@@ -3,7 +3,7 @@
 // Lake Travis High School, Texas, United States			  //
 // VEX Override 2026-2027									  //
 //															  //
-// By Theo Hallgren, Sebastian Ditsch, and Ryan Koontz		  //
+// By Theo Hallgren, and Ryan Koontz, Sebastian Ditsch 		  //
 // Using LemLib by Liam Teale								  //
 // 															  //
 // Source available on: github.com/The-Theory/Override-654T	  //
@@ -14,26 +14,41 @@
 
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
+#include "pros/abstract_motor.hpp"
+#include "pros/motors.hpp"
 
 
 
-////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////jm
 #pragma region RobotDefinition /////////////////////////////////
 ////////////////////////////////////////////////////////////////
 // Ports
 const int UNDEF_PORT = 0;
-pros::MotorGroup left_motors (  { 7,   9},  pros::MotorGearset::blue);
-pros::MotorGroup right_motors(  {-8, -10},  pros::MotorGearset::blue);
+pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
+pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 pros::Rotation vertical_encoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
+pros::Motor clawPivot(4, pros::MotorGearset::blue);
 
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
+// Input curves
+lemlib::ExpoDriveCurve throttle_curve(
+	3, // joystick deadband out of 127
+	10, // minimum output where drivetrain will move out of 127
+	1.019 // expo curve gain
+);
+lemlib::ExpoDriveCurve steer_curve(
+	3, // joystick deadband out of 127
+	10, // minimum output where drivetrain will move out of 127
+	1.019 // expo curve gain
+);
+
 // Drivetrain
 lemlib::Drivetrain drivetrain(
-	&left_motors, 				// left
-	&right_motors, 				// right
+	&leftMotors, 				// left
+	&rightMotors, 				// right
 	11.4173,  					// track width
 	lemlib::Omniwheel::NEW_275, // wheel type
 	450, 						// drivetrain rpm
@@ -133,7 +148,11 @@ void opcontrol() {
         int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
 
         // Dual-stick arcade
-        chassis.arcade(leftY, rightX);
+        chassis.curvature(leftY, rightX);
+
+		// Claw control
+		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+			clawPivot.move_voltage(12000);
     }
 }
 #pragma endregion
