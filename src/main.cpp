@@ -3,7 +3,7 @@
 // Lake Travis High School, Texas, United States			  //
 // VEX Override 2026-2027									  //
 //															  //
-// By Theo Hallgren, and Ryan Koontz, Sebastian Ditsch 		  //
+// By Theo Hallgren, Ryan Koontz, and Sebastian Ditsch 		  //
 // Using LemLib by Liam Teale								  //
 // 															  //
 // Source available on: github.com/The-Theory/Override-654T	  //
@@ -19,7 +19,7 @@
 
 
 
-////////////////////////////////////////////////////////////////jm
+////////////////////////////////////////////////////////////////
 #pragma region RobotDefinition /////////////////////////////////
 ////////////////////////////////////////////////////////////////
 // Ports
@@ -35,14 +35,14 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 // Input curves
 lemlib::ExpoDriveCurve throttle_curve(
-	3, // joystick deadband out of 127
-	10, // minimum output where drivetrain will move out of 127
-	1.019 // expo curve gain
+	3, 		// joystick deadband out of 127
+	10, 	// minimum output where drivetrain will move out of 127
+	1.019 	// expo curve gain
 );
 lemlib::ExpoDriveCurve steer_curve(
-	3, // joystick deadband out of 127
-	10, // minimum output where drivetrain will move out of 127
-	1.019 // expo curve gain
+	3, 		// joystick deadband out of 127
+	10, 	// minimum output where drivetrain will move out of 127
+	1.019 	// expo curve gain
 );
 
 // Drivetrain
