@@ -52,7 +52,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 
 Here we define all of our ports, and define the controller object. Reverse numbers mean reversed motors, so, for example,the left side of our drivetrain uses **Ports** `7` and `9`, with both motors reversed. We also specify the cartridge for each motor. In code, a **5.5W** motor is handled the same as a green **11W** motor. 
 
-Both our vertical encoder (rotation sensor for forward and backwards motion) and our IMU (Inertial Measurement Unit)haven't been physically attached yet, so we included a temporary assignement of "**Port** `0`."
+Both our vertical encoder (rotation sensor for forward and backwards motion) and our **IMU** (Inertial Measurement Unit)haven't been physically attached yet, so we included a temporary assignement of "**Port** `0`."
 
 ---
 
