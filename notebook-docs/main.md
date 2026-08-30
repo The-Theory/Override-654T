@@ -243,10 +243,13 @@ This section is the only part of the code that actually defines behavior so far.
 
 - The `delay` function slows down the program to around 40 cycles per second, saving the CPU from trying to run the program as fast as possible, which is pointless. Note that speed and fluidity of motion is not affected by cycle frequency. 
 <br>
+
 - The two `get_analog` lines request values from the **Controller** and save them. Specifically, we ask for the vertical position of the left stick, and the horizontal position of the right. 
 <br>
+
 - The `curvature` function is called using our **Chassis** object, instructing **LemLib** to use the **Controllers** saved values to move the robot using curvature drive. 
 <br>
+
 - Finally, the `get_digital` function asks the **Controller** if the **R1** button is being pressed, and if so, rotates the `clawPivot` motor with 1200mV. This just means that when the **R1** button is pressed, we spin the claw motor at max speed forward. Currently, this is just testing, but is the precursor for all of our future controls. 
 
 ---
