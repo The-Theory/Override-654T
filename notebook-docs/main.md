@@ -8,15 +8,15 @@ This document explains what the main `src/main.cpp` achieves for our robot. Each
 
 ```cpp
 ////////////////////////////////////////////////////////////////
-// Codebase of 654T - Tsunami                                  //
-// Lake Travis High School, Texas, United States               //
-// VEX Override 2026-2027                                       //
-//                                                             //
-// By Theo Hallgren, Ryan Koontz, and Sebastian Ditsch         //
-// Using LemLib by Liam Teale                                   //
-//                                                             //
-// Source available on: github.com/The-Theory/Override-654T    //
-// under GPL-3.0 license                                        //
+// Codebase of 654T - Tsunami                                 //
+// Lake Travis High School, Texas, United States              //
+// VEX Override 2026-2027                                     //
+//                                                            //
+// By Theo Hallgren, Ryan Koontz, and Sebastian Ditsch        //
+// Using LemLib by Liam Teale                                 //
+//                                                            //
+// Source available on: github.com/The-Theory/Override-654T   //
+// under GPL-3.0 license                                      //
 ////////////////////////////////////////////////////////////////
 ```
 
