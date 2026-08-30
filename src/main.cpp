@@ -28,7 +28,7 @@ pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 pros::Rotation vertical_encoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
-pros::Motor clawPivot(4, pros::MotorGearset::blue);
+pros::Motor clawPivot(4, pros::MotorGearset::green);
 
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
