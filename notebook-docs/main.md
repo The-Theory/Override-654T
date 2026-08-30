@@ -1,6 +1,6 @@
 # `src/main.cpp` - Walkthrough
 
-This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: PROS (an operating system for the Brain) and LemLib (a driving and odometry library).
+This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: **PROS** (an operating system for the Brain) and **LemLib** (a driving and odometry library).
 
 ---
 
@@ -171,3 +171,131 @@ void on_center_button() {
 A small helper function that runs each time someone presses the center button on the Brain's screen. At the moment, it just toggles a text on-screen. This is an example function from the **LemLib** docs, and will be used in the future to handle **Automation Routine Selection**.
 
 ---
+
+## Startup
+
+```cpp
+void initialize() {
+    pros::lcd::initialize();
+    pros::lcd::set_text(1, "Hello PROS User!");
+    pros::lcd::register_btn1_cb(on_center_button);
+}
+```
+
+Runs once, automatically, the moment the robot powers on. Currently it only turns on
+the Brain's text display, prints "Hello PROS User!" on the first line, and connects
+the center screen button to the callback above. All three are default template
+actions — no sensor calibration, no autonomous selector has been added, so this is
+effectively still a stub.
+
+---
+
+## Disabled period (`disabled`)
+
+```cpp
+void disabled() {}
+```
+
+Runs whenever the field control system disables the robot: before the match, between
+the autonomous and driver phases, and after the match. It is intentionally **empty**.
+During a disabled period the robot is supposed to do nothing, so an empty body is the
+correct and complete implementation — not a missing piece.
+
+---
+
+## Autonomous selector (`competition_initialize`)
+
+```cpp
+void competition_initialize() {}
+```
+
+Runs after startup but before the match begins — the normal place to build a menu for
+choosing which autonomous routine to run (for example, by starting position). It is
+currently **empty**, a deliberate stub. There is nothing to select yet because no
+autonomous routines have been written.
+
+---
+
+## Autonomous period (`autonomous`)
+
+```cpp
+void autonomous() {}
+```
+
+The roughly 15-second phase at the start of a match where the robot runs a
+pre-programmed routine with no driver input. It is currently **empty**, so the robot
+sits still for the entire autonomous period. This is the biggest unfinished piece of
+the program. The driving and PID machinery it would rely on is already set up; the
+routine itself has not been written.
+
+---
+
+## Driver control loop (`opcontrol`)
+
+```cpp
+void opcontrol() {
+    while (true) {
+        pros::delay(25);
+
+        // Get left y and right x positions
+        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
+        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+
+        // Dual-stick arcade
+        chassis.curvature(leftY, rightX);
+
+        // Claw control
+        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
+            clawPivot.move_voltage(12000);
+    }
+}
+```
+
+The driver-controlled phase, and the only behavior section that is actually
+implemented. It runs a loop that repeats until the phase ends. Each pass:
+
+1. **Wait 25 milliseconds.** Paces the loop to about 40 cycles per second. Without a
+   pause it would run thousands of times per second and needlessly load the Brain's
+   processor. The wait is at the top so it happens every cycle regardless of which
+   branches run.
+2. **Read two joystick axes:** left stick up/down (`leftY`), right stick left/right
+   (`rightX`).
+3. **Drive using `chassis.curvature`** (dual-stick arcade). `leftY` sets
+   forward/backward speed; `rightX` sets how sharply the robot curves. This makes the
+   robot handle like a car — at higher speed the same stick input gives a wider turn
+   — which many drivers find smoother than tank controls. Design note: the raw
+   joystick values go straight in. The input curves defined earlier are **not**
+   applied here — wiring them in is an obvious next step.
+4. **Claw control:** while **R1** is held, the claw motor runs at full power (12000
+   millivolts = 12 volts). There is no command to run it the other way or actively
+   hold it, so releasing R1 just stops driving the motor and it coasts. A
+   reverse/retract button is a known missing feature.
+
+---
+
+## Current state summary
+
+**Working now**
+
+- Full hardware definition for the four-motor drivetrain and the claw motor.
+- Driver control: dual-stick arcade driving plus a one-direction claw button (R1).
+- Startup screen text and the template test button.
+
+**Defined but not yet functional**
+
+- Odometry / position tracking — the tracking-wheel sensor and IMU have no ports.
+- PID tuning values — present, but only used by autonomous, which is empty.
+- Input curves — created, but not applied to live driving.
+
+**Not started**
+
+- Autonomous routine (empty stub).
+- Autonomous selector (empty stub).
+- Claw retract / reverse control.
+
+**Placeholder values to revisit**
+
+- Horizontal drift (2) — explicitly marked "for now."
+- Sensor ports set to `UNDEF_PORT` (0) — undefined.
+- All PID gains — first-pass estimates, untested on the real robot.
+
