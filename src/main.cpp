@@ -15,6 +15,7 @@
 #include "main.h"
 #include "lemlib/api.hpp" // IWYU pragma: keep
 #include "pros/abstract_motor.hpp"
+#include "pros/motors.h"
 #include "pros/motors.hpp"
 
 
@@ -32,7 +33,8 @@ pros::Imu imu(UNDEF_PORT);
 
 pros::Motor clawPivot(4, pros::MotorGearset::green);
 pros::Motor winchRight(21, pros::MotorGearset::blue);
-pros::Motor winchLeft(-UNDEF_PORT, pros::MotorGearset::blue);
+pros::Motor winchLeft(-20, pros::MotorGearset::blue);
+pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
@@ -147,6 +149,9 @@ void autonomous() {}
  * not in competition mode
  */
 void opcontrol() {
+	winchLeft.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	winchRight.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+
     while (true) {
 		pros::delay(25);
 
@@ -157,20 +162,24 @@ void opcontrol() {
         // Dual-stick arcade
         chassis.curvature(leftY, rightX);
 
-		// Claw control
+		// Intake control
 		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-			clawPivot.move_voltage(12000);
-		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
-			clawPivot.move_voltage(-12000);
+			intakeMotor.move_voltage(12000);
+		else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
+			intakeMotor.move_voltage(-12000);
+		else
+			intakeMotor.move_voltage(0);
 
 		// Winch control
 		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
 			winchRight.move_voltage(12000);
 			winchLeft.move_voltage(12000);
-		}
-		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
+		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
 			winchRight.move_voltage(-12000);
 			winchLeft.move_voltage(-12000);
+		} else {
+			winchRight.move_voltage(0);
+			winchLeft.move_voltage(0);
 		}
     }
 }
