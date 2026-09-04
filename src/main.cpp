@@ -32,8 +32,7 @@ pros::Rotation vertical_encoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
 
 pros::Motor clawPivot(4, pros::MotorGearset::green);
-pros::Motor winchRight(21, pros::MotorGearset::blue);
-pros::Motor winchLeft(-20, pros::MotorGearset::blue);
+pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 
 // Controller
@@ -104,6 +103,18 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 #pragma region BaseFunctions ///////////////////////////////////
 ////////////////////////////////////////////////////////////////
 /**
+ * Drives a motor at full voltage while fwd is held, reversed while rev is
+ * held, and stopped otherwise. fwd wins if both are pressed.
+ */
+void bindBidirectional(pros::AbstractMotor& motor,
+					   pros::controller_digital_e_t fwd,
+					   pros::controller_digital_e_t rev) {
+	motor.move_voltage(controller.get_digital(fwd) ?  12000
+					 : controller.get_digital(rev) ? -12000
+					 : 0);
+}
+
+/**
  * Callback function for LLEMU's center button.
  */
 void on_center_button() {
@@ -149,37 +160,16 @@ void autonomous() {}
  * not in competition mode
  */
 void opcontrol() {
-	winchLeft.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
-	winchRight.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	winch.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
-    while (true) {
+	while (true) {
 		pros::delay(25);
 
-        // Get left y and right x positions
-        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+		// Dual-stick arcade
+		chassis.curvature(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y),
+						  controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
 
-        // Dual-stick arcade
-        chassis.curvature(leftY, rightX);
-
-		// Intake control
-		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-			intakeMotor.move_voltage(12000);
-		else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R2))
-			intakeMotor.move_voltage(-12000);
-		else
-			intakeMotor.move_voltage(0);
-
-		// Winch control
-		if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L1)) {
-			winchRight.move_voltage(12000);
-			winchLeft.move_voltage(12000);
-		} else if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_L2)) {
-			winchRight.move_voltage(-12000);
-			winchLeft.move_voltage(-12000);
-		} else {
-			winchRight.move_voltage(0);
-			winchLeft.move_voltage(0);
-		}
-    }
+		bindBidirectional(intakeMotor, pros::E_CONTROLLER_DIGITAL_R1, pros::E_CONTROLLER_DIGITAL_R2);
+		bindBidirectional(winch,       pros::E_CONTROLLER_DIGITAL_L1, pros::E_CONTROLLER_DIGITAL_L2);
+	}
 }
