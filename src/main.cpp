@@ -12,11 +12,11 @@
 
 
 
-#include "main.h"
-#include "lemlib/api.hpp" // IWYU pragma: keep
-#include "pros/abstract_motor.hpp"
-#include "pros/motors.h"
-#include "pros/motors.hpp"
+#include "main.h"                // pulls in all of pros via api.h
+#include "lemlib/api.hpp"         // IWYU pragma: keep
+#include "tsu/control.hpp"
+
+using namespace tsu::btn;
 
 
 
@@ -103,18 +103,6 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 #pragma region BaseFunctions ///////////////////////////////////
 ////////////////////////////////////////////////////////////////
 /**
- * Drives a motor at full voltage while fwd is held, reversed while rev is
- * held, and stopped otherwise. fwd wins if both are pressed.
- */
-void bindBidirectional(pros::AbstractMotor& motor,
-					   pros::controller_digital_e_t fwd,
-					   pros::controller_digital_e_t rev) {
-	motor.move_voltage(controller.get_digital(fwd) ?  12000
-					 : controller.get_digital(rev) ? -12000
-					 : 0);
-}
-
-/**
  * Callback function for LLEMU's center button.
  */
 void on_center_button() {
@@ -162,14 +150,13 @@ void autonomous() {}
 void opcontrol() {
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
+	tsu::TsuControl ctl(controller);
+	ctl.bidir(intakeMotor, R)
+	   .bidir(winch, L);
+
 	while (true) {
+		ctl.update();
+		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
 		pros::delay(25);
-
-		// Dual-stick arcade
-		chassis.curvature(controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y),
-						  controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X));
-
-		bindBidirectional(intakeMotor, pros::E_CONTROLLER_DIGITAL_R1, pros::E_CONTROLLER_DIGITAL_R2);
-		bindBidirectional(winch,       pros::E_CONTROLLER_DIGITAL_L1, pros::E_CONTROLLER_DIGITAL_L2);
 	}
 }
