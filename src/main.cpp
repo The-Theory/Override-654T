@@ -150,13 +150,17 @@ void autonomous() {}
 void opcontrol() {
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
 
+	// Def controls
 	tsu::TsuControl ctl(controller);
-	ctl.bidir(intakeMotor, R)
-	   .bidir(winch, L);
+	ctl.bidir(intakeMotor, R)	// Bind intake
+	   .bidir(winch, L);		// Bind winch
 
 	while (true) {
-		ctl.update();
+		// Move
 		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
+
+		// Refresh
+		ctl.update();
 		pros::delay(25);
 	}
 }
