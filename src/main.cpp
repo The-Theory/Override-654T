@@ -75,7 +75,7 @@ lemlib::Drivetrain drivetrain(
 );
 
 // Odometry 
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_2, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalEncoder, lemlib::Omniwheel::NEW_2, 0);
 lemlib::OdomSensors sensors(
 	&vertical_tracking_wheel, 	
 	nullptr, nullptr, nullptr,	// unused tracking wheels
