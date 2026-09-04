@@ -12,8 +12,8 @@
 
 
 
-#include "main.h"                // pulls in all of pros via api.h
-#include "lemlib/api.hpp"         // IWYU pragma: keep
+#include "main.h"
+#include "lemlib/api.hpp"	// IWYU pragma: keep
 #include "tsu/control.hpp"
 
 using namespace tsu::btn;
@@ -21,19 +21,31 @@ using namespace tsu::btn;
 
 
 ////////////////////////////////////////////////////////////////
-#pragma region RobotDefinition /////////////////////////////////
+#pragma region Ports ///////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-// Ports
 const int UNDEF_PORT = 0;
+
+// Drivetrain
 pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
+// Sensors
 pros::Rotation vertical_encoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
 
+// Mechanisms
 pros::Motor clawPivot(4, pros::MotorGearset::green);
 pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+
+
+////////////////////////////////////////////////////////////////
+#pragma region ControlDefinition //////////////////////////////
+////////////////////////////////////////////////////////////////
 
 // Controller
 pros::Controller controller(pros::E_CONTROLLER_MASTER);
