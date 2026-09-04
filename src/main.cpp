@@ -32,6 +32,7 @@ pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
 pros::Rotation verticalEncoder(UNDEF_PORT);
+pros::Rotation winchEncoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
 
 // Mechanisms
