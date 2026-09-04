@@ -111,7 +111,7 @@ public:
 	}
 
 	/**
-	 * Each new press flips the state, which is handed to fn every cycle.
+	 * Each new press toggles the state.
 	 */
 	TsuControl& toggle(Button b, std::function<void(bool)> fn) {
 		return on([this, b, fn] {
@@ -131,14 +131,14 @@ public:
 	}
 
 	/**
-	 * Fires once on the rising edge.
+	 * Fires once on the button press.
 	 */
 	TsuControl& press(Button b, std::function<void()> fn) {
 		return on([this, b, fn] { if (pressed(b)) fn(); });
 	}
 
 	/**
-	 * Fires once on the falling edge.
+	 * Fires once on the button release.
 	 */
 	TsuControl& release(Button b, std::function<void()> fn) {
 		return on([this, b, fn] { if (released(b)) fn(); });
@@ -157,8 +157,8 @@ public:
 	}
 
 	/**
-	 * Runs fn in its own task on press so a macro may pros::delay() without
-	 * stalling opcontrol. Presses during a run are ignored.
+	 * Runs fn in its own thread so a macro may call pros::delay() without
+	 * pausing opcontrol. Presses during a run *are* ignored.
 	 */
 	TsuControl& macro(Button b, std::function<void()> fn) {
 		return press(b, [this, b, fn] {
@@ -172,14 +172,14 @@ public:
 	}
 
 	/**
-	 * Escape hatch for anything the bindings above do not cover.
+	 * Adds a job to the binding list.
 	 */
 	TsuControl& on(std::function<void()> fn) {
 		bindings.push_back(fn);
 		return *this;
 	}
 
-	// Button state, valid from the first update() onward
+	// Button states
 	bool held(Button b)     const { return now & bit(b); }
 	bool pressed(Button b)  const { return (now & ~was) & bit(b); }
 	bool released(Button b) const { return (was & ~now) & bit(b); }
@@ -187,8 +187,7 @@ public:
 	bool toggled(Button b)  const { return toggleState[idx(b)]; }
 
 	/**
-	 * Snapshots the controller, then runs every binding in the order it was
-	 * registered. Call exactly once per opcontrol loop.
+	 * Snapshots the controller state, then runs every binding
 	 */
 	void update() {
 		was = now;
@@ -200,26 +199,23 @@ public:
 	}
 
 private:
-	static const int WARN_LINE = 7;  // bottom of the brain screen
+	static const int WARN_LINE = 7;  // bottom of screen
 
-	// Digital button ids are contiguous, so one snapshot fits in a bitmask
+	// Digital button ids fitted in a bitmask
 	static const int FIRST_BUTTON = pros::E_CONTROLLER_DIGITAL_L1;
 	static const int LAST_BUTTON  = pros::E_CONTROLLER_DIGITAL_A;
 
-	// Sized past LAST_BUTTON so a hand-written Button holding POWER, which
-	// tsu::btn deliberately leaves out, still lands inside the array
+	// Define size of button array. PWR buttons is max, and len(arr)=n+1
+	// due to 0-based indexing
 	static const int BUTTON_SLOTS = pros::E_CONTROLLER_DIGITAL_POWER + 1;
 
 	/**
-	 * Clamps a binding's voltage to what a motor accepts, and says so if it
-	 * had to. A bad number is worth knowing about, but not
-	 * worth an assert() - that aborts the program, and losing the robot
-	 * mid-match over a typo is worse than a clamped motor.
+	 * Clamps a binding's voltage to what a V5 motor accepts.
 	 */
 	static int checkVoltage(int mv) {
 		const int voltage = std::clamp(mv, -MAX_VOLTAGE, MAX_VOLTAGE);
 		if (voltage != mv) {
-			// Terminal needs `pros terminal` to read, so say it on the brain too
+			// Terminal needs "pros terminal" to show
 			printf("TsuControl: %d mV out of range, clamped to %d\n", mv, voltage);
 			pros::lcd::print(WARN_LINE, "TsuControl: %d mV -> %d", mv, voltage);
 		}
@@ -233,8 +229,7 @@ private:
 	std::vector<std::function<void()>> bindings;
 	unsigned int now = 0, was = 0;
 
-	// Per-button state. Only update() writes toggleState, and a macro task
-	// only ever writes its own byte of macroRunning, so neither needs a lock.
+	// Per-button/-macro state, ran by update()
 	bool toggleState[BUTTON_SLOTS] = {};
 	bool macroRunning[BUTTON_SLOTS] = {};
 };
