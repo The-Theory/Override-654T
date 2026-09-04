@@ -158,7 +158,7 @@ public:
 
 	/**
 	 * Runs fn in its own thread so a macro may call pros::delay() without
-	 * pausing opcontrol. Presses during a run *are* ignored.
+	 * pausing opcontrol. Clone macro calls during a run *are* ignored.
 	 */
 	TsuControl& macro(Button b, std::function<void()> fn) {
 		return press(b, [this, b, fn] {
