@@ -14,6 +14,7 @@
 
 #include "main.h"
 #include "lemlib/api.hpp"	// IWYU pragma: keep
+#include "pros/rotation.hpp"
 #include "tsu/control.hpp"
 
 using namespace tsu::btn;
@@ -30,7 +31,7 @@ pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
-pros::Rotation vertical_encoder(UNDEF_PORT);
+pros::Rotation verticalEncoder(UNDEF_PORT);
 pros::Imu imu(UNDEF_PORT);
 
 // Mechanisms
