@@ -188,6 +188,7 @@ void scoringMacro() {
 	clawPivot.move_relative(150, 200);  // Move claw up slightly
 	pros::delay(1000);  				// Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
+	claw.move_voltage(0);  				// Stop claw
 	winch.move_absolute(0, 200);  		// Move winch down
 }
 
