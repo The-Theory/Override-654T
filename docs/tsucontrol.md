@@ -21,6 +21,50 @@ void opcontrol() {
 }
 ```
 
+## How it works
+
+The library is your `while` loop turned inside out. Before, the loop contained
+the rules. Now the rules live in a list, and the loop walks the list.
+
+That splits time into two phases:
+
+1. **Registration** runs once, at the top of `opcontrol`. `ctl.bidir(winch, L)`
+   does not read a button or move a motor. It packages up "drive the winch
+   from L1/L2" as a small job and appends it to a list.
+2. **Polling** runs every 25 ms. `ctl.update()` reads all twelve buttons once,
+   then runs every job in the list, in the order they were added.
+
+So every binding function runs once, but the job it builds runs forever.
+Adding a mechanism adds a list entry; the loop itself never changes.
+
+### Why it remembers last cycle
+
+`get_digital` answers one question: *is this button down?* It can't answer
+*did it just go down?*, which is what toggles, macros, and combos need. So
+`update()` keeps last cycle's buttons in `was` next to this cycle's in `now`.
+
+Holding R1 for three cycles:
+
+| cycle | R1 now | R1 last cycle | `held()` | `pressed()` |
+| --- | --- | --- | --- | --- |
+| 1 | down | up | yes | **yes** |
+| 2 | down | down | yes | no |
+| 3 | down | down | yes | no |
+| 4 | up | down | no | no (`released()` is yes) |
+
+`pressed()` is true for exactly one cycle however long you hold. That pulse
+is what lets a toggle flip once per press instead of forty times a second.
+
+### One full cycle
+
+Registered: intake on `R`, winch on `L`. You're holding R1. `update()` fires:
+
+1. `was = now`, filing last cycle away
+2. Read all 12 buttons into `now`: R1 is down
+3. Intake job: `held(R1)` yes, so `intakeMotor.move_voltage(12000)`
+4. Winch job: nothing held, nothing just released, so the winch is left alone
+5. Return, `pros::delay(25)`, repeat
+
 ## Names
 
 `using namespace tsu::btn;` gets you the bare names. Qualify them as
@@ -78,9 +122,11 @@ binding, which is what makes the edge-triggered bindings possible — polling
 
 ## Adding a mechanism
 
-Motors get defined in `main.cpp` under `RobotDefinition`; the binding goes on
-the chain in `opcontrol`. Nothing needs touching in `control.hpp` unless the
-mechanism needs a binding shape that doesn't exist yet.
+Motors get defined in `main.cpp` under `Ports`; the binding goes on the chain
+in `opcontrol`. Anything a binding and a macro both use, like a claw position,
+goes in a named function under `Macros` so both can call it. Nothing needs
+touching in `control.hpp` unless the mechanism needs a binding shape that
+doesn't exist yet.
 
 ## Reading the source
 
@@ -158,3 +204,16 @@ was & ~now     // released this cycle
 This is the reason `press`, `toggle`, `combo`, and `macro` can exist at all.
 Calling `get_digital` inline the way `opcontrol` used to can only tell you a
 button *is* down, never that it just *changed*.
+
+### Why the per-button arrays are 19 long
+
+`toggle` and `macro` keep one flag per button in a plain array, and look
+it up by the button's enum value: R1 *is* 8, so R1 uses slot 8. The enum
+runs from L1 = 6 up to POWER = 18, and an array of size N has slots 0 to
+N-1, so reaching slot 18 takes a size of 19.
+
+`tsu::btn` leaves POWER out on purpose (pressing it opens the controller's
+own menu), but `tsu::Button{pros::E_CONTROLLER_DIGITAL_POWER}` still
+compiles. C++ doesn't bounds-check arrays, so a slot too few would write
+over a neighboring variable instead of erroring. The arrays are sized to
+what the type can hold, not to the names we chose to expose.
