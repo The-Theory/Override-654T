@@ -61,7 +61,7 @@ pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 
 Here we define all of our ports, and define the controller object. Reverse numbers mean reversed motors, so, for example, the left side of our drivetrain uses **Ports** `7` and `9`, with both motors reversed. We also specify the cartridge for each motor. In code, a **5.5W** motor is handled the same as a green **11W** motor. 
 
-Both our vertical encoder (rotation sensor for forward and backwards motion) and our **IMU** (Inertial Measurement Unit) haven't been physically attached yet, so we included a temporary assignment of an imaginary "**Port** `0`."
+Whenever we add a new component, we give it a temporary assignment of an imaginary "**Port** `0`". This just allows us to keep the code compiling while developing on the building aspects.
 
 We also define our **Controller** to be used during operator control.
 
@@ -227,6 +227,40 @@ This is the function that will be running during the **15-second Autonomous Cont
 
 ---
 
+## Macros
+
+```cpp
+// Claw pivot positions
+const int CLAW_PIVOT_UP   = 330;    // [deg]
+const int CLAW_PIVOT_DOWN = -10;    // [deg]
+const int CLAW_PIVOT_RPM  = 100;
+
+void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
+void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
+
+/**
+ * Run when needing to score. 
+ * Start: Cascade level to score, claw in Up position
+ * End: Intake position; Cascade down, claw down
+ */
+void scoringMacro() {
+	claw.move_voltage(-12000);  		// Spit out from claw
+	clawPivot.move_relative(150, 200);  // Move claw up slightly
+	pros::delay(1000);  				// Wait for OP drive back
+	clawPivotDown();  					// Put claw into rest mode
+	claw.move_voltage(0);  				// Stop claw
+	winch.move_absolute(0, 200);  		// Move winch down
+}
+```
+
+A **macro**, in technology, is a command that can run a series of actions whenever we invoke it. In **VEX**, this is often in the form of pressing a button to carry out several motor movements autonomously during driver control. We can approach it like small sections autonomous to use during operator control, like performing a scoring routine. 
+
+That is exactly what our current main macro does; score. Whenever we call it, the robot will lift the claw up while releasing whatever is inside, and then return to the intake position. Macros can invoke other macros, as shown here. While scoring, we want to move the claw to predetermined positions, which we define in our `clawPivotUp` and `clawPivotDown` mini-macros. 
+
+As a consequence of this, we can always divide repeated parts of macros into new macros to be more concise. For example, if needed in other macros, we could make a macro that returns the robot to an **Intake Position**, 
+
+---
+
 ## Driver Control 
 
 ```cpp
@@ -266,7 +300,7 @@ This section is the only part of the code that actually defines behavior so far.
 ## Current State
 
 - [ ] Updated Docs
-- [x] Basic macros
+- [x] Basic macro implementation
 - [ ] **PID** Tuning
 - [ ] Stage 1 autonomous
 - [ ] Horizontal drift tuning
