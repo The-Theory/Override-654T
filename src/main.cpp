@@ -14,11 +14,6 @@
 
 #include "main.h"
 #include "lemlib/api.hpp"	// IWYU pragma: keep
-#include "pros/distance.hpp"
-#include "pros/motors.h"
-#include "pros/motors.hpp"
-#include "pros/rotation.hpp"
-#include "pros/rtos.hpp"
 #include "tsu/control.hpp"
 
 using namespace tsu::btn;
