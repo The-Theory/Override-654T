@@ -1,4 +1,4 @@
-# `src/main.cpp` - Walkthrough
+# `src/main.cpp` - Walkthrough V2
 
 This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: **PROS** (an operating system for the **Brain**) and **LemLib** (a driving and odometry library). Furthermore, we have a custom library, **Tide**, for macro control and controller bindings.
  
@@ -257,7 +257,9 @@ A **macro**, in technology, is a command that can run a series of actions whenev
 
 That is exactly what our current main macro does; score. Whenever we call it, the robot will lift the claw up while releasing whatever is inside, and then return to the intake position. Macros can invoke other macros, as shown here. While scoring, we want to move the claw to predetermined positions, which we define in our `clawPivotUp` and `clawPivotDown` mini-macros. 
 
-As a consequence of this, we can always divide repeated parts of macros into new macros to be more concise. For example, if needed in other macros, we could make a macro that returns the robot to an **Intake Position**, 
+As a consequence of this, we can always divide repeated parts of macros into new macros to be more concise. For example, if needed in other macros, we could make a macro that returns the robot to an **Intake Position**.
+
+**Tsunami**'s **Tide** library allows very easy integration into operator code, as seen below. 
 
 ---
 
@@ -265,41 +267,39 @@ As a consequence of this, we can always divide repeated parts of macros into new
 
 ```cpp
 void opcontrol() {
-    while (true) {
-        pros::delay(25);
+	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
-        // Get left y and right x positions
-        int leftY = controller.get_analog(pros::E_CONTROLLER_ANALOG_LEFT_Y);
-        int rightX = controller.get_analog(pros::E_CONTROLLER_ANALOG_RIGHT_X);
+	// Def controls
+	tide::Control ctl(controller);
+	ctl.bidir(intakeMotor, R)
+	   .bidir(winch, L)
+	   .bidir(claw, R)
+	   .press(A, clawPivotUp)
+	   .press(B, clawPivotDown)
+	   .macro(X, scoringMacro);
 
-        // Dual-stick arcade
-        chassis.curvature(leftY, rightX);
+	while (true) {
+		// Refresh
+		ctl.update();
+		pros::delay(25);
 
-        // Claw control
-        if (controller.get_digital(pros::E_CONTROLLER_DIGITAL_R1))
-            clawPivot.move_voltage(12000);
-    }
+		// Move
+		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
+	}
 }
 ```
 
-This section is the only part of the code that actually defines behavior so far. Let's see what it does, line by line:
+This is the core functionality of our code, which is run during operator control. The first three lines all set something called **brake mode** to "`hold`". This means that our motors will try their best to stay in their current position, without drifting due to torque. 
 
-- The `delay` function slows down the program to around 40 cycles per second, saving the CPU from trying to run the program as fast as possible, which is pointless. Note that speed and fluidity of motion is not affected by cycle frequency. 
-<br>
-
-- The two `get_analog` lines request values from the **Controller** and save them. Specifically, we ask for the vertical position of the left stick, and the horizontal position of the right. 
-<br>
-
-- The `curvature` function is called using our **Chassis** object, instructing **LemLib** to use the **Controllers** saved values to move the robot using curvature drive. 
-<br>
-
-- Finally, the `get_digital` function asks the **Controller** if the **R1** button is being pressed, and if so, rotates the `clawPivot` motor with 1200mV. This just means that when the **R1** button is pressed, we spin the claw motor at max speed forward. Currently, this is just testing, but is the precursor for all of our future controls. 
+Here is where **Tide** can truly shine, summarizing messy controller bindings into a few clean lines. `bidir` tells the code to control that object with a key or a _tuple_ of keys. A good example here is `R`, referring to `R1` and `R2` on the controller. **Tide** reads `R` and understands to spin the motor one way with `R1`, and the opposite way with `R2`. 
 
 ---
 
 ## Current State
 
-- [ ] Updated Docs
+- [x] Updated Docs
 - [x] Basic macro implementation
 - [ ] **PID** Tuning
 - [ ] Stage 1 autonomous
