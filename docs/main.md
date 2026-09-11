@@ -1,6 +1,6 @@
 # `src/main.cpp` - Walkthrough
 
-This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: **PROS** (an operating system for the **Brain**) and **LemLib** (a driving and odometry library).
+This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: **PROS** (an operating system for the **Brain**) and **LemLib** (a driving and odometry library). Furthermore, we have a custom library, **Tide**, for macro control and controller bindings.
  
 ---
 
@@ -32,7 +32,7 @@ This comment block at the very top credits the coding team and gives general inf
 #include "tide/control.hpp"
 ```
 
-These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically. `tide/control.hpp
+These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically. `tide/control.hpp` is our custom library, **Tide**. Docs for **Tide**, as viewable in `docs/tide.md`.
 
 ---
 
