@@ -28,12 +28,11 @@ This comment block at the very top credits the coding team and gives general inf
 
 ```cpp
 #include "main.h"
-#include "lemlib/api.hpp" // IWYU pragma: keep
-#include "pros/abstract_motor.hpp"
-#include "pros/motors.hpp"
+#include "lemlib/api.hpp"	// IWYU pragma: keep
+#include "tsu/control.hpp"
 ```
 
-These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically.
+These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically. `tsu/control.hpp
 
 ---
 
