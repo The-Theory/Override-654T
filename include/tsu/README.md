@@ -44,7 +44,7 @@ order it was registered.
 
 | Binding | Behavior |
 | --- | --- |
-| `bidir(motor, pair, mv = 12000)` | Forward while the pair's first button is held, reversed while the second is, stopped otherwise. Forward wins if both are down. |
+| `bidir(motor, pair, mv = 12000)` | Forward while the pair's first button is held, reversed while the second is, stopped on release. Forward wins if both are down. Leaves the motor alone while idle, so a macro or `move_absolute()` on the same motor isn't overwritten. |
 | `hold(motor, button, mv = 12000)` | Runs while held, stops on release. |
 | `toggle(motor, button, mv = 12000)` | Each new press flips the motor on or off. |
 | `toggle(button, fn)` | Same, but hands the `bool` to `fn` every cycle — for pneumatics or anything that isn't a motor. |

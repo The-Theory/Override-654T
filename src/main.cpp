@@ -18,6 +18,7 @@
 #include "pros/motors.h"
 #include "pros/motors.hpp"
 #include "pros/rotation.hpp"
+#include "pros/rtos.hpp"
 #include "tsu/control.hpp"
 
 using namespace tsu::btn;
@@ -169,10 +170,31 @@ void autonomous() {}
 #pragma region Macros //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
+// Claw pivot positions
+const int CLAW_PIVOT_UP   = 330;    // [deg]
+const int CLAW_PIVOT_DOWN = -100;   // [deg]
+const int CLAW_PIVOT_RPM  = 100;
 
+void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
+void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
+
+/**
+ * Run when needing to score. 
+ * Start: Cascade level to score, claw in Up position
+ * End: Intake position; Cascade down, claw down
+ */
+void scoringMacro() {
+	claw.move_voltage(-12000);  		// Spit out from claw
+	clawPivot.move_relative(150, 200);  // Move claw up slightly
+	pros::delay(1000);  				// Wait for OP drive back
+	clawPivotDown();  					// Put claw into rest mode
+	winch.move_absolute(0, 200);  		// Move winch down
+}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
+
+
 
 /**
  * Runs the  control code via Field Management System or
@@ -187,8 +209,11 @@ void opcontrol() {
 	// Def controls
 	tsu::TsuControl ctl(controller);
 	ctl.bidir(intakeMotor, R)
-	   .bidir(winch, L)	
-	   .bidir(claw, R);
+	   .bidir(winch, L)
+	   .bidir(claw, R)
+	   .press(A, clawPivotUp)
+	   .press(B, clawPivotDown)
+	   .macro(X, scoringMacro);
 
 	while (true) {
 		// Refresh
@@ -197,11 +222,5 @@ void opcontrol() {
 
 		// Move
 		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
-
-		// Try to balance motor
-		if (controller.get_digital_new_press(DIGITAL_A))
-			clawPivot.move_absolute(330, 100);
-		else if (controller.get_digital_new_press(DIGITAL_B))
-			clawPivot.move_absolute(-100, 100);
 	}
 }

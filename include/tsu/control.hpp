@@ -91,15 +91,15 @@ public:
 
 	/**
 	 * Full voltage while p.fwd is held, reversed while p.rev is held, and
-	 * stopped otherwise. Forward wins if both are down.
+	 * stopped on release. Forward wins if both are down. Leaves the motor
+	 * alone while idle, so macros and move_absolute() on it are not undone.
 	 */
 	TsuControl& bidir(pros::AbstractMotor& motor, Pair p, int mv = MAX_VOLTAGE) {
 		const int voltage = checkVoltage(mv);
 		return on([this, &motor, p, voltage] {
-			int out = 0;
-			if (held(p.fwd)) out = voltage;
-			else if (held(p.rev)) out = -voltage;
-			motor.move_voltage(out);
+			if (held(p.fwd)) motor.move_voltage(voltage);
+			else if (held(p.rev)) motor.move_voltage(-voltage);
+			else if (released(p.fwd) || released(p.rev)) motor.move_voltage(0);
 		});
 	}
 
