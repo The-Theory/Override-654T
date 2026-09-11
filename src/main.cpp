@@ -14,6 +14,9 @@
 
 #include "main.h"
 #include "lemlib/api.hpp"	// IWYU pragma: keep
+#include "pros/distance.hpp"
+#include "pros/motors.h"
+#include "pros/motors.hpp"
 #include "pros/rotation.hpp"
 #include "tsu/control.hpp"
 
@@ -31,12 +34,16 @@ pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
-pros::Rotation verticalEncoder(UNDEF_PORT);
-pros::Rotation winchEncoder(UNDEF_PORT);
-pros::Imu imu(UNDEF_PORT);
+pros::Rotation verticalEncoder(4);
+pros::Rotation winchEncoder(5);
+pros::Imu imu(6);
+pros::Distance leftDistance(3);
+pros::Distance rightDistance(2);
+pros::Distance middleDistance(1);
 
 // Mechanisms
-pros::Motor clawPivot(4, pros::MotorGearset::green);
+pros::Motor clawPivot(19, pros::MotorGearset::green);
+pros::Motor claw(18, pros::MotorGearset::green);
 pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 
@@ -162,12 +169,14 @@ void autonomous() {}
  * not in competition mode
  */
 void opcontrol() {
-	winch.set_brake_mode(pros::E_MOTOR_BRAKE_COAST);
+	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
 	tsu::TsuControl ctl(controller);
-	ctl.bidir(intakeMotor, R)	// Bind intake
-	   .bidir(winch, L);		// Bind winch
+	ctl.bidir(intakeMotor, R)
+	   .bidir(winch, L)	
+	   .bidir(clawPivot, DPAD_V)
+	   .bidir(claw, DPAD_H);
 
 	while (true) {
 		// Move

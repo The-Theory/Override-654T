@@ -1,0 +1,15 @@
+[package]
+name = "ble-upload"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+vex-v5-serial = { version = "0.5.1" }
+tokio = { version = "1", features = ["full"] }
+simplelog = "0.12"
+log = "0.4"
+
+# Vendored with Bluetooth flow control: upstream queues data faster than the
+# Brain commits it to flash, which drops the link on large (cold) uploads.
+[patch.crates-io]
+vex-v5-serial = { path = "vendor/vex-v5-serial" }
