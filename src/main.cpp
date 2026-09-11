@@ -167,7 +167,7 @@ void autonomous() {}
 
 // Claw pivot positions
 const int CLAW_PIVOT_UP   = 330;    // [deg]
-const int CLAW_PIVOT_DOWN = -100;   // [deg]
+const int CLAW_PIVOT_DOWN = -10;   // [deg]
 const int CLAW_PIVOT_RPM  = 100;
 
 void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
