@@ -1,7 +1,7 @@
 ////////////////////////////////////////////////////////////////
-// TsuControl - controller bindings for 654T - Tsunami		  //
+// Tide - controller bindings for 654T - Tsunami			  //
 //															  //
-// Docs and examples in docs/tsucontrol.md					  //
+// Docs and examples in docs/tide.md						  //
 ////////////////////////////////////////////////////////////////
 
 
@@ -19,7 +19,7 @@
 
 
 
-namespace tsu {
+namespace tide {
 
 ////////////////////////////////////////////////////////////////
 #pragma region ButtonNames /////////////////////////////////////
@@ -47,7 +47,7 @@ struct Axis {
  */
 inline Pair operator-(Pair p) { return {p.rev, p.fwd}; }
 
-// Short names, pulled in with `using namespace tsu::btn;`
+// Short names, pulled in with `using namespace tide::btn;`
 namespace btn {
 
 const Button L1    = {pros::E_CONTROLLER_DIGITAL_L1};
@@ -85,16 +85,16 @@ const Axis RY = {pros::E_CONTROLLER_ANALOG_RIGHT_Y};
 ////////////////////////////////////////////////////////////////
 #pragma region ControlClass /////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-class TsuControl {
+class Control {
 public:
-	TsuControl(pros::Controller& controller) : ctrl(controller) {}
+	Control(pros::Controller& controller) : ctrl(controller) {}
 
 	/**
 	 * Full voltage while p.fwd is held, reversed while p.rev is held, and
 	 * stopped on release. Forward wins if both are down. Leaves the motor
 	 * alone while idle, so macros and move_absolute() on it are not undone.
 	 */
-	TsuControl& bidir(pros::AbstractMotor& motor, Pair p, int mv = MAX_VOLTAGE) {
+	Control& bidir(pros::AbstractMotor& motor, Pair p, int mv = MAX_VOLTAGE) {
 		const int voltage = checkVoltage(mv);
 		return on([this, &motor, p, voltage] {
 			if (held(p.fwd)) motor.move_voltage(voltage);
@@ -106,14 +106,14 @@ public:
 	/**
 	 * Runs while the button is held, stops on release.
 	 */
-	TsuControl& hold(pros::AbstractMotor& motor, Button b, int mv = MAX_VOLTAGE) {
+	Control& hold(pros::AbstractMotor& motor, Button b, int mv = MAX_VOLTAGE) {
 		return bidir(motor, {b, b}, mv);
 	}
 
 	/**
 	 * Each new press toggles the state.
 	 */
-	TsuControl& toggle(Button b, std::function<void(bool)> fn) {
+	Control& toggle(Button b, std::function<void(bool)> fn) {
 		return on([this, b, fn] {
 			if (pressed(b)) toggleState[idx(b)] = !toggleState[idx(b)];
 			fn(toggleState[idx(b)]);
@@ -123,7 +123,7 @@ public:
 	/**
 	 * Motor spins while toggled on.
 	 */
-	TsuControl& toggle(pros::AbstractMotor& motor, Button b, int mv = MAX_VOLTAGE) {
+	Control& toggle(pros::AbstractMotor& motor, Button b, int mv = MAX_VOLTAGE) {
 		const int voltage = checkVoltage(mv);
 		return toggle(b, [&motor, voltage](bool state) {
 			motor.move_voltage(state ? voltage : 0);
@@ -133,14 +133,14 @@ public:
 	/**
 	 * Fires once on the button press.
 	 */
-	TsuControl& press(Button b, std::function<void()> fn) {
+	Control& press(Button b, std::function<void()> fn) {
 		return on([this, b, fn] { if (pressed(b)) fn(); });
 	}
 
 	/**
 	 * Fires once on the button release.
 	 */
-	TsuControl& release(Button b, std::function<void()> fn) {
+	Control& release(Button b, std::function<void()> fn) {
 		return on([this, b, fn] { if (released(b)) fn(); });
 	}
 
@@ -148,7 +148,7 @@ public:
 	 * Fires once each time every button lines up as held, and rearms as soon
 	 * as any one of them is let go.
 	 */
-	TsuControl& combo(std::initializer_list<Button> buttons, std::function<void()> fn) {
+	Control& combo(std::initializer_list<Button> buttons, std::function<void()> fn) {
 		unsigned int mask = 0;
 		for (const Button b : buttons) mask |= bit(b);
 		return on([this, mask, fn] {
@@ -160,7 +160,7 @@ public:
 	 * Runs fn in its own thread so a macro may call pros::delay() without
 	 * pausing opcontrol. Clone macro calls during a run *are* ignored.
 	 */
-	TsuControl& macro(Button b, std::function<void()> fn) {
+	Control& macro(Button b, std::function<void()> fn) {
 		return press(b, [this, b, fn] {
 			if (macroRunning[idx(b)]) return;
 			macroRunning[idx(b)] = true;
@@ -174,7 +174,7 @@ public:
 	/**
 	 * Adds a job to the binding list.
 	 */
-	TsuControl& on(std::function<void()> fn) {
+	Control& on(std::function<void()> fn) {
 		bindings.push_back(fn);
 		return *this;
 	}
@@ -216,8 +216,8 @@ private:
 		const int voltage = std::clamp(mv, -MAX_VOLTAGE, MAX_VOLTAGE);
 		if (voltage != mv) {
 			// Terminal needs "pros terminal" to show
-			printf("TsuControl: %d mV out of range, clamped to %d\n", mv, voltage);
-			pros::lcd::print(WARN_LINE, "TsuControl: %d mV -> %d", mv, voltage);
+			printf("Tide: %d mV out of range, clamped to %d\n", mv, voltage);
+			pros::lcd::print(WARN_LINE, "Tide: %d mV -> %d", mv, voltage);
 		}
 		return voltage;
 	}

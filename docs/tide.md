@@ -1,14 +1,14 @@
-# TsuControl
+# Tide
 
 Controller bindings for 654T Tsunami. Declare what each button does once,
 then poll everything with a single `update()` call per opcontrol loop.
 
 ```cpp
-#include "tsu/control.hpp"
-using namespace tsu::btn;
+#include "tide/control.hpp"
+using namespace tide::btn;
 
 void opcontrol() {
-    tsu::TsuControl ctl(controller);
+    tide::Control ctl(controller);
     ctl.bidir(intakeMotor, R)      // R1 forward, R2 reverse
        .bidir(winch, -L)           // L2 forward, L1 reverse
        .toggle(clawPivot, A);
@@ -67,8 +67,8 @@ Registered: intake on `R`, winch on `L`. You're holding R1. `update()` fires:
 
 ## Names
 
-`using namespace tsu::btn;` gets you the bare names. Qualify them as
-`tsu::btn::R2` instead if a name collides with something.
+`using namespace tide::btn;` gets you the bare names. Qualify them as
+`tide::btn::R2` instead if a name collides with something.
 
 | Kind | Names |
 | --- | --- |
@@ -83,7 +83,7 @@ Negating flips that: `-R` is R2 forward. Pairs can also be written out, as in
 
 ## Bindings
 
-Every binding returns the `TsuControl` so they chain, and each runs in the
+Every binding returns the `Control` so they chain, and each runs in the
 order it was registered.
 
 | Binding | Behavior |
@@ -166,7 +166,7 @@ return on([this, &motor, p, voltage] {   // <-- capture list
 });
 ```
 
-- `this` — the `TsuControl` itself, so the body can call `held()`
+- `this` — the `Control` itself, so the body can call `held()`
 - `&motor` — the motor **by reference**, i.e. the real motor, not a copy. It
   has to be a reference; you want to spin the actual hardware.
 - `p`, `voltage` — copied, because they're just a button pair and a number
@@ -178,7 +178,7 @@ motors declared at the top of `main.cpp` do.
 
 ### `return *this` is what lets bindings chain
 
-Every binding ends by returning the `TsuControl&` it was called on, so the
+Every binding ends by returning the `Control&` it was called on, so the
 next `.bidir(...)` has something to attach to. That's the only reason this
 works:
 
@@ -212,8 +212,8 @@ it up by the button's enum value: R1 *is* 8, so R1 uses slot 8. The enum
 runs from L1 = 6 up to POWER = 18, and an array of size N has slots 0 to
 N-1, so reaching slot 18 takes a size of 19.
 
-`tsu::btn` leaves POWER out on purpose (pressing it opens the controller's
-own menu), but `tsu::Button{pros::E_CONTROLLER_DIGITAL_POWER}` still
+`tide::btn` leaves POWER out on purpose (pressing it opens the controller's
+own menu), but `tide::Button{pros::E_CONTROLLER_DIGITAL_POWER}` still
 compiles. C++ doesn't bounds-check arrays, so a slot too few would write
 over a neighboring variable instead of erroring. The arrays are sized to
 what the type can hold, not to the names we chose to expose.

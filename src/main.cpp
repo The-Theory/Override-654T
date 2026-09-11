@@ -14,9 +14,9 @@
 
 #include "main.h"
 #include "lemlib/api.hpp"	// IWYU pragma: keep
-#include "tsu/control.hpp"
+#include "tide/control.hpp"
 
-using namespace tsu::btn;
+using namespace tide::btn;
 
 
 
@@ -203,7 +203,7 @@ void opcontrol() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
-	tsu::TsuControl ctl(controller);
+	tide::Control ctl(controller);
 	ctl.bidir(intakeMotor, R)
 	   .bidir(winch, L)
 	   .bidir(claw, R)
