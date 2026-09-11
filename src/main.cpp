@@ -170,13 +170,14 @@ void autonomous() {}
  */
 void opcontrol() {
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
 	tsu::TsuControl ctl(controller);
 	ctl.bidir(intakeMotor, R)
 	   .bidir(winch, L)	
 	   .bidir(clawPivot, DPAD_V)
-	   .bidir(claw, DPAD_H);
+	   .bidir(claw, R);
 
 	while (true) {
 		// Move
