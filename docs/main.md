@@ -40,13 +40,23 @@ These imports pull-in outside code so this file can use it. The note `IWYU pragm
 
 ```cpp
 const int UNDEF_PORT = 0;
+// Drivetrain
 pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
-pros::Rotation vertical_encoder(UNDEF_PORT);
-pros::Imu imu(UNDEF_PORT);
-pros::Motor clawPivot(4, pros::MotorGearset::green);
 
-pros::Controller controller(pros::E_CONTROLLER_MASTER);
+// Sensors
+pros::Rotation verticalEncoder(4);
+pros::Rotation winchEncoder(5);
+pros::Imu imu(6);
+pros::Distance leftDistance(3);
+pros::Distance rightDistance(2);
+pros::Distance middleDistance(1);
+
+// Mechanisms
+pros::Motor clawPivot(19, pros::MotorGearset::green);
+pros::Motor claw(18, pros::MotorGearset::green);
+pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
+pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 ```
 
 Here we define all of our ports, and define the controller object. Reverse numbers mean reversed motors, so, for example, the left side of our drivetrain uses **Ports** `7` and `9`, with both motors reversed. We also specify the cartridge for each motor. In code, a **5.5W** motor is handled the same as a green **11W** motor. 
@@ -255,16 +265,11 @@ This section is the only part of the code that actually defines behavior so far.
 
 ## Current State
 
-- [x] Driver code
-- [x] Motor ports
-- [x] Full **LemLib** support
-- [x] GitHub repo 
-- [x] Full codebase documentation
+- [ ] Updated Docs
+- [x] Basic macros
 - [ ] **PID** Tuning
 - [ ] Stage 1 autonomous
-- [ ] Full claw control
 - [ ] Horizontal drift tuning
-- [ ] Sensor ports
 
 ---
 # -TH
