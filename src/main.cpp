@@ -163,6 +163,17 @@ void autonomous() {}
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
+
+
+////////////////////////////////////////////////////////////////
+#pragma region Macros //////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
 /**
  * Runs the  control code via Field Management System or
  * the VEX Competition Switch, or after initialize() when
@@ -170,21 +181,27 @@ void autonomous() {}
  */
 void opcontrol() {
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
 	tsu::TsuControl ctl(controller);
 	ctl.bidir(intakeMotor, R)
 	   .bidir(winch, L)	
-	   .bidir(clawPivot, DPAD_V)
 	   .bidir(claw, R);
 
 	while (true) {
-		// Move
-		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
-
 		// Refresh
 		ctl.update();
 		pros::delay(25);
+
+		// Move
+		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
+
+		// Try to balance motor
+		if (controller.get_digital_new_press(DIGITAL_A))
+			clawPivot.move_absolute(330, 100);
+		else if (controller.get_digital_new_press(DIGITAL_B))
+			clawPivot.move_absolute(-100, 100);
 	}
 }
