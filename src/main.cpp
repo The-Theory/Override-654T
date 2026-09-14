@@ -166,7 +166,7 @@ void autonomous() {}
 ////////////////////////////////////////////////////////////////
 
 // Claw pivot positions
-const int CLAW_PIVOT_UP   = 330;	// [deg]
+const int CLAW_PIVOT_UP   = 500;	// [deg]
 const int CLAW_PIVOT_DOWN = -10;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
 
@@ -175,16 +175,17 @@ void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM);
 
 /**
  * Run when needing to score. 
- * Start: Cascade level to score, claw in Up position
- * End: Intake position; Cascade down, claw down
+ * Start: Cascade level to score, claw in Up position.
+ * End: Intake position; Cascade down, claw down.
  */
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
-	clawPivot.move_relative(150, 200);  // Move claw up slightly
+	clawPivot.move_relative(200, 200);  // Move claw up slightly
+	winch.move_relative(200, 200); 		// Lift cascade a tad
 	pros::delay(1000);  				// Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
-	winch.move_absolute(0, 200);  		// Move winch down
+	winch.move_absolute(0, 600);  		// Move winch down
 }
 
 #pragma endregion
@@ -195,7 +196,7 @@ void scoringMacro() {
 /**
  * Runs the  control code via Field Management System or
  * the VEX Competition Switch, or after initialize() when
- * not in competition mode
+ * not in competition mode.
  */
 void opcontrol() {
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -204,12 +205,12 @@ void opcontrol() {
 
 	// Def controls
 	tide::Control ctl(controller);
-	ctl.bidir(intakeMotor, R)
-	   .bidir(winch, L)
-	   .bidir(claw, R)
-	   .press(A, clawPivotUp)
-	   .press(B, clawPivotDown)
-	   .macro(X, scoringMacro);
+	ctl.when(R).bidir(intakeMotor);
+	ctl.when(L).bidir(winch);
+	ctl.when(R).bidir(claw);
+	ctl.when(A).run(clawPivotUp);
+	ctl.when(B).run(clawPivotDown);
+	ctl.when(X).altmacro(clawPivotUp, scoringMacro);
 
 	while (true) {
 		// Refresh
