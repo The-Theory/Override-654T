@@ -205,12 +205,12 @@ void opcontrol() {
 
 	// Def controls
 	tide::Control ctl(controller);
-	ctl.when(R).bidir(intakeMotor);
-	ctl.when(L).bidir(winch);
-	ctl.when(R).bidir(claw);
-	ctl.when(A).run(clawPivotUp);
-	ctl.when(B).run(clawPivotDown);
-	ctl.when(X).altmacro(clawPivotUp, scoringMacro);
+	ctl.when(R).bidir(intakeMotor)
+	   .when(L).bidir(winch)
+	   .when(R).bidir(claw)
+	   .when(A).run(clawPivotUp)
+	   .when(B).run(clawPivotDown)
+	   .when(X).altmacro(clawPivotUp, scoringMacro);
 
 	while (true) {
 		// Refresh
