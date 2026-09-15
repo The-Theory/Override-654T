@@ -17,10 +17,12 @@
 #include "pros/misc.hpp"
 #include "pros/rtos.hpp"
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
 #include <deque>
 #include <functional>
 #include <initializer_list>
+#include <string>
 #include <vector>
 
 
@@ -95,12 +97,16 @@ const int MAX_VOLTAGE = 12000;  // [mV]
 class When;
 class WhenPair;
 
-// One binding with its own toggle and macro state
+// One binding with its own toggle, macro and timing state
 struct Binding {
 	std::function<void(Binding&)> run;
-	bool state   = false;   // Toggle state
-	bool running = false;   // Macro in progress
-	int  step    = 0;       // Next altmacro routine
+	bool state   = false;       // Toggle state, or whether a hold motor is spinning
+	bool running = false;       // Macro in progress
+	int  step    = 0;           // Next altmacro routine
+	bool armed   = false;       // Pressed, and not let go since
+	bool fired   = false;       // Already fired during this press
+	std::uint32_t pressedAt = 0; // When the input was last pressed [ms]
+	std::uint32_t firedAt   = 0; // When the binding last fired [ms]
 };
 
 class Control {
@@ -151,6 +157,7 @@ public:
 	 * Call each iteration.
 	 */
 	void update() {
+		time = pros::millis();  // Shared by every binding for hold timing
 		was = now;  // Save last cycle
 		now = 0;
 		// Each button represents 1 bit in a pool of 4 bytes (an Integer)
@@ -184,6 +191,16 @@ private:
 			pros::lcd::print(WARN_LINE, "Tide: %d mV -> %d", mv, voltage);
 		}
 		return voltage;
+	}
+
+	/**
+	 * Spins a motor, or stops it once when it was spinning.
+	 * Stopping only once keeps macros on the same motor from being overwritten.
+	 */
+	static void drive(pros::AbstractMotor& motor, Binding& self, int voltage) {
+		if (voltage != 0) motor.move_voltage(voltage);
+		else if (self.state) motor.move_voltage(0);
+		self.state = voltage != 0;
 	}
 
 	/**
@@ -228,6 +245,7 @@ private:
 	std::deque<Binding> bindings;   // Deque so macro threads can keep a reference
 	std::vector<Input> boundInputs; // Every input a binding uses
 	unsigned int now = 0, was = 0;  // One bit per button, this cycle and last
+	std::uint32_t time = 0;         // When this update started [ms]
 };
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -246,6 +264,16 @@ public:
 	WhenPair(Control& control, Pair pair) : ctl(control), fwd(pair.fwd), rev(pair.rev) {}
 
 	/**
+	 * Only lets the motor spin while the condition is true.
+	 * Checked every update, so the motor stops as soon as it turns false.
+	 * - Useful for safety locks, like keeping an intake off while the arm is up.
+	 */
+	WhenPair& onlyIf(std::function<bool()> condition) {
+		allowed = condition;
+		return *this;
+	}
+
+	/**
 	 * Motor control for a forward and reverse button.
 	 * Stops on release.
 	 * - Useful for intakes.
@@ -253,17 +281,21 @@ public:
 	Control& bidir(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
 		const int voltage = Control::checkVoltage(mv);
 		// Saves this binding to run every update()
-		return ctl.add({fwd, rev}, [*this, &motor, voltage](Binding&) {
-			const bool wasSpinning = ctl.wasHeld(fwd) || ctl.wasHeld(rev);
-			if (ctl.held(fwd)) motor.move_voltage(voltage);       // Spin if forward is held
-			else if (ctl.held(rev)) motor.move_voltage(-voltage); // Spin opposite if reverse is held
-			else if (wasSpinning) motor.move_voltage(0);          // Stop if neither
+		return ctl.add({fwd, rev}, [*this, &motor, voltage](Binding& self) {
+			int out = 0;
+			if (ctl.held(fwd) && allows()) out = voltage;       // Spin if forward is held
+			else if (ctl.held(rev) && allows()) out = -voltage; // Spin opposite if reverse is held
+			Control::drive(motor, self, out);                   // Stop once if neither
 		});
 	}
 
 private:
 	Control& ctl;
 	Input fwd, rev;
+	std::function<bool()> allowed;  // onlyIf(), empty means always allowed
+
+	// Condition from onlyIf(), true when none was given
+	bool allows() const { return !allowed || allowed(); }
 };
 
 /**
@@ -284,12 +316,68 @@ public:
 	}
 
 	/**
+	 * Waits until the button has been held this long before firing.
+	 * With onRelease(), fires on release only if it was held at least this long.
+	 * - Useful for giving a button a separate long-press action.
+	 */
+	When& heldFor(int ms) {
+		minHold = std::max(ms, 0);
+		return *this;
+	}
+
+	/**
+	 * Fires on release, only if the button was held for less than this long.
+	 * - Useful for a quick tap, alongside a heldFor() binding on the same button.
+	 */
+	When& heldUnder(int ms) {
+		maxHold = std::max(ms, 0);
+		release = true;  // A tap is only known once the button is let go
+		return *this;
+	}
+
+	/**
+	 * Keeps firing at this interval for as long as the button stays held.
+	 * Has no effect with onRelease().
+	 * - Useful for nudging a mechanism in small steps.
+	 */
+	When& repeat(int ms) {
+		every = std::max(ms, 0);
+		return *this;
+	}
+
+	/**
+	 * Only fires if the condition is true at that moment.
+	 * For hold(), checked every update instead.
+	 * - Useful for safety locks, like only picking up while the cascade is down.
+	 */
+	When& onlyIf(std::function<bool()> condition) {
+		allowed = condition;
+		return *this;
+	}
+
+	/**
+	 * Rumbles the controller whenever the binding fires.
+	 * Uses '.' for short, '-' for long, and ' ' for pauses, up to 8 characters.
+	 * - Useful for letting the driver feel that a macro started.
+	 */
+	When& rumble(std::string rumblePattern) {
+		pattern = rumblePattern;
+		return *this;
+	}
+
+	/**
 	 * Runs while button is held.
 	 * Stops on release.
+	 * Uses heldFor(), onlyIf() and rumble(), other modifiers don't apply.
 	 */
 	Control& hold(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
-		// Same input as both halves of the pair
-		return WhenPair(ctl, {input, input}).bidir(motor, mv);
+		const int voltage = Control::checkVoltage(mv);
+		// Saves this binding to run every update()
+		return ctl.add({input}, [*this, &motor, voltage](Binding& self) {
+			const bool spin = holding(self);
+			if (spin && !self.state) buzz();                 // Rumble as the motor starts
+			Control::drive(motor, self, spin ? voltage : 0); // Spin while held, stop once after
+		});
 	}
 
 	/**
@@ -298,8 +386,8 @@ public:
 	 */
 	Control& run(std::function<void()> fn) {
 		// Saves this binding to run every update()
-		return ctl.add({input}, [*this, fn](Binding&) {
-			if (triggered()) fn();  // If triggered, run
+		return ctl.add({input}, [*this, fn](Binding& self) {
+			if (triggered(self)) fn();  // If triggered, run
 		});
 	}
 
@@ -311,8 +399,8 @@ public:
 	Control& toggle(std::function<void(bool)> fn) {
 		// Saves this binding to run every update()
 		return ctl.add({input}, [*this, fn](Binding& self) {
-			if (triggered()) self.state = !self.state;  // On trigger, invert state
-			fn(self.state);                             // Call function every time, inputting state
+			if (triggered(self)) self.state = !self.state; // On trigger, invert state
+			fn(self.state);                                // Call function every time with state
 		});
 	}
 
@@ -335,7 +423,7 @@ public:
 	Control& macro(std::function<void()> fn) {
 		// Saves this binding to run every update()
 		return ctl.add({input}, [*this, fn](Binding& self) {
-			if (!triggered() || self.running) return;  // Skip unless triggered and free
+			if (!triggered(self) || self.running) return;  // Skip unless triggered and free
 			Control::launch(self, fn);
 		});
 	}
@@ -350,7 +438,7 @@ public:
 		std::vector<std::function<void()>> list(routines);
 		// Saves this binding to run every update()
 		return ctl.add({input}, [*this, list](Binding& self) {
-			if (!triggered() || self.running) return;  // Skip unless triggered and free
+			if (!triggered(self) || self.running) return;  // Skip unless triggered and free
 			const int turn = self.step;
 			self.step = (turn + 1) % list.size();  // Advance to the next routine
 			Control::launch(self, list[turn]);
@@ -371,10 +459,63 @@ public:
 private:
 	Control& ctl;
 	Input input;
-	bool release = false;
+	bool release = false;           // onRelease()
+	std::uint32_t minHold = 0;      // heldFor() [ms]
+	std::uint32_t maxHold = 0;      // heldUnder(), 0 means no limit [ms]
+	std::uint32_t every   = 0;      // repeat(), 0 means fire once [ms]
+	std::function<bool()> allowed;  // onlyIf(), empty means always allowed
+	std::string pattern;            // rumble(), empty means no rumble
 
-	// Press or release this cycle, whichever this binding waits for
-	bool triggered() const { return release ? ctl.released(input) : ctl.pressed(input); }
+	/**
+	 * Remembers when the button went down, so hold times can be measured.
+	 */
+	void track(Binding& self) const {
+		if (ctl.pressed(input)) {
+			self.armed     = true;
+			self.fired     = false;
+			self.pressedAt = ctl.time;
+		}
+		if (!ctl.held(input)) self.armed = false;
+	}
+
+	// How long the current or last press lasted [ms]
+	std::uint32_t heldTime(const Binding& self) const { return ctl.time - self.pressedAt; }
+
+	// Condition from onlyIf(), true when none was given
+	bool allows() const { return !allowed || allowed(); }
+
+	// Rumble from rumble(), if one was given
+	void buzz() const { if (!pattern.empty()) ctl.ctrl.rumble(pattern.c_str()); }
+
+	/**
+	 * True on the update this binding should fire, once every modifier agrees.
+	 */
+	bool triggered(Binding& self) const {
+		track(self);
+		bool due = false;
+		if (release) {
+			// Released, and the press lasted within heldFor() and heldUnder()
+			const std::uint32_t held = heldTime(self);
+			due = ctl.released(input) && held >= minHold && (maxHold == 0 || held < maxHold);
+		} else if (self.armed && heldTime(self) >= minHold) {
+			// Held long enough: fire once, then again every repeat() interval
+			due = !self.fired || (every > 0 && ctl.time - self.firedAt >= every);
+		}
+		if (!due) return false;
+		self.fired   = true;
+		self.firedAt = ctl.time;
+		if (!allows()) return false;  // Skipped until the next time it's due
+		buzz();
+		return true;
+	}
+
+	// True while hold() should spin, once heldFor() and onlyIf() agree
+	bool holding(Binding& self) const {
+		track(self);
+		if (!ctl.held(input)) return false;
+		if (minHold > 0 && (!self.armed || heldTime(self) < minHold)) return false;
+		return allows();
+	}
 };
 
 // Return When and WhenPair, which are defined after Control

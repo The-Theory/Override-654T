@@ -20,7 +20,7 @@ This document explains what the main `src/main.cpp` achieves for our robot. Each
 ////////////////////////////////////////////////////////////////
 ```
 
-This comment block at the very top credits the coding team and gives general information about our code's purpose and foundation. This is documentation only, having no effect on how the robot.
+This comment block at the very top credits the coding team and gives general information about our code's purpose and foundation. This is documentation only, having no effect on how the robot behaves.
 
 ---
 
@@ -32,7 +32,7 @@ This comment block at the very top credits the coding team and gives general inf
 #include "tide/control.hpp"
 ```
 
-These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically. `tide/control.hpp` is our custom library, **Tide**. Docs for **Tide**, as viewable in `docs/tide.md`.
+These imports pull-in outside code so this file can use it. The note `IWYU pragma: keep` on the **LemLib** line is an instruction to code-cleanup tools telling them not delete that import automatically. `tide/control.hpp` is our custom library, **Tide**. Docs for **Tide** are in `docs/tide.md`.
 
 ---
 
@@ -45,8 +45,8 @@ pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
-pros::Rotation verticalEncoder(4);
-pros::Rotation winchEncoder(5);
+pros::Rotation verticalEncoder(-5);
+pros::Rotation winchEncoder(4);
 pros::Imu imu(6);
 pros::Distance leftDistance(3);
 pros::Distance rightDistance(2);
@@ -59,17 +59,20 @@ pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 ```
 
-Here we define all of our ports, and define the controller object. Reverse numbers mean reversed motors, so, for example, the left side of our drivetrain uses **Ports** `7` and `9`, with both motors reversed. We also specify the cartridge for each motor. In code, a **5.5W** motor is handled the same as a green **11W** motor. 
+Here we define all of our ports. Reverse numbers mean reversed motors, so, for example, the left side of our drivetrain uses **Ports** `7` and `9`, with both motors reversed. We also specify the cartridge for each motor. In code, a **5.5W** motor is handled the same as a green **11W** motor. 
 
 Whenever we add a new component, we give it a temporary assignment of an imaginary "**Port** `0`". This just allows us to keep the code compiling while developing on the building aspects.
 
-We also define our **Controller** to be used during operator control.
 
 ---
 
 ## Input Curves
 
 ```cpp
+// Controller
+pros::Controller controller(pros::E_CONTROLLER_MASTER);
+
+// Input curves
 lemlib::ExpoDriveCurve throttle_curve(
     3,      // joystick deadband out of 127
     10,     // minimum output where drivetrain will move out of 127
@@ -82,7 +85,7 @@ lemlib::ExpoDriveCurve steer_curve(
 );
 ```
 
-This code defines our driving sensitivities. These values are only placeholders suggested by the LemLib documentation, but seem to work quite well. Common issues like oversensitive turning or stick-drift can be mitigated by altering these settings. We'll continue to edit these throughout the year, seeing what our driver prefers.
+We first define our **Controller**, used during operator control. The rest of this code defines our driving sensitivities. These values are only placeholders suggested by the LemLib documentation, but seem to work quite well. Common issues like oversensitive turning or stick-drift can be mitigated by altering these settings. We'll continue to edit these throughout the year, seeing what our driver prefers.
 
 ---
 
@@ -106,7 +109,7 @@ This portion defines our drivetrain, using a few measured parameters. Track widt
 ## Odometry (position tracking) 
 
 ```cpp
-lemlib::TrackingWheel vertical_tracking_wheel(&vertical_encoder, lemlib::Omniwheel::NEW_2, 0);
+lemlib::TrackingWheel vertical_tracking_wheel(&verticalEncoder, lemlib::Omniwheel::NEW_2, 0);
 lemlib::OdomSensors sensors(
     &vertical_tracking_wheel,
     nullptr, nullptr, nullptr,  // unused tracking wheels
@@ -179,7 +182,7 @@ void on_center_button() {
 }
 ```
 
-A small helper function that runs each time someone presses the center button on the Brain's screen. At the moment, it just toggles a text on-screen. This is an example function from the **LemLib** docs, and will be used as a template in the future to handle **Automation Routine Selection**.
+A small helper function that runs each time someone presses the center button on the Brain's screen. At the moment, it just toggles a text on-screen. This is an example function from the default **PROS** project template, and will be used as a template in the future to handle **Automation Routine Selection**.
 
 ---
 
@@ -190,10 +193,11 @@ void initialize() {
     pros::lcd::initialize();
     pros::lcd::set_text(1, "Hello PROS User!");
     pros::lcd::register_btn1_cb(on_center_button);
+    chassis.calibrate();
 }
 ```
 
-This section is also unchanged from the default **LemLib** configuration. The `initialize()` function is run automatically whenever the program is started. Currently, it just displays some text on the screen, and adds the button shown in the section above. It won't really be used to anything, as it's used mostly by **LemLib** to calibrate sensors and get the system up and running.
+This section starts from the default **PROS** project template. The `initialize()` function is run automatically whenever the program is started. It displays some text on the screen, adds the button shown in the section above, and calls `chassis.calibrate()` so **LemLib** can calibrate our sensors before the robot moves.
 
 ---
 
@@ -203,7 +207,7 @@ This section is also unchanged from the default **LemLib** configuration. The `i
 void disabled() {}
 ```
 
-This function is also called automatically, but is instead run whenever the robot is commanded to go into a **disabled** state. This is usually done before a match starts, or during the intermission time between the **Autonomous Control Period** and the **Driver Controller Period**. It will stay empty, as a robot cannot move during its disabled period.
+This function is also called automatically, but is instead run whenever the robot is commanded to go into a **disabled** state. This is usually done before a match starts, or during the intermission time between the **Autonomous Control Period** and the **Driver Control Period**. It will stay empty, as a robot cannot move during its disabled period.
 
 ---
 
@@ -213,17 +217,22 @@ This function is also called automatically, but is instead run whenever the robo
 void competition_initialize() {}
 ```
 
-This function is run by **LemLib** after startup but before a match actually starts. Thus, this is what will be used to select autonomous routines in the future. Since the code is still developing as the robot is being built, we do not currently have any autonomous routines defined, but we have several ones planned. Furthermore, once we acquire our own field, autonomous development will ramp up heavily.
+This function is run by **PROS** after startup but before a match actually starts. Thus, this is what will be used to select autonomous routines in the future. Since the code is still developing as the robot is being built, we do not currently have any autonomous routines defined, but we have several ones planned. Furthermore, once we acquire our own field, autonomous development will ramp up heavily.
 
 ---
 
 ## Autonomous Period
 
 ```cpp
-void autonomous() {}
+void autonomous() {
+    // set position to x:0, y:0, heading:0
+    chassis.setPose(0, 0, 0);
+    // turn to face heading 90 with a very long timeout
+    chassis.turnToHeading(90, 5000);
+}
 ```
 
-This is the function that will be running during the **15-second Autonomous Control Period** at the start of each match. We'll also be calling this function manually during autonomous development. **LemLib** uses the sensors we defined previously to help track its position on the field, and does so automatically. 
+This is the function that will be running during the **15-second Autonomous Control Period** at the start of each match. We'll also be calling this function manually during autonomous development. **LemLib** uses the sensors we defined previously to help track its position on the field, and does so automatically. Right now it only holds a test turn to 90 degrees, which we use while tuning our **PID** values. 
 
 ---
 
@@ -231,31 +240,46 @@ This is the function that will be running during the **15-second Autonomous Cont
 
 ```cpp
 // Claw pivot positions
-const int CLAW_PIVOT_UP   = 330;    // [deg]
-const int CLAW_PIVOT_DOWN = -10;    // [deg]
+const int CLAW_PIVOT_UP   = 505;	// [deg]
+const int CLAW_PIVOT_DOWN = -10;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
 
 void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
 void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
 
 /**
- * Run when needing to score. 
- * Start: Cascade level to score, claw in Up position
- * End: Intake position; Cascade down, claw down
+ * Run when needing to score.
+ * Start: Cascade level to score, claw in Up position.
+ * End: Intake position; Cascade down, claw down.
  */
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
-	clawPivot.move_relative(150, 200);  // Move claw up slightly
+	clawPivot.move_relative(200, 200);  // Move claw up slightly
+	winch.move_relative(200, 200); 		// Lift cascade a tad
 	pros::delay(1000);  				// Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
-	winch.move_absolute(0, 200);  		// Move winch down
+	winch.move_absolute(0, 600);  		// Move winch down
+}
+
+/**
+ * Run when needing to pick a pin off of the floor.
+ * Start: Cascade level to pick up, claw in up position
+ * End: Same; pin in claw.
+ */
+void pickupMacro() {
+	claw.move_voltage(12000);
+	winch.move_relative(-200, 200);
+	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);
+	pros::delay(850);
+	clawPivotUp();
+	claw.move_voltage(0);
 }
 ```
 
-A **macro**, in technology, is a command that can run a series of actions whenever we invoke it. In **VEX**, this is often in the form of pressing a button to carry out several motor movements autonomously during driver control. We can approach it like small sections autonomous to use during operator control, like performing a scoring routine. 
+A **macro**, in technology, is a command that can run a series of actions whenever we invoke it. In **VEX**, this is often in the form of pressing a button to carry out several motor movements autonomously during driver control. We can approach it like small sections of autonomous to use during operator control, like performing a scoring routine. 
 
-That is exactly what our current main macro does; score. Whenever we call it, the robot will lift the claw up while releasing whatever is inside, and then return to the intake position. Macros can invoke other macros, as shown here. While scoring, we want to move the claw to predetermined positions, which we define in our `clawPivotUp` and `clawPivotDown` mini-macros. 
+That is exactly what our scoring macro does: score. Whenever we call it, the robot will lift the claw and cascade slightly while releasing whatever is inside, and then return to the intake position. Our pickup macro works the other way around: it lowers the cascade and claw onto a pin while pulling it in, then raises the claw back up with the pin held. Macros can invoke other macros, as shown here. While scoring, we want to move the claw to predetermined positions, which we define in our `clawPivotUp` and `clawPivotDown` mini-macros. 
 
 As a consequence of this, we can always divide repeated parts of macros into new macros to be more concise. For example, if needed in other macros, we could make a macro that returns the robot to an **Intake Position**.
 
@@ -276,8 +300,7 @@ void opcontrol() {
 	ctl.when(R).bidir(intakeMotor)
 	   .when(L).bidir(winch)
 	   .when(R).bidir(claw)
-	   .when(A).run(clawPivotUp)
-	   .when(B).run(clawPivotDown)
+	   .when(A).macro(pickupMacro)
 	   .when(X).altmacro(clawPivotUp, scoringMacro);
 
 	while (true) {
@@ -293,7 +316,7 @@ void opcontrol() {
 
 This is the core functionality of our code, which is run during operator control. The first three lines all set something called **brake mode** to "`hold`". This means that our motors will try their best to stay in their current position, without drifting due to torque. 
 
-Here is where **Tide** can truly shine, summarizing messy controller bindings into a few clean lines. `bidir` tells the code to control that object with a key or a _tuple_ of keys. A good example here is `R`, referring to `R1` and `R2` on the controller. **Tide** reads `R` and understands to spin the motor one way with `R1`, and the opposite way with `R2`. 
+Here is where **Tide** can truly shine, summarizing messy controller bindings into a few clean lines. Each line starts with `when`, naming the buttons, followed by what they do. `bidir` spins a motor both ways from a pair of buttons: `R` refers to `R1` and `R2`, so **Tide** spins the motor one way with `R1` and the opposite way with `R2`. `A` runs our pickup macro, and `X` alternates between raising the claw and running the scoring macro. 
 
 ---
 
