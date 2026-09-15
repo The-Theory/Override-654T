@@ -195,7 +195,8 @@ void scoringMacro() {
  */
  void pickupMacro() {
 	claw.move_voltage(12000);
-	clawPivot.move_relative(-150, CLAW_PIVOT_RPM); 
+	winch.move_relative(-200, 200);
+	clawPivot.move_relative(-175, CLAW_PIVOT_RPM); 
 	pros::delay(850);
 	clawPivotUp();
 	claw.move_voltage(0);
