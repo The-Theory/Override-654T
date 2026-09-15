@@ -30,8 +30,8 @@ pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
 pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
-pros::Rotation verticalEncoder(4);
-pros::Rotation winchEncoder(5);
+pros::Rotation verticalEncoder(-5);
+pros::Rotation winchEncoder(4);
 pros::Imu imu(6);
 pros::Distance leftDistance(3);
 pros::Distance rightDistance(2);
@@ -136,6 +136,7 @@ void initialize() {
 	pros::lcd::initialize();
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
+	chassis.calibrate();
 }
 
 /**
@@ -154,7 +155,12 @@ void competition_initialize() {}
  * Runs the autonomous code via Field Management System or
  * the VEX Competition Switch. May be called manually for testing.
  */
-void autonomous() {}
+void autonomous() {
+	// set position to x:0, y:0, heading:0
+    chassis.setPose(0, 0, 0);
+    // turn to face heading 90 with a very long timeout
+    chassis.turnToHeading(90, 5000);
+}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -213,6 +219,8 @@ void scoringMacro() {
  * not in competition mode.
  */
 void opcontrol() {
+	autonomous();
+
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
