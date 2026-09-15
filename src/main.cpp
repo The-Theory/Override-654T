@@ -166,7 +166,7 @@ void autonomous() {}
 ////////////////////////////////////////////////////////////////
 
 // Claw pivot positions
-const int CLAW_PIVOT_UP   = 500;	// [deg]
+const int CLAW_PIVOT_UP   = 505;	// [deg]
 const int CLAW_PIVOT_DOWN = -10;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
 
@@ -188,6 +188,19 @@ void scoringMacro() {
 	winch.move_absolute(0, 600);  		// Move winch down
 }
 
+/**
+ * Run when needing to pick a pin off of the floor.
+ * Start: Cascade level to pick up, claw in up position
+ * End: Same; pin in claw. 
+ */
+ void pickupMacro() {
+	claw.move_voltage(12000);
+	clawPivot.move_relative(-150, CLAW_PIVOT_RPM); 
+	pros::delay(850);
+	clawPivotUp();
+	claw.move_voltage(0);
+ }
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -208,8 +221,7 @@ void opcontrol() {
 	ctl.when(R).bidir(intakeMotor)
 	   .when(L).bidir(winch)
 	   .when(R).bidir(claw)
-	   .when(A).run(clawPivotUp)
-	   .when(B).run(clawPivotDown)
+	   .when(A).macro(pickupMacro)
 	   .when(X).altmacro(clawPivotUp, scoringMacro);
 
 	while (true) {
