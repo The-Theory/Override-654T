@@ -27,9 +27,9 @@
 
 namespace tide {
 
-///////////////////////////////////////////////////////////////
-#pragma region ButtonNames ////////////////////////////////////
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+#pragma region ButtonNames /////////////////////////////////////
+////////////////////////////////////////////////////////////////
 // One button, or several held together
 struct Input { unsigned int mask; };
 
@@ -81,13 +81,13 @@ const Axis RX       = {pros::E_CONTROLLER_ANALOG_RIGHT_X};
 const Axis RY       = {pros::E_CONTROLLER_ANALOG_RIGHT_Y};
 }
 #pragma endregion
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
 
 
-///////////////////////////////////////////////////////////////
-#pragma region ControlClass ///////////////////////////////////
-///////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+#pragma region ControlClass ////////////////////////////////////
+////////////////////////////////////////////////////////////////
 // Max voltage used as default for all motors - VEX motors cap inputs above 12V
 const int MAX_VOLTAGE = 12000;  // [mV]
 
@@ -127,7 +127,7 @@ public:
 		return add({}, [fn](Binding&) { fn(); });
 	}
 
-	// Down now, and not part of a combo
+	// Down now, and not overridden by a held combo
 	bool held(Input in) const {
 		return allHeld(in, now) && !shadowed(in, now);
 	}
@@ -139,7 +139,7 @@ public:
 	}
 
 	// Held last cycle but not now
-	// Partially letting go of a combo doesn't trigger remaining buttons
+	// Completing a combo doesn't release the buttons inside it
 	bool released(Input in) const {
 		return wasHeld(in) && !held(in) && (was & ~now & in.mask);
 	}
@@ -147,7 +147,7 @@ public:
 	int axis(Axis a) const { return ctrl.get_analog(a.id); }  // -127 to 127
 
 	/**
-	 * Snapshots the controller state, then runs every binding. 
+	 * Snapshots the controller state, then runs every binding.
 	 * Call each iteration.
 	 */
 	void update() {
@@ -200,7 +200,7 @@ private:
 	}
 
 	/**
-	 * Saves a binding and sorts to give combos priority.
+	 * Saves a binding, and records its inputs so combos can take priority.
 	 */
 	Control& add(std::initializer_list<Input> inputs, std::function<void(Binding&)> run) {
 		for (const Input in : inputs) boundInputs.push_back(in);
@@ -212,7 +212,7 @@ private:
 	// Every button of the input is down in this snapshot
 	static bool allHeld(Input in, unsigned int state) { return (state & in.mask) == in.mask; }
 
-	// Avoids shadow triggers from buttons assigned to a combo
+	// True if a bigger combo containing this input is held, so the combo wins
 	bool shadowed(Input in, unsigned int state) const {
 		for (const Input other : boundInputs) {
 			const bool bigger = other.mask != in.mask && (other.mask & in.mask) == in.mask;
@@ -268,7 +268,7 @@ private:
 
 /**
  * Bindings on a button or combo.
- * Can be used for a family of macros, such as using `A` as a modifer to reach several macros:
+ * Can be used for a family of macros, such as using `A` as a modifier to reach several macros:
  * (`A`+`UP`, `A`+`DOWN`, etc).
  */
 class When {
@@ -276,7 +276,7 @@ public:
 	When(Control& control, Input input) : ctl(control), input(input) {}
 
 	/**
-	 * Triggers on release instead of press
+	 * Triggers on release instead of press.
 	 */
 	When& onRelease() {
 		release = true;
@@ -284,8 +284,8 @@ public:
 	}
 
 	/**
-	 * Runs while button is held
-	 * Stops on release
+	 * Runs while button is held.
+	 * Stops on release.
 	 */
 	Control& hold(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
 		// Same input as both halves of the pair
@@ -293,8 +293,8 @@ public:
 	}
 
 	/**
-	 * Fires once when triggered
-	 * Requires button to be released to be able to trigger again
+	 * Fires once when triggered.
+	 * Requires button to be released to be able to trigger again.
 	 */
 	Control& run(std::function<void()> fn) {
 		// Saves this binding to run every update()
@@ -304,9 +304,9 @@ public:
 	}
 
 	/**
-	 * New trigger toggles state
-	 * Inputted function is run every update with the toggle state
-	 * - Useful for pneumatics
+	 * New trigger toggles state.
+	 * Inputted function is run every update with the toggle state.
+	 * - Useful for pneumatics.
 	 */
 	Control& toggle(std::function<void(bool)> fn) {
 		// Saves this binding to run every update()
@@ -317,8 +317,8 @@ public:
 	}
 
 	/**
-	 * New trigger toggles motor state
-	 * Motor never stops
+	 * New trigger toggles motor state.
+	 * Motor keeps running after release.
 	 */
 	Control& toggle(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
 		const int voltage = Control::checkVoltage(mv);
@@ -329,7 +329,7 @@ public:
 	}
 
 	/**
-	 * Runs fn in its own thread in order to avoid disrupting the main program (op control). 
+	 * Runs fn in its own thread in order to avoid disrupting the main program (op control).
 	 * Triggering a macro while it's running does nothing.
 	 */
 	Control& macro(std::function<void()> fn) {
