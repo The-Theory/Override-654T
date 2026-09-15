@@ -112,3 +112,31 @@ ctl.when(R).bidir(intakeMotor);
 
 
 
+## Multiple Binds
+
+Now, we will likely need to bind more than one mechanism. Let's do a claw, specifically the pivoting of the claw. 
+
+Our claw has two main positions, independent of the closing state; _up_, and _down_.
+
+So let's define two _macros_:
+```cpp
+void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
+void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
+```
+
+These two functions define what angle to keep our claw at. Now we want to be able to toggle between these states. Here's how we would bind these functions to `A` and `B`, while keeping our previous bind:
+
+```cpp
+tide::Control ctl(controller);
+ctl.when(R).bidir(intakeMotor)
+   .when(A).run(clawPivotUp)
+   .when(B).run(clawPivotDown);
+```
+
+We can use a _return chain_ to keep adding lines, adding however many binds we want. 
+
+> Notice that there isn't a semicolon (`;`) at the end of each line.
+
+
+
+
