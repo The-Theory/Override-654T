@@ -74,7 +74,7 @@ lemlib::Drivetrain drivetrain(
 	11.4173,  					// track width
 	lemlib::Omniwheel::NEW_275, // wheel type
 	450, 						// drivetrain rpm
-	2 							// horizontal drift is 2 (for now)
+	1 							// horizontal drift is 2 (for now)
 );
 
 // Odometry 
@@ -89,13 +89,13 @@ lemlib::OdomSensors sensors(
 lemlib::ControllerSettings lateral_controller(
 	10, // prop gain		(kP)
 	0, 	// integral gain 	(kI)
-	3, 	// derivative gain 	(kD)
+	21, // derivative gain 	(kD)
 	3, 	// anti windup
 	1, 	// small error range 			[in]
 	100,// small error range timeout	[ms]
 	3, 	// large error range 			[in]
 	500,// large error range timeout	[ms]
-	20 	// maximum acceleration (slew)
+	30 	// maximum acceleration (slew)
 );
 lemlib::ControllerSettings angular_controller(
 	2, 	// prop gain 		(kP)
@@ -155,11 +155,11 @@ void competition_initialize() {}
  * Runs the autonomous code via Field Management System or
  * the VEX Competition Switch. May be called manually for testing.
  */
+ASSET(test_txt);
 void autonomous() {
 	// set position to x:0, y:0, heading:0
-    chassis.setPose(0, 0, 0);
-    // turn to face heading 90 with a very long timeout
-    chassis.turnToHeading(90, 5000);
+    chassis.setPose(-46.665, 0.73, 90);
+	chassis.follow(test_txt, 25, 5000);
 }
 
 #pragma endregion
@@ -219,26 +219,27 @@ void scoringMacro() {
  * not in competition mode.
  */
 void opcontrol() {
-	autonomous();
+	//autonomous();
 
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
-	tide::Control ctl(controller);
-	ctl.when(R).bidir(intakeMotor)
-	   .when(L).bidir(winch)
-	   .when(R).bidir(claw)
-	   .when(A).macro(pickupMacro)
-	   .when(X).altmacro(clawPivotUp, scoringMacro);
+	tide::Control tide(controller);
+	tide.when(R).bidir(intakeMotor)
+		.when(L).bidir(winch)
+		.when(R).bidir(claw)
+		.when(A).macro(pickupMacro)
+		.when(X).altmacro(clawPivotUp, scoringMacro)
+		.when(LEFT).run(autonomous);
 
 	while (true) {
 		// Refresh
-		ctl.update();
+		tide.update();
 		pros::delay(25);
 
 		// Move
-		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
+		chassis.curvature(tide.axis(LY), tide.axis(RX));
 	}
 }
