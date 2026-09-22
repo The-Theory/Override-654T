@@ -155,11 +155,20 @@ void competition_initialize() {}
  * Runs the autonomous code via Field Management System or
  * the VEX Competition Switch. May be called manually for testing.
  */
-ASSET(test_txt);
 void autonomous() {
 	// set position to x:0, y:0, heading:0
-    chassis.setPose(-46.665, 0.73, 90);
-	chassis.follow(test_txt, 25, 5000);
+    chassis.setPose(0, -61, 180);
+
+	chassis.moveToPoint(0, -40, 1000);
+	pros::delay(200);
+
+	chassis.turnToHeading(0, 1000);
+	pros::delay(200);
+
+	chassis.moveToPoint(0, -65, 1000);
+	pros::delay(200);
+
+	pros::delay(1000);
 }
 
 #pragma endregion
@@ -186,9 +195,10 @@ void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM);
  */
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
-	clawPivot.move_relative(200, 200);  // Move claw up slightly
 	winch.move_relative(200, 200); 		// Lift cascade a tad
-	pros::delay(1000);  				// Wait for OP drive back
+	pros::delay(200);                   // Wait for c;aw to drop
+	clawPivot.move_relative(200, 200);  // Move claw up slightly
+	pros::delay(800);  				    // Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
 	winch.move_absolute(0, 600);  		// Move winch down
