@@ -87,26 +87,29 @@ lemlib::OdomSensors sensors(
 
 // PID Tunings
 lemlib::ControllerSettings lateral_controller(
-	10, // prop gain		(kP)
-	0, 	// integral gain 	(kI)
-	21, // derivative gain 	(kD)
-	3, 	// anti windup
+	8, // prop gain		(kP)
+	0 , 	// integral gain 	(kI)
+	20, // derivative gain 	(kD)
+	0, 0, 0, 0, 0, 0
+);
+/*
+3, 	// anti windup
 	1, 	// small error range 			[in]
-	100,// small error range timeout	[ms]
+	100,// small error ran  ge timeout	[ms]
 	3, 	// large error range 			[in]
 	500,// large error range timeout	[ms]
 	30 	// maximum acceleration (slew)
-);
+*/
 lemlib::ControllerSettings angular_controller(
-	2, 	// prop gain 		(kP)
+	2.5, 	// prop gain 		(kP)
 	0, 	// integral gain 	(kI)
-	10, // derivative gain 	(kD)
+	14, // derivative gain 	(kD)
 	3, 	// anti windup
 	1, 	// small error range 			[deg]
 	100,// small error range timeout	[ms]
 	3, 	// large error range			[deg]
 	500,// large error range timeout	[ms]
-	0 	// maximum acceleration (slew)
+	0 	// maximum acceleration (slew)*/
 );
 
 // Chassis definition
@@ -156,19 +159,10 @@ void competition_initialize() {}
  * the VEX Competition Switch. May be called manually for testing.
  */
 void autonomous() {
-	// set position to x:0, y:0, heading:0
-    chassis.setPose(0, -61, 180);
+	const int LENGTH = 16;
+	const int TILE = 24;
 
-	chassis.moveToPoint(0, -40, 1000);
-	pros::delay(200);
-
-	chassis.turnToHeading(0, 1000);
-	pros::delay(200);
-
-	chassis.moveToPoint(0, -65, 1000);
-	pros::delay(200);
-
-	pros::delay(1000);
+	chassis.setPose(0, -2, 0);
 }
 
 #pragma endregion
@@ -180,10 +174,11 @@ void autonomous() {
 #pragma region Macros //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// Claw pivot positions
+// Defs
 const int CLAW_PIVOT_UP   = 505;	// [deg]
-const int CLAW_PIVOT_DOWN = -10;	// [deg]
+const int CLAW_PIVOT_DOWN = -70;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
+const int RPM = 600;
 
 void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
 void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
@@ -209,14 +204,31 @@ void scoringMacro() {
  * Start: Cascade level to pick up, claw in up position
  * End: Same; pin in claw. 
  */
- void pickupMacro() {
+void pickupMacro() {
 	claw.move_voltage(12000);
 	winch.move_relative(-200, 200);
 	clawPivot.move_relative(-175, CLAW_PIVOT_RPM); 
 	pros::delay(850);
 	clawPivotUp();
 	claw.move_voltage(0);
- }
+}
+
+ /**
+ * Run when needing to pick a pin off of the floor.
+ * Start: Cascade level to pick up, claw in up position
+ * End: Same; pin in claw. 
+ */
+void clawToRestMacro() {
+	winch.set_zero_position(-2000);
+	//clawPivot.set_zero_position(-150);
+
+	//clawPivot.move_relative(-150, RPM);
+	winch.move_absolute(0, RPM);
+
+	pros::delay(1000);
+
+	//clawPivot.move_absolute(0, RPM);
+}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -229,8 +241,6 @@ void scoringMacro() {
  * not in competition mode.
  */
 void opcontrol() {
-	//autonomous();
-
 	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
@@ -243,6 +253,9 @@ void opcontrol() {
 		.when(A).macro(pickupMacro)
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(LEFT).run(autonomous);
+
+	// Init
+	clawToRestMacro();
 
 	while (true) {
 		// Refresh
