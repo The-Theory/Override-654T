@@ -175,7 +175,7 @@ void autonomous() {
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = 505;	// [deg]
+const int CLAW_PIVOT_UP   = -450;	// [deg]
 const int CLAW_PIVOT_DOWN = -70;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
 const int RPM = 600;
@@ -219,15 +219,14 @@ void pickupMacro() {
  * End: Same; pin in claw. 
  */
 void clawToRestMacro() {
-	winch.set_zero_position(-2000);
-	//clawPivot.set_zero_position(-150);
+	winch.move_relative(400, RPM);
+	clawPivot.move_relative(-50, RPM);
 
-	//clawPivot.move_relative(-150, RPM);
+	pros::delay(300);
+
+	clawPivot.move_relative(200, RPM);
 	winch.move_absolute(0, RPM);
-
-	pros::delay(1000);
-
-	//clawPivot.move_absolute(0, RPM);
+	winch.move_relative(20, RPM);
 }
 
 #pragma endregion
@@ -261,6 +260,9 @@ void opcontrol() {
 		// Refresh
 		tide.update();
 		pros::delay(25);
+
+		// Keep winch stable
+		//winch.move_voltage(12000);
 
 		// Move
 		chassis.curvature(tide.axis(LY), tide.axis(RX));
