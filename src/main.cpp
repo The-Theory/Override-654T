@@ -38,7 +38,7 @@ pros::Distance rightDistance(2);
 pros::Distance middleDistance(1);
 
 // Mechanisms
-pros::Motor clawPivot(19, pros::MotorGearset::green);
+pros::Motor clawPivot(-19, pros::MotorGearset::green);
 pros::Motor claw(18, pros::MotorGearset::green);
 pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
@@ -140,6 +140,7 @@ void initialize() {
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 	chassis.calibrate();
+	winchEncoder.reset_position();
 }
 
 /**
@@ -168,19 +169,30 @@ void autonomous() {
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+#pragma region Checks //////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
+bool isWinchDown() { return winchEncoder.get_position() < 250; }
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 #pragma region Macros //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -450;	// [deg]
+const int CLAW_PIVOT_UP   = -350;	// [deg]
 const int CLAW_PIVOT_DOWN = -70;	// [deg]
 const int CLAW_PIVOT_RPM  = 100;
 const int RPM = 600;
 
-void clawPivotUp()   { clawPivot.move_absolute(CLAW_PIVOT_UP, CLAW_PIVOT_RPM); }
+void clawPivotUp()   { 
+	winch.move_relative(100, RPM);
+	pros::delay(200);
+	clawPivot.move_absolute(CLAW_PIVOT_UP, RPM); 
+}
 void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
 
 /**
@@ -192,7 +204,7 @@ void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
 	winch.move_relative(200, 200); 		// Lift cascade a tad
 	pros::delay(200);                   // Wait for c;aw to drop
-	clawPivot.move_relative(200, 200);  // Move claw up slightly
+	clawPivot.move_relative(-200, 200);  // Move claw up slightly
 	pros::delay(800);  				    // Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
@@ -218,14 +230,16 @@ void pickupMacro() {
  * Start: Cascade level to pick up, claw in up position
  * End: Same; pin in claw. 
  */
-void clawToRestMacro() {
-	winch.move_relative(400, RPM);
-	clawPivot.move_relative(-50, RPM);
+void clawIntakeMacro() {
+	winch.move_absolute(475, RPM);
+	clawPivot.move_absolute(-50, RPM);
 
 	pros::delay(300);
 
 	clawPivot.move_relative(200, RPM);
 	winch.move_absolute(0, RPM);
+	winch.move_relative(20, RPM);
+	pros::delay(100);
 	winch.move_relative(20, RPM);
 }
 
@@ -247,14 +261,12 @@ void opcontrol() {
 	// Def controls
 	tide::Control tide(controller);
 	tide.when(R).bidir(intakeMotor)
+		.when(R1).onlyIf(isWinchDown).macro(clawIntakeMacro)
 		.when(L).bidir(winch)
 		.when(R).bidir(claw)
 		.when(A).macro(pickupMacro)
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(LEFT).run(autonomous);
-
-	// Init
-	clawToRestMacro();
 
 	while (true) {
 		// Refresh
@@ -263,6 +275,8 @@ void opcontrol() {
 
 		// Keep winch stable
 		//winch.move_voltage(12000);
+
+		printf("Winch rot: %d\n", winchEncoder.get_position());
 
 		// Move
 		chassis.curvature(tide.axis(LY), tide.axis(RX));
