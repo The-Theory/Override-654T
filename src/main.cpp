@@ -38,8 +38,8 @@ pros::Distance rightDistance(2);
 pros::Distance middleDistance(1);
 
 // Mechanisms
-pros::Motor clawPivot(-19, pros::MotorGearset::green);
-pros::Motor claw(18, pros::MotorGearset::green);
+pros::Motor clawPivot(19, pros::MotorGearset::green);
+pros::Motor claw(-18, pros::MotorGearset::green);
 pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 
@@ -161,9 +161,17 @@ void competition_initialize() {}
  */
 void autonomous() {
 	const int LENGTH = 16;
+	const int BUFF = 4;
 	const int TILE = 24;
 
-	chassis.setPose(0, -2, 0);
+	chassis.setPose(0, -62, 0);
+	// chassis.moveToPose(0, -62+LENGTH, 0, 300);
+	// pros::delay(1000);
+	chassis.turnToHeading(90, 200);
+	// pros::delay(1000);
+	// pros::delay(300);
+	// chassis.moveToPose(0, -62, 180, 300);
+	// pros::delay(300);
 }
 
 #pragma endregion
@@ -203,7 +211,7 @@ void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM);
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
 	winch.move_relative(200, 200); 		// Lift cascade a tad
-	pros::delay(200);                   // Wait for c;aw to drop
+	pros::delay(200);                   // Wait for claw to drop
 	clawPivot.move_relative(-200, 200);  // Move claw up slightly
 	pros::delay(800);  				    // Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
@@ -216,13 +224,15 @@ void scoringMacro() {
  * Start: Cascade level to pick up, claw in up position
  * End: Same; pin in claw. 
  */
-void pickupMacro() {
-	claw.move_voltage(12000);
-	winch.move_relative(-200, 200);
-	clawPivot.move_relative(-175, CLAW_PIVOT_RPM); 
+void pickupMacroPart1() {
+	winch.move_relative(-200, 200);	 // Move up winch a tad
+	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);  // Lift claw
+}	
+void pickupMacroPart2() {
+	claw.move_voltage(12000);	// Spin claw
+	clawPivotUp();				// Make calaw horizontal
 	pros::delay(850);
-	clawPivotUp();
-	claw.move_voltage(0);
+	claw.move_voltage(0);		// Stop claw
 }
 
  /**
@@ -264,7 +274,7 @@ void opcontrol() {
 		.when(R1).onlyIf(isWinchDown).macro(clawIntakeMacro)
 		.when(L).bidir(winch)
 		.when(R).bidir(claw)
-		.when(A).macro(pickupMacro)
+		.when(A).altmacro(pickupMacroPart1, pickupMacroPart2)
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(LEFT).run(autonomous);
 
