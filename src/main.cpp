@@ -90,27 +90,32 @@ lemlib::ControllerSettings lateral_controller(
 	8, // prop gain		(kP)
 	0 , 	// integral gain 	(kI)
 	20, // derivative gain 	(kD)
-	0, 0, 0, 0, 0, 0
-);
-/*
-3, 	// anti windup
+	3, 	// anti windup
 	1, 	// small error range 			[in]
 	100,// small error ran  ge timeout	[ms]
 	3, 	// large error range 			[in]
 	500,// large error range timeout	[ms]
 	30 	// maximum acceleration (slew)
-*/
+);
+
 lemlib::ControllerSettings angular_controller(
-	2.5, 	// prop gain 		(kP)
-	0, 	// integral gain 	(kI)
-	14, // derivative gain 	(kD)
+	6,  // KP
+	0,  // KI
+	80,  // KD
 	3, 	// anti windup
 	1, 	// small error range 			[deg]
 	100,// small error range timeout	[ms]
 	3, 	// large error range			[deg]
 	500,// large error range timeout	[ms]
-	0 	// maximum acceleration (slew)*/
+	0 	// maximum acceleration (slew)
 );
+
+/*
+2.5, 	// prop gain 		(kP)
+0, 	// integral gain 	(kI)
+14, // derivative gain 	(kD)
+
+*/
 
 // Chassis definition
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
@@ -161,17 +166,16 @@ void competition_initialize() {}
  */
 void autonomous() {
 	const int LENGTH = 16;
-	const int BUFF = 4;
+	const int BUFF = 8;
 	const int TILE = 24;
 
 	chassis.setPose(0, -62, 0);
-	// chassis.moveToPose(0, -62+LENGTH, 0, 300);
-	// pros::delay(1000);
-	chassis.turnToHeading(90, 200);
-	// pros::delay(1000);
-	// pros::delay(300);
-	// chassis.moveToPose(0, -62, 180, 300);
-	// pros::delay(300);
+	chassis.moveToPose(0, -62+BUFF, 0, 300);
+	pros::delay(600);
+	chassis.turnToHeading(180, 600);
+	pros::delay(800);
+	chassis.moveToPoint(9, -100, 500);
+	pros::delay(300);
 }
 
 #pragma endregion
@@ -285,9 +289,7 @@ void opcontrol() {
 
 		// Keep winch stable
 		//winch.move_voltage(12000);
-
-		printf("Winch rot: %d\n", winchEncoder.get_position());
-
+ 
 		// Move
 		chassis.curvature(tide.axis(LY), tide.axis(RX));
 	}
