@@ -46,8 +46,6 @@ pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
-
-
 ////////////////////////////////////////////////////////////////
 #pragma region ControlDefinition //////////////////////////////
 ////////////////////////////////////////////////////////////////
@@ -99,9 +97,9 @@ lemlib::ControllerSettings lateral_controller(
 );
 
 lemlib::ControllerSettings angular_controller(
-	6,  // KP
+	2,  // KP
 	0,  // KI
-	80,  // KD
+	10,  // KD
 	3, 	// anti windup
 	1, 	// small error range 			[deg]
 	100,// small error range timeout	[ms]
@@ -121,8 +119,6 @@ lemlib::ControllerSettings angular_controller(
 lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sensors);
 #pragma endregion
 ////////////////////////////////////////////////////////////////
-
-
 
 ////////////////////////////////////////////////////////////////
 #pragma region BaseFunctions ///////////////////////////////////
@@ -160,22 +156,11 @@ void disabled() {}
  */
 void competition_initialize() {}
 
-/**
- * Runs the autonomous code via Field Management System or
- * the VEX Competition Switch. May be called manually for testing.
- */
-void autonomous() {
-	const int LENGTH = 16;
-	const int BUFF = 8;
-	const int TILE = 24;
+void rot90() {
+	chassis.setPose(0,0,0);
+	chassis.moveToPose(0, 0, 90, 10000);
+	pros::delay(1000);
 
-	chassis.setPose(0, -62, 0);
-	chassis.moveToPose(0, -62+BUFF, 0, 300);
-	pros::delay(600);
-	chassis.turnToHeading(180, 600);
-	pros::delay(800);
-	chassis.moveToPoint(9, -100, 500);
-	pros::delay(300);
 }
 
 #pragma endregion
@@ -229,7 +214,7 @@ void scoringMacro() {
  * End: Same; pin in claw. 
  */
 void pickupMacroPart1() {
-	winch.move_relative(-200, 200);	 // Move up winch a tad
+	winch.move_relative(-150, 200);	 // Move up winch a tad
 	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);  // Lift claw
 }	
 void pickupMacroPart2() {
@@ -260,7 +245,56 @@ void clawIntakeMacro() {
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
+/**
+ * Runs the autonomous code via Field Management System or
+ * the VEX Competition Switch. May be called manually for testing.
+ */
+void autonomous() {
+	const int LENGTH = 16;
+	const int BUFF = 8;
+	const int TILE = 24;
 
+	// Fix shitty rubber band
+	winch.move_relative(360*4.4, RPM);
+	pros::delay(500);
+	winch.tare_position();
+
+	// Suck up match load
+	clawIntakeMacro();
+	pros::delay(500);
+	claw.move_voltage(12000);
+
+	// Hit toggle once
+	chassis.setPose(0, -60, 180);	 // Start
+	chassis.moveToPoint(0, -55, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -100, 500);  // Hit toggle
+	pros::delay(500);
+
+	// Hit toggle again
+	chassis.setPose(0, -68+LENGTH/2, 180);  // Reset
+	chassis.moveToPoint(0, -55, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -100, 500);  // Hit toggle
+	
+	// Go to goal
+	chassis.setPose(0, -68+LENGTH/2, 180);  // Reset
+	chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
+	clawPivotUp();  // Lift claw
+	chassis.turnToHeading(90, 1000);  // Turn to goal
+	chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
+	pros::delay(300);
+	claw.move_voltage(0);  // Stop claw
+	winch.move_relative(-500, RPM);  // Put down winch
+	pros::delay(300);
+	scoringMacro();  // Score
+
+	// Drive away from goal w/ claw up
+	clawPivotUp();
+	chassis.moveToPoint(-10, -47, 1000);
+
+	// Point towards cup
+	chassis.turnToPoint(23.5, 68.5, 1000);
+	chassis.moveToPose(-23.5, -68.5, 180, 2000);
+}
 
 /**
  * Runs the  control code via Field Management System or
@@ -286,9 +320,6 @@ void opcontrol() {
 		// Refresh
 		tide.update();
 		pros::delay(25);
-
-		// Keep winch stable
-		//winch.move_voltage(12000);
  
 		// Move
 		chassis.curvature(tide.axis(LY), tide.axis(RX));
