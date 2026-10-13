@@ -93,7 +93,7 @@ lemlib::ControllerSettings lateral_controller(
 	100,// small error ran  ge timeout	[ms]
 	3, 	// large error range 			[in]
 	500,// large error range timeout	[ms]
-	30 	// maximum acceleration (slew)
+	0 	// maximum acceleration (slew)
 );
 
 lemlib::ControllerSettings angular_controller(
@@ -105,7 +105,7 @@ lemlib::ControllerSettings angular_controller(
 	100,// small error range timeout	[ms]
 	3, 	// large error range			[deg]
 	500,// large error range timeout	[ms]
-	0 	// maximum acceleration (slew)
+	0 	// maximum acceleration (slew)  Old 30
 );
 
 /*
@@ -214,7 +214,7 @@ void scoringMacro() {
  * End: Same; pin in claw. 
  */
 void pickupMacroPart1() {
-	winch.move_relative(-150, 200);	 // Move up winch a tad
+	winch.move_relative(150, 200);	 // Move up winch a tad
 	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);  // Lift claw
 }	
 void pickupMacroPart2() {
@@ -285,17 +285,17 @@ void autonomous() {
 	pros::delay(300);
 	claw.move_voltage(-12000);
 	pros::delay(300);
+	winch.move_relative(150, 200);
 
 	// Drive away from goal w/ claw up
-	chassis.moveToPoint(-10, -47, 1000);
+	chassis.moveToPoint(-5, -47, 750);
+	clawPivot.move_relative(-75, RPM);
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(45, 1000);
-	pickupMacroPart1();
-	chassis.moveToPose(-23.5, -68.5, 0, 3000, {.forwards = false});
-	pros::delay(500);
-	chassis.turnToHeading(0, 300);
-
+	chassis.turnToHeading(45, 500);
+	pros::delay(800);
+	leftMotors.move_voltage(-6000);
+	rightMotors.move_voltage(-6000);
 
 	pros::delay(1000);
 }
