@@ -186,7 +186,7 @@ const int CLAW_PIVOT_RPM  = 100;
 const int RPM = 600;
 
 void clawPivotUp()   { 
-	winch.move_relative(100, RPM);
+	//winch.move_relative(100, RPM);
 	pros::delay(200);
 	clawPivot.move_absolute(CLAW_PIVOT_UP, RPM); 
 }
@@ -214,11 +214,12 @@ void scoringMacro() {
  * End: Same; pin in claw. 
  */
 void pickupMacroPart1() {
-	winch.move_relative(150, 200);	 // Move up winch a tad
 	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);  // Lift claw
 }	
 void pickupMacroPart2() {
 	claw.move_voltage(12000);	// Spin claw
+	clawPivotDown();
+	pros::delay(200);
 	clawPivotUp();				// Make calaw horizontal
 	pros::delay(850);
 	claw.move_voltage(0);		// Stop claw
@@ -255,7 +256,7 @@ void autonomous() {
 	const int TILE = 24;
 
 	// Fix shitty rubber band
-	winch.move_relative(360*4.4, RPM);
+	winch.move_relative(400*4.4, RPM);
 	pros::delay(500);
 	winch.tare_position();
 
@@ -289,15 +290,16 @@ void autonomous() {
 
 	// Drive away from goal w/ claw up
 	chassis.moveToPoint(-5, -47, 750);
-	clawPivot.move_relative(-75, RPM);
+	pickupMacroPart1();
 
 	// To cuppin with claw ready
 	chassis.turnToHeading(45, 500);
 	pros::delay(800);
-	leftMotors.move_voltage(-6000);
-	rightMotors.move_voltage(-6000);
+	leftMotors.move_voltage(-6100);
+	rightMotors.move_voltage(-6100);
 
 	pros::delay(1000);
+	pickupMacroPart2();
 }
 
 /**
