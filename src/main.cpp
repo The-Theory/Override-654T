@@ -259,7 +259,7 @@ void pickupMacroPart2() {
  * End: Same; pin in claw. 
  */
 void clawIntakeMacro() {
-	winchPID.moveTo(475);
+	winchPID.moveTo(500);
 
 	pros::delay(300);
 
