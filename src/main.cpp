@@ -122,6 +122,30 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 ////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
+#pragma region MechanismPID ////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Ratios scale encoder degrees
+tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
+	.kP     = 300,	// [mV/deg]
+	.kI     = 8,	// counteracts grav.
+	.kD     = 500,
+	.windup = 10,	// [deg]
+	.settle = 15,	// stops bounce [deg]
+}, 1.0);
+
+tide::Mechanism winchPID(winch, winchEncoder, {
+	.kP     = 30,
+	.kI     = 0.5,
+	.kD     = 100,
+	.windup = 20,
+	.settle = 5,
+}, 1.0);
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
 #pragma region BaseFunctions ///////////////////////////////////
 ////////////////////////////////////////////////////////////////
 /**
@@ -142,7 +166,8 @@ void initialize() {
 	pros::lcd::set_text(1, "Hello PROS User!");
 	pros::lcd::register_btn1_cb(on_center_button);
 	chassis.calibrate();
-	winchEncoder.reset_position();
+	clawPivotPID.start();
+	winchPID.start();
 }
 
 /**
@@ -181,17 +206,15 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -350;	// [deg]
-const int CLAW_PIVOT_DOWN = -70;	// [deg]
-const int CLAW_PIVOT_RPM  = 100;
-const int RPM = 600;
+const int CLAW_PIVOT_UP   = -130;	// [deg]
+const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
-	//winch.move_relative(100, RPM);
-	pros::delay(200);
-	clawPivot.move_absolute(CLAW_PIVOT_UP, RPM); 
+	//winchPID.moveBy(100);
+	// pros::delay(200);
+	clawPivotPID.moveTo(CLAW_PIVOT_UP); 
 }
-void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM); }
+void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
 
 /**
  * Run when needing to score. 
@@ -200,13 +223,17 @@ void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM);
  */
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
-	winch.move_relative(200, 200); 		// Lift cascade a tad
+	winchPID.moveBy(200); 		// Lift cascade a tad
 	pros::delay(200);                   // Wait for claw to drop
-	clawPivot.move_relative(-200, 200);  // Move claw up slightly
+	clawPivotPID.moveBy(-50);  					// Move claw up slightly
 	pros::delay(800);  				    // Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
-	winch.move_absolute(0, 600);  		// Move winch down
+	winchPID.moveTo(-25);  		// Move winch down
+
+	while (!isWinchDown())
+		pros::delay(100);
+	clawPivotPID.release();					// Drop claw
 }
 
 /**
@@ -215,13 +242,13 @@ void scoringMacro() {
  * End: Same; pin in claw. 
  */
 void pickupMacroPart1() {
-	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);  // Lift claw
+	clawPivotPID.moveTo(CLAW_PIVOT_UP - 75);  // Lift claw
 }	
 void pickupMacroPart2() {
 	claw.move_voltage(12000);	// Spin claw
 	clawPivotDown();
 	pros::delay(200);
-	clawPivotUp();				// Make calaw horizontal
+	clawPivotUp();				// Make claw horizontal
 	pros::delay(850);
 	claw.move_voltage(0);		// Stop claw
 }
@@ -232,16 +259,15 @@ void pickupMacroPart2() {
  * End: Same; pin in claw. 
  */
 void clawIntakeMacro() {
-	winch.move_absolute(475, RPM);
-	clawPivot.move_absolute(-50, RPM);
+	winchPID.moveTo(475);
 
 	pros::delay(300);
 
-	clawPivot.move_relative(200, RPM);
-	winch.move_absolute(0, RPM);
-	winch.move_relative(20, RPM);
+	clawPivotPID.moveBy(65);
+	winchPID.moveTo(0);
+	winchPID.moveBy(20);
 	pros::delay(100);
-	winch.move_relative(20, RPM);
+	winchPID.moveBy(20);
 }
 
 #pragma endregion
@@ -257,9 +283,9 @@ void autonomous() {
 	const int TILE = 24;
 
 	// Fix shitty rubber band
-	winch.move_relative(400*4.4, RPM);
+	winchPID.moveBy(400*4.4);
 	pros::delay(500);
-	winch.tare_position();
+	winchPID.tare();
 
 	// Suck up match load
 	clawIntakeMacro();
@@ -283,11 +309,11 @@ void autonomous() {
 	chassis.turnToHeading(90, 1000);  // Turn to goal
 	chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
 	pros::delay(300);
-	winch.move_relative(-500, RPM);  // Put down winch
+	winchPID.moveBy(-500);  // Put down winch
 	pros::delay(300);
 	claw.move_voltage(-12000);
 	pros::delay(300);
-	winch.move_relative(150, 200);
+	winchPID.moveBy(150);
 
 	// Drive away from goal w/ claw up
 	chassis.moveToPoint(-5, -47, 750);
@@ -309,18 +335,17 @@ void autonomous() {
  * not in competition mode.
  */
 void opcontrol() {
-	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
 	tide::Control tide(controller);
 	tide.when(R).bidir(intakeMotor)
 		.when(R1).onlyIf(isWinchDown).macro(clawIntakeMacro)
-		.when(L).bidir(winch)
+		.when(L).bidir(winchPID)
 		.when(R).bidir(claw)
 		.when(A).altmacro(pickupMacroPart1, pickupMacroPart2)
 		.when(X).altmacro(clawPivotUp, scoringMacro)
+		.when(B).run([] { clawPivotPID.release(); })
 		.when(LEFT).run(autonomous);
 
 	while (true) {

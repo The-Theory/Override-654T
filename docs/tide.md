@@ -256,3 +256,28 @@ ctl.when(A).heldFor(500).onlyIf(clawOpen).onRelease().run(fn); // steps read lef
 Both describe the same binding. However, the first has to be read from the inside out, while the second reads left to right, like a sentence. 
 
 Now how often you need to _run a function when you release a button after it's been held for half a second if your claw is open_ is questionable, but it shows how **Tide** stays readable as your bindings grow more specific.
+
+
+
+
+---
+
+
+
+
+
+## PID Mechanisms
+
+For arms and lifts with a rotation sensor, `tide::Mechanism` holds the motor at a target using PID instead of the motor's built-in encoder:
+
+```cpp
+tide::Mechanism winchPID(winch, winchEncoder, {.kP = 30, .kI = 0.5, .kD = 100, .windup = 20, .settle = 5});
+```
+
+Call `winchPID.start()` in `initialize()`. Then move it with `moveTo()` / `moveBy()`, let it go limp with `release()`, or drive it by hand with `bidir`:
+
+```cpp
+ctl.when(L).bidir(winchPID);
+```
+
+>Unlike `bidir` on a motor, letting go holds the mechanism where it is instead of stopping it.
