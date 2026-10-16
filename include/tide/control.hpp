@@ -12,6 +12,7 @@
 
 #pragma once
 
+#include "tide/mechanism.hpp"
 #include "pros/abstract_motor.hpp"
 #include "pros/llemu.hpp"
 #include "pros/misc.hpp"
@@ -282,10 +283,23 @@ public:
 		const int voltage = Control::checkVoltage(mv);
 		// Saves this binding to run every update()
 		return ctl.add({fwd, rev}, [*this, &motor, voltage](Binding& self) {
-			int out = 0;
-			if (ctl.held(fwd) && allows()) out = voltage;       // Spin if forward is held
-			else if (ctl.held(rev) && allows()) out = -voltage; // Spin opposite if reverse is held
-			Control::drive(motor, self, out);                   // Stop once if neither
+			Control::drive(motor, self, output(voltage));  // Stop once if neither held
+		});
+	}
+
+	/**
+	 * Manual control of a PID mechanism.
+	 * Holds position on release instead of stopping.
+	 * - Useful for lifts that would otherwise sag.
+	 */
+	Control& bidir(Mechanism& mech, int mv = MAX_VOLTAGE) {
+		const int voltage = Control::checkVoltage(mv);
+		// Saves this binding to run every update()
+		return ctl.add({fwd, rev}, [*this, &mech, voltage](Binding& self) {
+			const int out = output(voltage);
+			if (out != 0) mech.drive(out);
+			else if (self.state) mech.hold();  // Once, so macros moving it aren't overwritten
+			self.state = out != 0;
 		});
 	}
 
@@ -296,6 +310,14 @@ private:
 
 	// Condition from onlyIf(), true when none was given
 	bool allows() const { return !allowed || allowed(); }
+
+	// +voltage while forward is held, -voltage while reverse is, else 0
+	int output(int voltage) const {
+		if (!allows()) return 0;
+		if (ctl.held(fwd)) return voltage;
+		if (ctl.held(rev)) return -voltage;
+		return 0;
+	}
 };
 
 /**
