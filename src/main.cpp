@@ -135,9 +135,9 @@ tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
 }, 1.0);
 
 tide::Mechanism winchPID(winch, winchEncoder, {
-	.kP     = 30,
-	.kI     = 0.5,
-	.kD     = 100,
+	.kP     = 100,
+	.kI     = 14,
+	.kD     = 200,
 	.windup = 20,
 	.settle = 5,
 }, 1.0);
@@ -206,7 +206,7 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -130;	// [deg]
+const int CLAW_PIVOT_UP   = -140;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
@@ -222,18 +222,17 @@ void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
  * End: Intake position; Cascade down, claw down.
  */
 void scoringMacro() {
-	claw.move_voltage(-12000);  		// Spit out from claw
+	claw.move_voltage(-12000);  // Spit out from claw
 	winchPID.moveBy(200); 		// Lift cascade a tad
-	pros::delay(200);                   // Wait for claw to drop
-	clawPivotPID.moveBy(-50);  					// Move claw up slightly
-	pros::delay(800);  				    // Wait for OP drive back
-	clawPivotDown();  					// Put claw into rest mode
-	claw.move_voltage(0);  				// Stop claw
-	winchPID.moveTo(-25);  		// Move winch down
+	clawPivotPID.moveBy(-100);  // Move claw up slightly
+	pros::delay(500);  			// Wait for OP drive back
+	claw.move_voltage(0);  		// Stop claw
+	winchPID.moveTo(0);  		// Move winch down
+	clawPivotPID.moveTo(CLAW_PIVOT_DOWN); // Move claw down
 
 	while (!isWinchDown())
 		pros::delay(100);
-	clawPivotPID.release();					// Drop claw
+	clawPivotPID.release();		// Drop claw
 }
 
 /**
@@ -247,9 +246,8 @@ void pickupMacroPart1() {
 void pickupMacroPart2() {
 	claw.move_voltage(12000);	// Spin claw
 	clawPivotDown();
-	pros::delay(200);
+	pros::delay(1000);
 	clawPivotUp();				// Make claw horizontal
-	pros::delay(850);
 	claw.move_voltage(0);		// Stop claw
 }
 
@@ -259,15 +257,9 @@ void pickupMacroPart2() {
  * End: Same; pin in claw. 
  */
 void clawIntakeMacro() {
-	winchPID.moveTo(500);
-
-	pros::delay(300);
-
-	clawPivotPID.moveBy(65);
-	winchPID.moveTo(0);
-	winchPID.moveBy(20);
-	pros::delay(100);
-	winchPID.moveBy(20);
+	winchPID.moveTo(195);
+	pros::delay(850);
+	clawPivotPID.moveTo(50);
 }
 
 #pragma endregion
@@ -283,9 +275,8 @@ void autonomous() {
 	const int TILE = 24;
 
 	// Fix shitty rubber band
-	winchPID.moveBy(400*4.4);
+	winchPID.moveTo(0);
 	pros::delay(500);
-	winchPID.tare();
 
 	// Suck up match load
 	clawIntakeMacro();
@@ -309,13 +300,12 @@ void autonomous() {
 	chassis.turnToHeading(90, 1000);  // Turn to goal
 	chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
 	pros::delay(300);
-	winchPID.moveBy(-500);  // Put down winch
-	pros::delay(300);
 	claw.move_voltage(-12000);
-	pros::delay(300);
-	winchPID.moveBy(150);
+	pros::delay(500);
+	winchPID.moveBy(50);
 
 	// Drive away from goal w/ claw up
+	claw.move_voltage(0);
 	chassis.moveToPoint(-5, -47, 750);
 	pickupMacroPart1();
 
