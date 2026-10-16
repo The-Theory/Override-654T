@@ -276,7 +276,6 @@ void autonomous() {
 
 	// Fix shitty rubber band
 	winchPID.moveTo(0);
-	pros::delay(500);
 
 	// Suck up match load
 	clawIntakeMacro();
@@ -312,8 +311,8 @@ void autonomous() {
 	// To cuppin with claw ready
 	chassis.turnToHeading(45, 500);
 	pros::delay(800);
-	leftMotors.move_voltage(-6100);
-	rightMotors.move_voltage(-6100);
+	leftMotors.move_voltage(-5950);
+	rightMotors.move_voltage(-5950);
 
 	pros::delay(1000);
 	pickupMacroPart2();
