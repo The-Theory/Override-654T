@@ -32,7 +32,8 @@ pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 // Sensors
 pros::Rotation verticalEncoder(-5);
 pros::Rotation winchEncoder(4);
-pros::Imu imu(6);
+pros::Rotation clawEncoder(6);
+pros::Imu imu(13);
 pros::Distance leftDistance(3);
 pros::Distance rightDistance(2);
 pros::Distance middleDistance(1);
@@ -170,7 +171,7 @@ void rot90() {
 #pragma region Checks //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-bool isWinchDown() { return winchEncoder.get_position() < 250; }
+bool isWinchDown() { return winchEncoder.get_position() < 480; }
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
