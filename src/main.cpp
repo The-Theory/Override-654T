@@ -279,7 +279,6 @@ void autonomous() {
 
 	// Suck up match load
 	clawIntakeMacro();
-	pros::delay(500);
 
 	// Hit toggle once
 	chassis.setPose(0, -60, 180);	 // Start
@@ -298,24 +297,37 @@ void autonomous() {
 	clawPivotUp();  // Lift claw
 	chassis.turnToHeading(90, 1000);  // Turn to goal
 	chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
-	pros::delay(300);
 	claw.move_voltage(-12000);
-	pros::delay(500);
-	winchPID.moveBy(50);
+	pros::delay(230);
 
 	// Drive away from goal w/ claw up
 	claw.move_voltage(0);
+	winchPID.moveBy(50);
 	chassis.moveToPoint(-5, -47, 750);
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
 	chassis.turnToHeading(45, 500);
 	pros::delay(800);
-	leftMotors.move_voltage(-5950);
-	rightMotors.move_voltage(-5950);
+	leftMotors.move_voltage(-6500);
+	rightMotors.move_voltage(-6500);
 
 	pros::delay(1000);
+
+	leftMotors.move_voltage(0);
+	rightMotors.move_voltage(0);
+
+	chassis.moveToPose(chassis.getPose().x, chassis.getPose().y+2, 0, 400);
+
 	pickupMacroPart2();
+	winchPID.moveTo(0);
+	claw.move_voltage(12000);
+	clawPivotPID.moveTo(CLAW_PIVOT_UP);
+	pros::delay(2000);
+
+	
+
+	winchPID.moveTo(500);
 }
 
 /**
