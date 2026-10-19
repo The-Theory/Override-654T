@@ -282,17 +282,16 @@ void autonomous() {
 
 	// Hit toggle once
 	chassis.setPose(0, -60, 180);	 // Start
-	chassis.moveToPoint(0, -55, 500, {.forwards = false});  // Back up
-	chassis.moveToPoint(0, -100, 500);  // Hit toggle
-	pros::delay(500);
+	chassis.moveToPoint(0, -50, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
 
 	// Hit toggle again
-	chassis.setPose(0, -68+LENGTH/2, 180);  // Reset
-	chassis.moveToPoint(0, -55, 500, {.forwards = false});  // Back up
-	chassis.moveToPoint(0, -100, 500);  // Hit toggle
-	
+	chassis.setPose(0, -60, 180);  // Reset
+	chassis.moveToPoint(0, -50, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
+
 	// Go to goal
-	chassis.setPose(0, -68+LENGTH/2, 180);  // Reset
+	chassis.setPose(0, -65, 180);  // Reset
 	chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
 	clawPivotUp();  // Lift claw
 	chassis.turnToHeading(90, 1000);  // Turn to goal
@@ -317,17 +316,28 @@ void autonomous() {
 	leftMotors.move_voltage(0);
 	rightMotors.move_voltage(0);
 
-	chassis.moveToPose(chassis.getPose().x, chassis.getPose().y+2, 0, 400);
+	// chassis.moveToPose(chassis.getPose().x, chassis.getPose().y+2, 0, 400);
 
 	pickupMacroPart2();
 	winchPID.moveTo(0);
 	claw.move_voltage(12000);
 	clawPivotPID.moveTo(CLAW_PIVOT_UP);
-	pros::delay(2000);
+	pros::delay(1000);
+	claw.move_voltage(0);
 
-	
+	claw.move_voltage(0);
+	winchPID.moveTo(1000);
 
-	winchPID.moveTo(500);
+	// chassis.swingToPoint(-12, -60, DriveSide::RIGHT, 1000);
+
+	chassis.turnToHeading(45, 1000, {}, false);
+	chassis.moveToPose(10, -35, 45, 1000);
+
+	// Go to new goalfqazq
+	//chassis.moveToPose(18.5, -46.8, 270, 1000, {.forwards = false}, false);
+
+	pros::delay(1000);
+	winchPID.moveTo(0);
 }
 
 /**
