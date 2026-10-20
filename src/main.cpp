@@ -206,7 +206,7 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -120;	// [deg]
+const int CLAW_PIVOT_UP   = -130;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
@@ -223,6 +223,7 @@ void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
  */
 void scoringMacro() {
 	claw.move_voltage(-12000);  // Spit out from claw
+	pros::delay(300);
 	winchPID.moveBy(200); 		// Lift cascade a tad
 	clawPivotPID.moveBy(-100);  // Move claw up slightly
 	pros::delay(500);  			// Wait for OP drive back
@@ -291,7 +292,7 @@ void autonomous() {
 	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
 
 	// Go to goal
-	chassis.setPose(0, -65, 180);  // Reset
+	chassis.setPose(0, -65, 180);  // Reset.  
 	chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
 	clawPivotUp();  // Lift claw
 	chassis.turnToHeading(90, 1000);  // Turn to goal
@@ -333,9 +334,32 @@ void autonomous() {
 	chassis.turnToHeading(45, 1000, {}, false);
 	chassis.moveToPose(10, -35, 45, 1000);
 
-	// Go to new goalfqazq
-	//chassis.moveToPose(18.5, -46.8, 270, 1000, {.forwards = false}, false);
+	// Go to new goal with first cuppin
+	clawPivotUp();  // Lift claw
+	chassis.turnToHeading(90, 1000);  // Turn to goal
+	chassis.moveToPose(-33, -49, 90, 1100, {.forwards = false}, false);  // Drive to goal
+	winchPID.moveTo(500);
+	pros::delay(300);
+	claw.move_voltage(-12000);
+	pros::delay(230);
 
+	// Drive away from goal w/ claw up
+	claw.move_voltage(0);
+	winchPID.moveBy(200);
+	pros::delay(100);
+	chassis.moveToPoint(-5, -47, 750);
+	pickupMacroPart1();
+
+	// To other cuppin with claw ready
+	chassis.turnToHeading(135, 500);
+	pros::delay(800);
+	leftMotors.move_voltage(-6500);
+	rightMotors.move_voltage(-6500);
+
+	pros::delay(1000);
+
+	leftMotors.move_voltage(0);
+	rightMotors.move_voltage(0);
 	pros::delay(1000);
 	winchPID.moveTo(0);
 }
@@ -358,8 +382,8 @@ void opcontrol() {
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(B).run([] { clawPivotPID.release(); })
 		.when(LEFT).run(autonomous);
-
-	while (true) {
+	
+		while (true) {
 		// Refresh
 		tide.update();
 		pros::delay(25);
