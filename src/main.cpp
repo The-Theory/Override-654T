@@ -206,7 +206,7 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -130;	// [deg]
+const int CLAW_PIVOT_UP   = -140;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
@@ -283,12 +283,12 @@ void autonomous() {
 
 	// Hit toggle once
 	chassis.setPose(0, -60, 180);	 // Start
-	chassis.moveToPoint(0, -50, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -54, 500, {.forwards = false});  // Back up
 	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
 
 	// Hit toggle again
 	chassis.setPose(0, -60, 180);  // Reset
-	chassis.moveToPoint(0, -50, 500, {.forwards = false});  // Back up
+	chassis.moveToPoint(0, -54, 500, {.forwards = false});  // Back up
 	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
 
 	// Go to goal
