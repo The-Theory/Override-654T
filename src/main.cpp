@@ -206,7 +206,7 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 ////////////////////////////////////////////////////////////////
 
 // Defs
-const int CLAW_PIVOT_UP   = -140;	// [deg]
+const int CLAW_PIVOT_UP   = -120;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
