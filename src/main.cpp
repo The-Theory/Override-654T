@@ -242,7 +242,9 @@ void scoringMacro() {
  * End: Same; pin in claw. 
  */
 void pickupMacroPart1() {
-	clawPivotPID.moveTo(CLAW_PIVOT_UP - 75);  // Lift claw
+	if(isWinchDown()){
+		clawPivotPID.moveTo(CLAW_PIVOT_UP - 75);  // Lift claw
+	}
 }	
 void pickupMacroPart2() {
 	claw.move_voltage(12000);	// Spin claw
@@ -327,7 +329,7 @@ void autonomous() {
 	claw.move_voltage(0);
 
 	claw.move_voltage(0);
-	winchPID.moveTo(1000);
+	winchPID.moveTo(700);
 
 	// chassis.swingToPoint(-12, -60, DriveSide::RIGHT, 1000);
 
@@ -335,24 +337,27 @@ void autonomous() {
 	chassis.moveToPose(10, -35, 45, 1000);
 
 	// Go to new goal with first cuppin
-	clawPivotUp();  // Lift claw
 	chassis.turnToHeading(90, 1000);  // Turn to goal
 	chassis.moveToPose(-33, -49, 90, 1100, {.forwards = false}, false);  // Drive to goal
-	winchPID.moveTo(500);
-	pros::delay(300);
+	pros::delay(400);
+	winchPID.moveTo(450);
+	pros::delay(200);
 	claw.move_voltage(-12000);
-	pros::delay(230);
+	pros::delay(300);
 
 	// Drive away from goal w/ claw up
 	claw.move_voltage(0);
-	winchPID.moveBy(200);
-	pros::delay(100);
+	clawPivotUp();  // Lift claw
+	winchPID.moveTo(600);
+	pros::delay(300);
 	chassis.moveToPoint(-5, -47, 750);
 	pickupMacroPart1();
+	pros::delay(300);
 
 	// To other cuppin with claw ready
-	chassis.turnToHeading(135, 500);
-	pros::delay(800);
+	winchPID.moveTo(0);
+	chassis.turnToHeading(320, 500);
+	pros::delay(600);
 	leftMotors.move_voltage(-6500);
 	rightMotors.move_voltage(-6500);
 
@@ -360,6 +365,18 @@ void autonomous() {
 
 	leftMotors.move_voltage(0);
 	rightMotors.move_voltage(0);
+
+	//Collect cuppin number 2
+	pickupMacroPart2();
+	winchPID.moveTo(0);
+	claw.move_voltage(12000);
+	clawPivotPID.moveTo(CLAW_PIVOT_UP);
+	pros::delay(1000);
+	claw.move_voltage(0);
+
+	claw.move_voltage(0);
+	winchPID.moveTo(1000);
+
 	pros::delay(1000);
 	winchPID.moveTo(0);
 }
