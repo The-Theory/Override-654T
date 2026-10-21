@@ -259,14 +259,13 @@ void pickupMacroPart2(int pickUpTime=1000) {
  */
 void clawIntakeMacro() {
 	winchPID.moveTo(195);
-	pros::delay(300);
 	clawPivotPID.moveTo(50);
 }
 
 void driveStraight(int delay, int volts=6500) {
 	if (delay < 0) {
-		delay = -delay;
-		volts = -volts;
+		delay *= -1;
+		volts *= -1;
 	}
 
 	leftMotors.move_voltage(volts);
@@ -299,28 +298,31 @@ void autonomous() {
 	const int SOUTH_WEST = 180 + 45;
 
 	// Fix shitty rubber band
-	winchPID.moveTo(0);
+	// winchPID.moveTo(0);
 
 	// Suck up match load
 	clawIntakeMacro();
 
-	// Hit toggle once
-	chassis.setPose(0, -60, 180);	 // Start
-	chassis.moveToPoint(0, -54, 500, {.forwards = false});  // Back up
-	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
+	// Double toggle
+	driveStraight(-200);
+	driveStraight(500);
+	driveStraight(-200);
+	driveStraight(500);
 
-	// Hit toggle again
-	chassis.setPose(0, -60, 180);  // Reset
-	chassis.moveToPoint(0, -54, 500, {.forwards = false});  // Back up
-	chassis.moveToPoint(0, -68, 750, {}, false);  // Hit toggle
-
-	// Go to goal
+	// // Go to goal
 	chassis.setPose(0, -65, 180);  // Reset.  
-	chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
-	clawPivotUp();  // Lift claw
-	chassis.turnToHeading(90, 1000);  // Turn to goal
-	winchPID.moveTo(80);
-	chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
+	// chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
+	// clawPivotUp();  // Lift claw
+	// chassis.turnToHeading(90, 1000);  // Turn to goal
+	// winchPID.moveTo(80);
+	// chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
+	// claw.move_voltage(-12000);
+	// pros::delay(230);
+
+	clawPivotUp();
+	winchPID.moveTo(60);
+	chassis.moveToPose(-21, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
+	pros::delay(150);
 	claw.move_voltage(-12000);
 	pros::delay(230);
 
@@ -331,15 +333,14 @@ void autonomous() {
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(45, 500);
-	pros::delay(800);
+	chassis.turnToHeading(45, 500, {}, false);
 	driveStraight(-2000);
 	driveStraight(100);
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
 	pickupMacroPart1();
-	pros::delay(500); 
+	// pros::delay(500); 
 	pickupMacroPart2();
 	claw.move_voltage(12000);
 	winchPID.moveBy(400);
