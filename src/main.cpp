@@ -333,8 +333,8 @@ void autonomous() {
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(45, 500, {}, false);
-	driveStraight(-2000);
+	chassis.turnToHeading(42, 500, {}, false);
+	driveStraight(-1300);
 	driveStraight(100);
 
 	// Pickup cuppin
@@ -356,6 +356,7 @@ void autonomous() {
 	chassis.moveToPose(-21, -50, SOUTH_EAST, 1000, {.forwards = false}, false);
 
 	// Score
+	clawPivotUp();
 	claw.move_voltage(0);
 	winchPID.moveBy(-120);
 	pros::delay(230);
