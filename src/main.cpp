@@ -127,11 +127,14 @@ lemlib::Chassis chassis(drivetrain, lateral_controller, angular_controller, sens
 
 // Ratios scale encoder degrees
 tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
-	.kP     = 300,	// [mV/deg]
-	.kI     = 8,	// counteracts grav.
-	.kD     = 500,
-	.windup = 10,	// [deg]
-	.settle = 15,	// stops bounce [deg]
+	// .kP     = 400,	// [mV/deg]
+	// .kI     = 3,	// counteracts grav.
+	// .kD     = 800,
+	.kP     = 200,	// [mV/deg]
+	.kI     = 0,	// counteracts grav.
+	.kD     = 800,
+	.windup = 0,	// [deg]
+	.settle = 0,	// stops bounce [deg]
 }, 1.0);
 
 tide::Mechanism winchPID(winch, winchEncoder, {
@@ -168,6 +171,7 @@ void initialize() {
 	chassis.calibrate();
 	clawPivotPID.start();
 	winchPID.start();
+	clawPivotPID.tare();
 }
 
 /**
@@ -210,8 +214,6 @@ const int CLAW_PIVOT_UP   = -140;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
 
 void clawPivotUp()   { 
-	//winchPID.moveBy(100);
-	// pros::delay(200);
 	clawPivotPID.moveTo(CLAW_PIVOT_UP); 
 }
 void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
@@ -309,16 +311,8 @@ void autonomous() {
 	driveStraight(-200);
 	driveStraight(500);
 
-	// // Go to goal
-	chassis.setPose(0, -65, 180);  // Reset.  
-	// chassis.moveToPose(0, -47, 180, 1000, {.forwards = false});  // Back up
-	// clawPivotUp();  // Lift claw
-	// chassis.turnToHeading(90, 1000);  // Turn to goal
-	// winchPID.moveTo(80);
-	// chassis.moveToPose(-30, -47, 90, 1000, {.forwards = false}, false);  // Drive to goal
-	// claw.move_voltage(-12000);
-	// pros::delay(230);
-
+	// Go to goal
+	chassis.setPose(0, -65, 180);  // Reset
 	clawPivotUp();
 	winchPID.moveTo(60);
 	chassis.moveToPose(-21, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
@@ -333,14 +327,12 @@ void autonomous() {
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(42, 500, {}, false);
-	driveStraight(-1300);
+	chassis.turnToHeading(44, 500, {}, false);
+	driveStraight(-1400);
 	driveStraight(100);
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
-	pickupMacroPart1();
-	// pros::delay(500); 
 	pickupMacroPart2();
 	claw.move_voltage(12000);
 	winchPID.moveBy(400);
@@ -352,11 +344,11 @@ void autonomous() {
 	chassis.turnToHeading(90, 500, {}, false);
 	chassis.setPose(-24, -60, 90);  // Reset
 	chassis.moveToPose(-12, -60, 90, 1000, {}, false);
+	chassis.setPose(-12, -60, 90);  // Reset
 	chassis.turnToHeading(SOUTH_EAST, 500, {}, false);
-	chassis.moveToPose(-21, -50, SOUTH_EAST, 1000, {.forwards = false}, false);
+	chassis.moveToPose(-26, -45, SOUTH_EAST, 1100, {.forwards = false}, false);
 
 	// Score
-	clawPivotUp();
 	claw.move_voltage(0);
 	winchPID.moveBy(-120);
 	pros::delay(230);
@@ -365,48 +357,11 @@ void autonomous() {
 	winchPID.moveBy(200);
 	claw.move_voltage(0);
 
-	driveStraight(-500);
 
-	// // Go to new goal with first cuppin
-	// chassis.turnToHeading(90, 1000);  // Turn to goal
-	// chassis.moveToPose(-33, -49, 90, 1100, {.forwards = false}, false);  // Drive to goal
-	// pros::delay(400);
-	// winchPID.moveTo(450);
-	// pros::delay(200);
-	// claw.move_voltage(-12000);
-	// pros::delay(300);
+	////////////////////////////////////////////////
 
-	// // Drive away from goal w/ claw up
-	// claw.move_voltage(0);
-	// clawPivotUp();  // Lift claw
-	// winchPID.moveTo(600);
-	// pros::delay(300);
-	// chassis.moveToPoint(-5, -47, 750);
-	// pickupMacroPart1();
-	// pros::delay(300);
-
-	// // To cuppin with claw ready
-	// winchPID.moveTo(0);
-	// chassis.turnToHeading(320, 500);
-	// pros::delay(600);
-	// leftMotors.move_voltage(-6500);
-	// rightMotors.move_voltage(-6500);
-
-	// pros::delay(1000);
-
-	// leftMotors.move_voltage(0);
-	// rightMotors.move_voltage(0);
-
-	// // Collect second cuppin
-	// pickupMacroPart2();
-	// winchPID.moveTo(0);
-	// claw.move_voltage(12000);
-	// clawPivotPID.moveTo(CLAW_PIVOT_UP);
-	// pros::delay(1000);
-	// claw.move_voltage(0);
-
-	// claw.move_voltage(0);
-	// winchPID.moveTo(1000);
+	// Go to new cuppin
+	chassis.moveToPose(0, -36, 0, 2000);
 
 	pros::delay(3000);
 	winchPID.moveTo(0);

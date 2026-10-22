@@ -102,6 +102,8 @@ private:
 	double integral  = 0;
 	double prevError = 0;
 
+	static double clampMv(double mv) { return std::clamp(mv, -(double)MAX_MV, (double)MAX_MV); }
+
 	void resetPID() {
 		integral  = 0;
 		prevError = 0;
@@ -135,10 +137,11 @@ private:
 				if (manualMv == 0) motor.brake();
 				else motor.move_voltage(manualMv);
 			} else if (std::fabs(error) < gains.settle) {
-				resetPID();
-				motor.brake();
+				// Keep the built-up integral pushing, or a loaded mechanism sags to the band edge
+				prevError = error;
+				motor.move_voltage(clampMv(integral * gains.kI));
 			} else {
-				motor.move_voltage(std::clamp(pid(error), -(double)MAX_MV, (double)MAX_MV));
+				motor.move_voltage(clampMv(pid(error)));
 			}
 			pros::delay(10);
 		}
