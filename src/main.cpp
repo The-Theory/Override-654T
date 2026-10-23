@@ -132,7 +132,7 @@ tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
 	// .kD     = 800,
 	.kP     = 200,	// [mV/deg]
 	.kI     = 0,	// counteracts grav.
-	.kD     = 800,
+	.kD     = 1400,
 	.windup = 0,	// [deg]
 	.settle = 0,	// stops bounce [deg]
 }, 1.0);
@@ -151,25 +151,21 @@ tide::Mechanism winchPID(winch, winchEncoder, {
 ////////////////////////////////////////////////////////////////
 #pragma region BaseFunctions ///////////////////////////////////
 ////////////////////////////////////////////////////////////////
-/**
- * Callback function for LLEMU's center button.
- */
-void on_center_button() {
-	static bool pressed = false;
-	pressed = !pressed;
-	if (pressed) pros::lcd::set_text(2, "I was pressed!");
-	else pros::lcd::clear_line(2);
-}
+void showAuton();
+void prevAuton();
+void nextAuton();
 
 /**
  * Initalization triggered upon execution.
  */
 void initialize() {
 	pros::lcd::initialize();
-	pros::lcd::set_text(1, "Hello PROS User!");
-	pros::lcd::register_btn1_cb(on_center_button);
+	pros::lcd::register_btn0_cb(prevAuton);
+	pros::lcd::register_btn2_cb(nextAuton);
+	showAuton();
 	chassis.calibrate();
 	clawPivotPID.start();
+	winchPID.tare();
 	winchPID.start();
 }
 
@@ -309,7 +305,11 @@ const int NORTH_EAST = 45;
 const int NORTH_WEST = 270 + 45;
 const int SOUTH_EAST = 180 - 45;
 const int SOUTH_WEST = 180 + 45;
-void autonomous() {
+
+const int CUPPIN_1 = 400;
+const int SCORE_CUPPIN_1 = 120;
+
+void x_auton() {
 	clawIntakeMacro();
 	doubleToggle();
 
@@ -369,7 +369,7 @@ void autonomous() {
 	winchPID.moveTo(0);
 }
 
-void skills() {
+void left_auton() {
 	pros::delay(100);
 	clawIntakeMacro();
 	doubleToggle();
@@ -385,22 +385,23 @@ void skills() {
 	pros::delay(230);
 
 	// Go to cuppin
-	winchPID.moveBy(300);
+	winchPID.moveTo(600);
 	chassis.moveToPose(-48, -10, NORTH, 600, {.minSpeed=50});
-	chassis.moveToPose(-24, -24, NORTH_WEST, 1000, {.forwards = false, .minSpeed=50}, false);
+	chassis.moveToPose(-24 - 2, -24 + 2, NORTH_WEST, 1000, {.forwards = false, .minSpeed=40}, false);
 
 	// Pickup cuppin
+	clawPivotUp();
 	claw.move_velocity(12000);
-	winchPID.moveBy(-320);
-	pros::delay(500);
-	winchPID.moveBy(320);
+	pros::delay(100);
+	winchPID.moveTo(30);
+	pros::delay(1000);
+	winchPID.moveTo(600);
 	claw.move_velocity(0);
-	winchPID.moveTo(500);
 
 	// Score cuppin
 	chassis.turnToPoint(48, 24, 600, {}, false);
-	chassis.moveToPoint(-48 + 2, -24, 600, {.forwards = false, .minSpeed=50}, false);
-	winchPID.moveBy(-250);
+	chassis.moveToPoint(-48 + 2, -24 - 1, 600, {.forwards = false, .minSpeed=50}, false);
+	winchPID.moveTo(30);
 	pros::delay(400);
 	claw.move_velocity(-12000);
 	pros::delay(400);
@@ -409,22 +410,58 @@ void skills() {
 
 	// Go to new cuppin
 	pros::delay(400);
-	driveStraight(500);
-	chassis.moveToPoint(-48 + 5, -48 + 8, 1200, {.forwards = false, .minSpeed=30}, false);
+	chassis.moveToPoint(-30, -24, 800, {}, false);
+	chassis.turnToPoint(-48, -48, 800, {.forwards = false}, false);
+	chassis.moveToPoint(-48 + 6, -48 + 8, 1200, {.forwards = false, .minSpeed=50}, false);
 
 	// Pickup new cuppin
 	clawPivotUp();
 	pros::delay(400);
 	claw.move_velocity(12000);
-	winchPID.moveTo(100);
+	winchPID.moveTo(50);
 	pros::delay(800);
-	winchPID.moveBy(600);
+	winchPID.moveTo(600);
 	claw.move_velocity(0);
 
-	// Reset
-	pros::delay(3000);
-	winchPID.moveTo(0);
+	// Score new cuppin
+	chassis.turnToPoint(-48, -24, 800, {.forwards = false}, false);
+	chassis.moveToPoint(-48, -24, 800, {.forwards = false}, false);
+	winchPID.moveTo(60);
+	pros::delay(400);
+	claw.move_velocity(-12000);
+	pros::delay(400);
+	claw.move_velocity(0);
+	winchPID.moveTo(600);
+
+	// Back out
+	chassis.moveToPoint(-48, -34, 800, {}, false);
 }
+
+////////////////////////////////////////////////////////////////
+#pragma region AutonSelector ///////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Add new routes here; brain left/right buttons cycle them
+struct Auton { const char* name; void (*run)(); };
+const Auton autons[] = {
+	{"X",    x_auton},
+	{"Left", left_auton},
+};
+const int AUTON_COUNT = sizeof(autons) / sizeof(autons[0]);
+int selectedAuton = 0;
+
+void showAuton() { pros::lcd::print(1, "Auton: < %s >", autons[selectedAuton].name); }
+void cycleAuton(int step) {
+	selectedAuton = (selectedAuton + step + AUTON_COUNT) % AUTON_COUNT;
+	showAuton();
+}
+void prevAuton() { cycleAuton(-1); }
+void nextAuton() { cycleAuton( 1); }
+
+void autonomous() { autons[selectedAuton].run(); }
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
 
 /**
  * Runs the  control code via Field Management System or
@@ -433,8 +470,6 @@ void skills() {
  */
 void opcontrol() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-
-	// skills();
 
 	// Def controls
 	tide::Control tide(controller);
@@ -446,10 +481,9 @@ void opcontrol() {
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(B).run([] { clawPivotPID.release(); })
 		.when(LEFT).run(autonomous)
-		.when(DOWN).run(skills)
 		.when(Y).macro(tareClaw);
 	
-		while (true) {
+	while (true) {
 		// Refresh
 		tide.update();
 		pros::delay(25);
