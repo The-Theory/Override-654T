@@ -171,7 +171,6 @@ void initialize() {
 	chassis.calibrate();
 	clawPivotPID.start();
 	winchPID.start();
-	clawPivotPID.tare();
 }
 
 /**
@@ -185,13 +184,6 @@ void disabled() {}
  * Allows selection of specific autons.
  */
 void competition_initialize() {}
-
-void rot90() {
-	chassis.setPose(0,0,0);
-	chassis.moveToPose(0, 0, 90, 10000);
-	pros::delay(1000);
-
-}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -283,6 +275,20 @@ void driveStraight(int delay, int volts=6500) {
 	rightMotors.move_voltage(0);
 }
 
+void tareClaw() {
+	clawPivotPID.release();
+	pros::delay(400);
+	clawPivotPID.tare();
+	clawPivotPID.start();
+}
+
+void doubleToggle() {
+	driveStraight(-200);
+	driveStraight(500);
+	driveStraight(-200);
+	driveStraight(500);
+}
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -290,35 +296,25 @@ void driveStraight(int delay, int volts=6500) {
  * Runs the autonomous code via Field Management System or
  * the VEX Competition Switch. May be called manually for testing.
  */
+const int LENGTH = 16;
+const int BUFF = 8;
+const int TILE = 24;
+
+const int NORTH = 0;
+const int SOUTH = 180;
+const int EAST 	= 90;
+const int WEST  = 270;
+
+const int NORTH_EAST = 45;
+const int NORTH_WEST = 270 + 45;
+const int SOUTH_EAST = 180 - 45;
+const int SOUTH_WEST = 180 + 45;
 void autonomous() {
-	const int LENGTH = 16;
-	const int BUFF = 8;
-	const int TILE = 24;
-
-	const int NORTH = 0;
-	const int SOUTH = 180;
-	const int EAST 	= 90;
-	const int WEST  = 270;
-
-	const int NORTH_EAST = 45;
-	const int NORTH_WEST = 270 + 45;
-	const int SOUTH_EAST = 180 - 45;
-	const int SOUTH_WEST = 180 + 45;
-
-	// Fix shitty rubber band
-	// winchPID.moveTo(0);
-
-	// Suck up match load
 	clawIntakeMacro();
-
-	// Double toggle
-	driveStraight(-200);
-	driveStraight(500);
-	driveStraight(-200);
-	driveStraight(500);
+	doubleToggle();
 
 	// Go to goal
-	chassis.setPose(0, -65, 180);  // Reset
+	chassis.setPose(0, -65, SOUTH);  // Reset
 	clawPivotUp();
 	winchPID.moveTo(60);
 	chassis.moveToPose(-21, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
@@ -373,6 +369,64 @@ void autonomous() {
 	winchPID.moveTo(0);
 }
 
+void skills() {
+	pros::delay(100);
+	clawIntakeMacro();
+	doubleToggle();
+
+	// Go to goal
+	chassis.setPose(-65, 0, WEST);
+	clawPivotUp();
+	pros::delay(100);
+	winchPID.moveTo(60);
+	chassis.moveToPose(-48, -21, NORTH, 2000, {.forwards = false, .minSpeed=50}, false);
+	pros::delay(150);
+	claw.move_voltage(-12000);
+	pros::delay(230);
+
+	// Go to cuppin
+	winchPID.moveBy(300);
+	chassis.moveToPose(-48, -10, NORTH, 600, {.minSpeed=50});
+	chassis.moveToPose(-24, -24, NORTH_WEST, 1000, {.forwards = false, .minSpeed=50}, false);
+
+	// Pickup cuppin
+	claw.move_velocity(12000);
+	winchPID.moveBy(-320);
+	pros::delay(800);
+	winchPID.moveBy(320);
+	claw.move_velocity(0);
+	winchPID.moveTo(500);
+
+	// Score cuppin
+	chassis.turnToPoint(48, 24, 600, {}, false);
+	chassis.moveToPoint(-48 + 2, -24, 600, {.forwards = false, .minSpeed=50}, false);
+	winchPID.moveBy(-250);
+	pros::delay(400);
+	claw.move_velocity(-12000);
+	pros::delay(400);
+	claw.move_velocity(0);
+	winchPID.moveTo(500);
+	clawPivotUp();
+
+	// Go to new cuppin
+	pros::delay(400);
+	driveStraight(500);
+	chassis.moveToPoint(-48, -48, 800, {.forwards = false, .minSpeed=50}, false);
+
+	// Pickup new cuppin
+	clawPivotUp();
+	pros::delay(400);
+	claw.move_velocity(12000);
+	winchPID.moveBy(-450);
+	pros::delay(800);
+	winchPID.moveBy(450);
+	claw.move_velocity(0);
+
+	// Reset
+	pros::delay(3000);
+	winchPID.moveTo(0);
+}
+
 /**
  * Runs the  control code via Field Management System or
  * the VEX Competition Switch, or after initialize() when
@@ -390,7 +444,9 @@ void opcontrol() {
 		.when(A).altmacro(pickupMacroPart1, [] { pickupMacroPart2(); })
 		.when(X).altmacro(clawPivotUp, scoringMacro)
 		.when(B).run([] { clawPivotPID.release(); })
-		.when(LEFT).run(autonomous);
+		.when(LEFT).run(autonomous)
+		.when(DOWN).run(skills)
+		.when(Y).macro(tareClaw);
 	
 		while (true) {
 		// Refresh
