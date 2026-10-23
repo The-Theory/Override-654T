@@ -212,9 +212,11 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 // Defs
 const int CLAW_PIVOT_UP   = -140;	// [deg]
 const int CLAW_PIVOT_DOWN = 0;	// [deg]
+bool downState = false;
 
 void clawPivotUp()   { 
 	clawPivotPID.moveTo(CLAW_PIVOT_UP); 
+	downState = false;
 }
 void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
 
@@ -232,6 +234,7 @@ void scoringMacro() {
 	claw.move_voltage(0);  		// Stop claw
 	winchPID.moveTo(0);  		// Move winch down
 	clawPivotPID.moveTo(CLAW_PIVOT_DOWN); // Move claw down
+	downState = true;
 
 	while (!isWinchDown())
 		pros::delay(100);
@@ -260,8 +263,11 @@ void pickupMacroPart2(int pickUpTime=1000) {
  * End: Same; pin in claw. 
  */
 void clawIntakeMacro() {
-	winchPID.moveTo(195);
-	clawPivotPID.moveTo(50);
+	if(downState) {
+		winchPID.moveTo(195);
+		clawPivotPID.moveTo(50);
+	}
+	
 }
 
 void driveStraight(int delay, int volts=6500) {
