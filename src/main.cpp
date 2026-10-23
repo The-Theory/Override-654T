@@ -392,7 +392,7 @@ void skills() {
 	// Pickup cuppin
 	claw.move_velocity(12000);
 	winchPID.moveBy(-320);
-	pros::delay(800);
+	pros::delay(500);
 	winchPID.moveBy(320);
 	claw.move_velocity(0);
 	winchPID.moveTo(500);
@@ -405,21 +405,20 @@ void skills() {
 	claw.move_velocity(-12000);
 	pros::delay(400);
 	claw.move_velocity(0);
-	winchPID.moveTo(500);
-	clawPivotUp();
+	winchPID.moveTo(600);
 
 	// Go to new cuppin
 	pros::delay(400);
 	driveStraight(500);
-	chassis.moveToPoint(-48, -48, 800, {.forwards = false, .minSpeed=50}, false);
+	chassis.moveToPoint(-48 + 5, -48 + 8, 1200, {.forwards = false, .minSpeed=30}, false);
 
 	// Pickup new cuppin
 	clawPivotUp();
 	pros::delay(400);
 	claw.move_velocity(12000);
-	winchPID.moveBy(-450);
+	winchPID.moveTo(100);
 	pros::delay(800);
-	winchPID.moveBy(450);
+	winchPID.moveBy(600);
 	claw.move_velocity(0);
 
 	// Reset
@@ -434,6 +433,8 @@ void skills() {
  */
 void opcontrol() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+
+	// skills();
 
 	// Def controls
 	tide::Control tide(controller);
