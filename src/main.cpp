@@ -140,7 +140,7 @@ tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
 tide::Mechanism winchPID(winch, winchEncoder, {
 	.kP     = 100,
 	.kI     = 14,
-	.kD     = 200,
+	.kD     = 400,
 	.windup = 20,
 	.settle = 5,
 }, 1.0);
@@ -310,14 +310,15 @@ const int CUPPIN_1 = 400;
 const int SCORE_CUPPIN_1 = 120;
 
 void x_auton() {
-	clawIntakeMacro();
+	winchPID.moveTo(195);
 	doubleToggle();
 
 	// Go to goal
 	chassis.setPose(0, -65, SOUTH);  // Reset
 	clawPivotUp();
+	pros::delay(200);
 	winchPID.moveTo(60);
-	chassis.moveToPose(-21, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
+	chassis.moveToPose(-24, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
 	pros::delay(150);
 	claw.move_voltage(-12000);
 	pros::delay(230);
@@ -329,8 +330,8 @@ void x_auton() {
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(44, 500, {}, false);
-	driveStraight(-1400);
+	chassis.turnToHeading(42, 500, {}, false);
+	driveStraight(-1500);
 	driveStraight(100);
 
 	// Pickup cuppin
@@ -341,35 +342,52 @@ void x_auton() {
 	
 	// Turn out
 	chassis.turnToHeading(45, 500, {}, false);
+	clawPivotUp();
 	driveStraight(-150);
 	chassis.turnToHeading(55, 500, {}, false);
 	chassis.turnToHeading(90, 500, {}, false);
 	chassis.setPose(-24, -60, 90);  // Reset
 	chassis.moveToPose(-12, -60, 90, 1000, {}, false);
 	chassis.setPose(-12, -60, 90);  // Reset
+	clawPivotUp();
 	chassis.turnToHeading(SOUTH_EAST, 500, {}, false);
 	chassis.moveToPose(-26, -45, SOUTH_EAST, 1100, {.forwards = false}, false);
 
 	// Score
 	claw.move_voltage(0);
-	winchPID.moveBy(-120);
-	pros::delay(230);
+	winchPID.moveTo(100);
+	pros::delay(500);
+	clawPivotPID.release();
+	pros::delay(200);
 	claw.move_voltage(-12000);
 	pros::delay(500);
-	winchPID.moveBy(200);
+	winchPID.moveTo(800);
+	pros::delay(500);
 	claw.move_voltage(0);
 
-
-	////////////////////////////////////////////////
-
-	// Go to new cuppin
+	// Ready to new cuppin
 	chassis.moveToPose(0, -36, 0, 2000);
-
-	pros::delay(3000);
 	winchPID.moveTo(0);
+	pros::delay(500);
+	tareClaw();
+	pros::delay(500);
+	chassis.moveToPoint(4, -47, 750, {}, false);
+
+	// To new cupping with claw
+	pickupMacroPart1();
+	chassis.turnToHeading(-40, 500, {}, false);
+	winchPID.moveTo(200);
+	driveStraight(-1500);
+	driveStraight(100);
+
+	// Pickup
+	winchPID.moveTo(0);
+	pickupMacroPart2();
+	claw.move_voltage(12000);
+	winchPID.moveBy(400);
 }
 
-void left_auton() {
+void left_base_auton() {
 	pros::delay(100);
 	clawIntakeMacro();
 	doubleToggle();
@@ -379,29 +397,29 @@ void left_auton() {
 	clawPivotUp();
 	pros::delay(100);
 	winchPID.moveTo(60);
-	chassis.moveToPose(-48, -21, NORTH, 2000, {.forwards = false, .minSpeed=50}, false);
+	chassis.moveToPose(-48, -23, NORTH, 2000, {.forwards = false, .minSpeed=50}, false);
 	pros::delay(150);
 	claw.move_voltage(-12000);
 	pros::delay(230);
 
 	// Go to cuppin
-	winchPID.moveTo(600);
+	winchPID.moveTo(400);
 	chassis.moveToPose(-48, -10, NORTH, 600, {.minSpeed=50});
-	chassis.moveToPose(-24 - 2, -24 + 2, NORTH_WEST, 1000, {.forwards = false, .minSpeed=40}, false);
+	chassis.moveToPose(-24 - 2.2, -24 + 2.2, NORTH_WEST, 1500, {.forwards = false, .minSpeed=40}, false);
 
 	// Pickup cuppin
 	clawPivotUp();
 	claw.move_velocity(12000);
 	pros::delay(100);
-	winchPID.moveTo(30);
-	pros::delay(1000);
+	winchPID.moveTo(20);
+	pros::delay(1500);
 	winchPID.moveTo(600);
 	claw.move_velocity(0);
 
 	// Score cuppin
 	chassis.turnToPoint(48, 24, 600, {}, false);
-	chassis.moveToPoint(-48 + 2, -24 - 1, 600, {.forwards = false, .minSpeed=50}, false);
-	winchPID.moveTo(30);
+	chassis.moveToPoint(-48 + 3, -24, 600, {.forwards = false, .minSpeed=50}, false);
+	winchPID.moveTo(15);
 	pros::delay(400);
 	claw.move_velocity(-12000);
 	pros::delay(400);
@@ -411,39 +429,75 @@ void left_auton() {
 	// Go to new cuppin
 	pros::delay(400);
 	chassis.moveToPoint(-30, -24, 800, {}, false);
-	chassis.turnToPoint(-48, -48, 800, {.forwards = false}, false);
-	chassis.moveToPoint(-48 + 6, -48 + 8, 1200, {.forwards = false, .minSpeed=50}, false);
+	chassis.turnToPoint(-47, -48, 800, {.forwards = false}, false);
+	chassis.moveToPoint(-43 , -43, 2000, {.forwards = false}, false);
 
 	// Pickup new cuppin
 	clawPivotUp();
-	pros::delay(400);
-	claw.move_velocity(12000);
-	winchPID.moveTo(50);
 	pros::delay(800);
-	winchPID.moveTo(600);
+	claw.move_velocity(12000);
+	winchPID.moveTo(30);
+	pros::delay(1000);
+	winchPID.moveTo(700);
 	claw.move_velocity(0);
 
 	// Score new cuppin
 	chassis.turnToPoint(-48, -24, 800, {.forwards = false}, false);
-	chassis.moveToPoint(-48, -24, 800, {.forwards = false}, false);
-	winchPID.moveTo(60);
+	chassis.moveToPoint(-48, -24 - 3, 800, {.forwards = false, .maxSpeed=100}, false);
+	winchPID.moveTo(15);
 	pros::delay(400);
 	claw.move_velocity(-12000);
-	pros::delay(400);
+	pros::delay(800);
 	claw.move_velocity(0);
-	winchPID.moveTo(600);
+	winchPID.moveTo(1000);
+	pros::delay(500);
 
 	// Back out
-	chassis.moveToPoint(-48, -34, 800, {}, false);
+	chassis.moveToPoint(-48, -48, 800, {}, false);
 }
+
+void left_auton() {
+	left_base_auton();
+
+	// Toggle
+}
+
+void skills_auton() {
+	left_base_auton();
+	winchPID.moveTo(200);
+
+	// Park
+	chassis.turnToPoint(-5, -5, 800, {.forwards=false}, false);
+	chassis.moveToPoint(-5, -5, 1600, {.forwards=false}, false);
+
+	// Get new 
+	chassis.setPose(-5, -5, SOUTH_WEST);
+	chassis.moveToPoint(-10, -10, 800, {}, false );
+	chassis.turnToPoint(-24, 32, 2000, {}, false);
+	clawIntakeMacro();
+	intakeMotor.move_voltage(12000);
+	claw.move_voltage(12000);
+	chassis.moveToPose(-24, 32, NORTH, 2000, {}, false);
+	pros::delay(4000);
+
+	// Score
+	clawPivotUp();
+	winchPID.moveTo(250);
+	claw.move_voltage(0);
+	chassis.moveToPoint(0, 0, 2000, {.forwards=false}, false);
+	claw.move_voltage(-12000);
+
+}
+
 
 ////////////////////////////////////////////////////////////////
 #pragma region AutonSelector ///////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// Add new routes here; brain left/right buttons cycle them
+// Add new routes; brain left/right buttons cycles
 struct Auton { const char* name; void (*run)(); };
 const Auton autons[] = {
+	{"Skills", skills_auton},           
 	{"X",    x_auton},
 	{"Left", left_auton},
 };
@@ -470,6 +524,7 @@ void autonomous() { autons[selectedAuton].run(); }
  */
 void opcontrol() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 
 	// Def controls
 	tide::Control tide(controller);
