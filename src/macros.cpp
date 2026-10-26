@@ -15,75 +15,62 @@ bool isWinchDown() { return winchEncoder.get_position() < 480; }
 #pragma region Macros //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// Defs
 const int CLAW_PIVOT_UP   = -140;	// [deg]
-const int CLAW_PIVOT_DOWN = 0;	// [deg]
-bool downState = false;
+const int CLAW_PIVOT_DOWN = 0;		// [deg]
+const double TOGGLE_BACKOFF = 4;	// [in]
 
-void clawPivotUp()   {
+bool clawDropped = false;
+
+void clawPivotUp() {
 	clawPivotPID.moveTo(CLAW_PIVOT_UP);
-	downState = false;
+	clawDropped = false;
 }
 void clawPivotDown() { clawPivotPID.moveTo(CLAW_PIVOT_DOWN); }
 
-/**
- * Run when needing to score.
- * Start: Cascade level to score, claw in Up position.
- * End: Intake position; Cascade down, claw down.
- */
-void scoringMacro() {
-	claw.move_voltage(-12000);  // Spit out from claw
+// From scoring height with the claw up; ends with the winch down and the claw dropped
+void score() {
+	claw.move_voltage(-12000);	// Spit out
 	pros::delay(300);
-	winchPID.moveBy(200); 		// Lift cascade a tad
-	clawPivotPID.moveBy(-100);  // Move claw up slightly
-	pros::delay(500);  			// Wait for OP drive back
-	claw.move_voltage(0);  		// Stop claw
-	winchPID.moveTo(0);  		// Move winch down
-	clawPivotPID.moveTo(CLAW_PIVOT_DOWN); // Move claw down
-	downState = true;
+	winchPID.moveBy(200);		// Lift off the stack
+	clawPivotPID.moveBy(-100);
+	pros::delay(500);			// Time for the driver to back away
+	claw.move_voltage(0);
+	winchPID.moveTo(0);
+	clawPivotPID.moveTo(CLAW_PIVOT_DOWN);
+	clawDropped = true;
 
 	while (!isWinchDown())
 		pros::delay(100);
-	clawPivotPID.release();		// Drop claw
+	clawPivotPID.release();
 }
 
-/**
- * Run when needing to pick a pin off of the floor.
- * Start: Cascade level to pick up, claw in up position
- * End: Same; pin in claw.
- */
-void pickupMacroPart1() {
-	clawPivotPID.moveTo(CLAW_PIVOT_UP - 75);  // Lift claw
-}
-void pickupMacroPart2(int pickUpTime) {
-	claw.move_voltage(12000);	// Spin claw
+// Tilts the claw past up so it clears the pin before coming down on it
+void raiseForPickup() { clawPivotPID.moveTo(CLAW_PIVOT_UP - 75); }
+
+// Grabs a floor pin; ends with it held and the claw up
+void pickup(int time) {
+	claw.move_voltage(12000);
 	clawPivotDown();
-	pros::delay(pickUpTime);
-	clawPivotUp();				// Make claw horizontal
-	claw.move_voltage(0);		// Stop claw
+	pros::delay(time);
+	clawPivotUp();
+	claw.move_voltage(0);
 }
 
- /**
- * Run when needing to pick a pin off of the floor.
- * Start: Cascade level to pick up, claw in up position
- * End: Same; pin in claw.
- */
-void clawIntakeMacro() {
-	if(downState) {
+// Back to intake height after score() dropped the claw
+void lowerToIntake() {
+	if (clawDropped) {
 		winchPID.moveTo(195);
 		clawPivotPID.moveTo(50);
 	}
-
 }
 
-void tareClaw() {
+// Lets the pivot fall to rest and zeroes there
+void tareClawPivot() {
 	clawPivotPID.release();
 	pros::delay(400);
 	clawPivotPID.tare();
 	clawPivotPID.start();
 }
-
-const double TOGGLE_BACKOFF = 4;	// [in] tune: was a 200 ms timed back-up
 
 // Two hits on the Toggle in front of the robot
 void doubleToggle() {

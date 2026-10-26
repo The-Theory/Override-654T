@@ -36,7 +36,7 @@ extern pros::Distance middleDistance;
 extern pros::Motor clawPivot;
 extern pros::Motor claw;
 extern pros::MotorGroup winch;
-extern pros::Motor intakeMotor;
+extern pros::Motor intake;
 
 extern pros::Controller controller;
 extern lemlib::Chassis chassis;
@@ -54,11 +54,11 @@ std::string robotInfo();
 bool isWinchDown();
 void clawPivotUp();
 void clawPivotDown();
-void scoringMacro();
-void pickupMacroPart1();
-void pickupMacroPart2(int pickUpTime = 1000);
-void clawIntakeMacro();
-void tareClaw();
+void score();
+void raiseForPickup();
+void pickup(int time = 1000);
+void lowerToIntake();
+void tareClawPivot();
 void doubleToggle();
 
 // Autons & tuners, defined in autons.cpp

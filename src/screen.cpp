@@ -7,7 +7,7 @@ using tide::screen::inches;
 
 
 
-// INFO tab: what's needed to calibrate and diagnose, refreshed 10x a second
+// INFO tab: calibration and diagnostics, refreshed 10x a second
 std::string robotInfo() {
 	const lemlib::Pose pose = chassis.getPose();
 	char text[512];
