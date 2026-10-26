@@ -336,30 +336,27 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 
 ## Brain Screen
 
-`tide/screen.hpp` replaces the default **Brain** screen with a touchscreen UI:
+`tide/screen.hpp` replaces the default **Brain** screen with three pages, picked with the buttons along the top:
 
-- **Header**: team name, the selected auton and alliance (in alliance color), battery.
-- **AUTON** tab: RED / BLUE toggle and a grid of autons, with a one-line note under the selected one.
-- **TUNE** tab: list of tuners and the last tuner's result.
-- **INFO** tab: live text you supply, refreshed 10 times a second.
+- **Auton**: Red / Blue, then one button per auton.
+- **Tune**: one button per tuner, and the last result as text.
+- **Info**: live text you supply, refreshed 10 times a second.
+
+Buttons are flat and 56 px tall; the selected one is white (or red / blue for the alliance).
 
 ```cpp
 void x_auton(tide::Alliance side) { ... }
 std::string tune_winch() { return tide::autotune(...).summary; }
 
-const std::vector<tide::screen::Auton> autons = {
-	{"X", x_auton, "Audience wall, facing the Toggle"},
-};
-const std::vector<tide::screen::Tuner> tuners = {
-	{"Winch", tune_winch},
-};
+const std::vector<tide::screen::Auton> autons = {{"X", x_auton}};
+const std::vector<tide::screen::Tuner> tuners = {{"Winch", tune_winch}};
 
-void initialize() { tide::screen::init(autons, tuners, robotInfo, "654T TSUNAMI"); }
+void initialize() { tide::screen::init(autons, tuners, robotInfo); }
 void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected alliance
 // In opcontrol: .when(RIGHT).run(tide::screen::runTuner)
 ```
 
-Autons receive the selected `tide::Alliance`; `tide::screen::alliance()` reads it anywhere else. Tuners return the text to show when they finish.
+`tide::screen::alliance()` reads the selected alliance anywhere. `tide::screen::inches(sensor)` and `tide::screen::hottest(motors)` help format info text.
 
 >Tuners only run from the controller, never from a tap on the screen, so nobody's hand is on the robot when it starts moving.
 
