@@ -17,7 +17,8 @@
 #include "lemlib/api.hpp"	// IWYU pragma: keep
 #include "tide/mechanism.hpp"
 #include "tide/odom.hpp"
-#include "tide/selector.hpp"
+#include "tide/screen.hpp"
+#include <string>
 #include <vector>
 
 
@@ -54,5 +55,6 @@ void clawIntakeMacro();
 void tareClaw();
 void doubleToggle();
 
-// Autons, defined in autons.cpp
-extern const std::vector<tide::selector::Auton> autons;
+// Autons & tuners, defined in autons.cpp
+extern const std::vector<tide::screen::Auton> autons;
+extern const std::vector<tide::screen::Tuner> tuners;
