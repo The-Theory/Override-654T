@@ -44,6 +44,12 @@ extern tide::Odom odom;
 extern tide::Mechanism clawPivotPID;
 extern tide::Mechanism winchPID;
 
+// Startup, defined in robot.cpp
+void initRobot();
+
+// INFO tab text, defined in screen.cpp
+std::string robotInfo();
+
 // Macros, defined in macros.cpp
 bool isWinchDown();
 void clawPivotUp();

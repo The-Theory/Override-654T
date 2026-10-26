@@ -13,7 +13,11 @@
 #pragma once
 
 #include "liblvgl/lvgl.h"
+#include "pros/distance.hpp"
+#include "pros/error.h"
 #include "pros/misc.hpp"
+#include "pros/motor_group.hpp"
+#include <algorithm>
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
@@ -316,6 +320,21 @@ inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners,
 }
 
 inline Alliance alliance() { return detail::side; }
+
+// For info text: a distance reading in inches, or "--" with nothing in range
+inline std::string inches(pros::Distance& sensor) {
+	const std::int32_t mm = sensor.get();
+	if (mm == PROS_ERR || mm >= 9999) return "--";
+	char text[16];
+	std::snprintf(text, sizeof(text), "%.1f", mm / 25.4);
+	return text;
+}
+
+// For info text: the hottest motor in a group [°C]
+inline double hottest(pros::MotorGroup& motors) {
+	const std::vector<double> temps = motors.get_temperature_all();
+	return temps.empty() ? 0 : *std::max_element(temps.begin(), temps.end());
+}
 
 // Plays the selected auton for the selected alliance
 inline void runAuton() {
