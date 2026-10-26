@@ -318,12 +318,13 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 Each distance sensor is listed with where it sits relative to the tracking center and which way it points (`tide::dir` headings, relative to the robot's front).
 
 - `odom.wallReset(tide::Wall::RED)` corrects the one coordinate facing that wall, using whichever sensor points at it. It skips the reset (returns `false`) if no sensor is within 15° of square or the wall is over 40" away.
-- `odom.driveDist(-3)` drives straight along the current heading by odometry. Negative backs up.
+- `odom.moveBy(-tide::TILE)` moves relative to where the robot is: forward, then optional right and turn (`odom.moveBy(12, 12, 90)`), all from the current pose. Negative forward backs up; heading holds unless `turn` is given. A sideways offset curves there, since tank can't strafe. Chained relative moves stack their small errors, so follow with an absolute move or `wallReset` when it matters.
+- `odom.turnBy(-90)` turns relative to the current heading. Positive is clockwise, and it turns that way even past 180°.
 - `odom.pushUntilStall(6500)` drives into a wall or Toggle at a voltage and stops once the tracking wheel stops.
 
 >Only reset while stopped, with the beam on bare wall, not a Loader or Scoring Objects on the wall.
 
-`tide::dir` holds the LemLib headings (`NORTH = 0`, `EAST = 90`, ...), pulled in with `using namespace tide::dir;`.
+`tide::dir` holds the LemLib headings (`NORTH = 0`, `EAST = 90`, ...), pulled in with `using namespace tide::dir;`. `tide::TILE` is the tile pitch (23.4").
 
 
 

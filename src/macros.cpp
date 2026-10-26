@@ -75,7 +75,7 @@ void tareClawPivot() {
 // Two hits on the Toggle in front of the robot
 void doubleToggle() {
 	for (int i = 0; i < 2; i++) {
-		odom.driveDist(-TOGGLE_BACKOFF);
+		odom.moveBy(-TOGGLE_BACKOFF);
 		odom.pushUntilStall(6500);
 	}
 }
