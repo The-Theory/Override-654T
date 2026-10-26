@@ -342,7 +342,7 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 - **Tune**: one button per tuner, and the last result as text.
 - **Info**: live text you supply, refreshed 10 times a second.
 
-Buttons are flat and 56 px tall; the selected one is white (or red / blue for the alliance).
+Buttons are flat and 56 px tall; the selected one is light blue (or red / blue for the alliance).
 
 ```cpp
 void x_auton(tide::Alliance side) { ... }
