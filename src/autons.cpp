@@ -32,7 +32,7 @@ void xAuton(tide::Alliance) {
 	// To cuppin
 	chassis.turnToHeading(42, TURN_TIMEOUT, {}, false);
 	odom.pushUntilStall(-6500);
-	odom.driveDist(2);
+	odom.moveBy(2);
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
@@ -43,7 +43,7 @@ void xAuton(tide::Alliance) {
 	// Turn out
 	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
 	clawPivotUp();
-	odom.driveDist(-3);
+	odom.moveBy(-3);
 	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
 	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
 	odom.wallReset(Wall::AUDIENCE);
@@ -77,7 +77,7 @@ void xAuton(tide::Alliance) {
 	chassis.turnToHeading(-40, TURN_TIMEOUT, {}, false);
 	winchPID.moveTo(200);
 	odom.pushUntilStall(-6500);
-	odom.driveDist(2);
+	odom.moveBy(2);
 
 	// Pickup
 	winchPID.moveTo(0);

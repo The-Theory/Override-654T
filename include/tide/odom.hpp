@@ -39,6 +39,15 @@ constexpr double SOUTH_WEST = 225;
 constexpr double NORTH_WEST = 315;
 }
 
+constexpr double TILE = 23.4;	// [in] tile pitch: 140.4" inside the perimeter / 6
+
+// Robot-frame offset [in] (+right, +forward) along field axes, for a LemLib heading [deg]
+struct FieldOffset { double x, y; };
+inline FieldOffset toField(double right, double forward, double heading) {
+	const double h = lemlib::degToRad(heading);
+	return {right * std::cos(h) + forward * std::sin(h), -right * std::sin(h) + forward * std::cos(h)};
+}
+
 // Perimeter walls; field frame has +x toward blue station, +y away from audience
 enum class Wall { RED, BLUE, AUDIENCE, FAR };
 
@@ -61,7 +70,7 @@ struct OdomSettings {
 
 /**
  * Position helpers on top of a LemLib chassis that don't depend on battery or tiles:
- * distance-sensor wall resets, odom-relative straight drives, and pushes into hard stops.
+ * distance-sensor wall resets, moves relative to the robot, and pushes into hard stops.
  */
 class Odom {
 public:
@@ -91,26 +100,33 @@ public:
 			const double dist = mm / 25.4;
 			if (dist > settings.maxResetRange) continue;
 
-			const double heading = lemlib::degToRad(pose.theta);
-			const double beamRad = lemlib::degToRad(beam);
+			const FieldOffset sensorAt = toField(mount.right, mount.forward, pose.theta);
+			const FieldOffset beamHit  = toField(0, dist, beam);
 			const double wallPos = sign * settings.halfField;
-			if (xAxis) {
-				const double offset = mount.right * std::cos(heading) + mount.forward * std::sin(heading);
-				chassis.setPose(wallPos - offset - dist * std::sin(beamRad), pose.y, pose.theta);
-			} else {
-				const double offset = -mount.right * std::sin(heading) + mount.forward * std::cos(heading);
-				chassis.setPose(pose.x, wallPos - offset - dist * std::cos(beamRad), pose.theta);
-			}
+			if (xAxis) chassis.setPose(wallPos - sensorAt.x - beamHit.x, pose.y, pose.theta);
+			else       chassis.setPose(pose.x, wallPos - sensorAt.y - beamHit.y, pose.theta);
 			return true;
 		}
 		return false;
 	}
 
-	// Straight along current heading; negative backs up
-	void driveDist(double inches, int timeout = 1500) {
-		const lemlib::Pose pose = chassis.getPose(true);
-		chassis.moveToPoint(pose.x + inches * std::sin(pose.theta), pose.y + inches * std::cos(pose.theta),
-			timeout, {.forwards = inches > 0}, false);
+	/**
+	 * Moves by an offset from where the robot is now, ending at heading + turn [deg].
+	 * Negative forward backs up. Tank can't strafe, so a sideways offset curves there.
+	 */
+	// ponytail: relative to the measured pose, so error stacks over chained moves; an absolute move or wallReset clears it
+	void moveBy(double forward, double right = 0, double turn = 0, int timeout = 1500,
+				lemlib::MoveToPoseParams params = {}, bool async = false) {
+		const lemlib::Pose pose = chassis.getPose();
+		const FieldOffset offset = toField(right, forward, pose.theta);
+		params.forwards = forward >= 0;
+		chassis.moveToPose(pose.x + offset.x, pose.y + offset.y, pose.theta + turn, timeout, params, async);
+	}
+
+	// Positive is clockwise; turns that way even past 180°
+	void turnBy(double degrees, int timeout = 1000, lemlib::TurnToHeadingParams params = {}, bool async = false) {
+		params.direction = degrees >= 0 ? lemlib::AngularDirection::CW_CLOCKWISE : lemlib::AngularDirection::CCW_COUNTERCLOCKWISE;
+		chassis.turnToHeading(chassis.getPose().theta + degrees, timeout, params, async);
 	}
 
 	/**
