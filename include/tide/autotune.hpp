@@ -14,7 +14,6 @@
 
 #include "tide/mechanism.hpp"
 #include "pros/imu.hpp"
-#include "pros/llemu.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
@@ -24,6 +23,7 @@
 #include <cstdio>
 #include <functional>
 #include <numbers>
+#include <string>
 
 
 
@@ -59,6 +59,7 @@ struct TuneResult {
 	double kG = 0;					// holding voltage at the setpoint, Gains::kG [mV]
 	double ku = 0;					// ultimate gain [mV/unit]
 	double tu = 0;					// oscillation period [s]
+	std::string summary;			// what autotune() printed
 };
 
 // lemlib::PID outputs -127..127, not mV
@@ -202,7 +203,7 @@ inline Plant drivePlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::R
 
 /**
  * Relay-tunes a plant, blocking until done, then cuts its power and prints gains
- * to the brain screen (lines 2-6) and the terminal.
+ * to the terminal. The same text comes back in TuneResult::summary.
  * - Give it room: it swings back and forth around the setpoint for several seconds.
  */
 inline TuneResult autotune(const char* name, const Plant& plant, TuneSettings settings) {
@@ -215,17 +216,15 @@ inline TuneResult autotune(const char* name, const Plant& plant, TuneSettings se
 	}
 	plant.apply(0);
 
-	const TuneResult r = tuner.result();
+	TuneResult r = tuner.result();
 	char lines[5][64];
 	std::snprintf(lines[0], 64, "Tune %s: %s", name, r.ok ? "OK" : (tuner.failed() ? "FAILED (strayed)" : "FAILED (no oscillation, raise amplitude)"));
 	std::snprintf(lines[1], 64, "kP %.2f  kI %.4f  kD %.1f", r.kP, r.kI, r.kD);
 	std::snprintf(lines[2], 64, "kG %.0f mV", r.kG);
 	std::snprintf(lines[3], 64, "LemLib kP %.3f kI %.5f kD %.2f", r.kP * LEMLIB_SCALE, r.kI * LEMLIB_SCALE, r.kD * LEMLIB_SCALE);
 	std::snprintf(lines[4], 64, "Ku %.1f  Tu %.3f s", r.ku, r.tu);
-	for (int i = 0; i < 5; i++) {
-		pros::lcd::print(i + 2, "%s", lines[i]);
-		std::printf("%s\n", lines[i]);
-	}
+	for (const char* line : lines) r.summary += std::string(line) + "\n";
+	std::printf("%s", r.summary.c_str());
 	return r;
 }
 

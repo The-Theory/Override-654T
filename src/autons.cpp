@@ -8,7 +8,7 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] safety cap; shorter ones cut turns off early on a weak battery
 
-void x_auton() {
+void x_auton(tide::Alliance) {
 	chassis.setPose(0, -65, SOUTH);  // Placed flush on the audience wall, facing it
 	winchPID.moveTo(195);
 	doubleToggle();
@@ -156,13 +156,13 @@ void left_base_auton() {
 	chassis.moveToPoint(-48, -48, 1500, {}, false);
 }
 
-void left_auton() {
+void left_auton(tide::Alliance) {
 	left_base_auton();
 
 	// Toggle
 }
 
-void skills_auton() {
+void skills_auton(tide::Alliance) {
 	left_base_auton();
 	winchPID.moveTo(200);
 
@@ -192,40 +192,47 @@ void skills_auton() {
 ////////////////////////////////////////////////////////////////
 #pragma region Tuning //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-// Relay auto-tunes. Pick on the brain, run with LEFT in driver; results print on the brain and terminal.
+// Relay auto-tunes. Pick on the brain TUNE tab, run with RIGHT in driver; results show on that tab and the terminal.
 // Starting settings: raise amplitude if it reports no oscillation, lower it if the swing is violent.
 
-void tune_winch() {
-	tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
+std::string tune_winch() {
+	const tide::TuneResult r = tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
 	winchPID.moveTo(0);
+	return r.summary;
 }
 
-void tune_claw_pivot() {
-	tide::autotune("claw pivot", tide::mechanismPlant(clawPivotPID), {.setpoint = -70, .amplitude = 3000, .maxDeviation = 60, .hysteresis = 1});
+std::string tune_claw_pivot() {
+	const tide::TuneResult r = tide::autotune("claw pivot", tide::mechanismPlant(clawPivotPID), {.setpoint = -70, .amplitude = 3000, .maxDeviation = 60, .hysteresis = 1});
 	clawPivotUp();
+	return r.summary;
 }
 
 // Needs ~2 ft clear around the robot
-void tune_turn() {
-	tide::autotune("turn", tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
+std::string tune_turn() {
+	return tide::autotune("turn", tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
 }
 
 // Needs ~1 ft clear in front and behind
-void tune_drive() {
-	tide::autotune("drive", tide::drivePlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
-		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25});
+std::string tune_drive() {
+	return tide::autotune("drive", tide::drivePlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
+		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25}).summary;
 }
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
-// Brain buttons cycle through these; first is the default
-const std::vector<tide::selector::Auton> autons = {
-	{"Skills", skills_auton},
-	{"X",      x_auton},
-	{"Left",   left_auton},
-	{"TUNE winch",      tune_winch},
-	{"TUNE claw pivot", tune_claw_pivot},
-	{"TUNE turn",       tune_turn},
-	{"TUNE drive",      tune_drive},
+// Brain AUTON tab; first is the default. Routes are written for red: the field is
+// rotationally symmetric, so a blue robot placed in the mirrored spot runs the same code
+const std::vector<tide::screen::Auton> autons = {
+	{"X",      x_auton,      "Audience wall, centered on the Toggle, facing it"},
+	{"Left",   left_auton,   "Alliance wall, centered on the Toggle, facing it"},
+	{"Skills", skills_auton, "Skills only: crosses the Auton Line"},
+};
+
+// Brain TUNE tab
+const std::vector<tide::screen::Tuner> tuners = {
+	{"Winch",      tune_winch},
+	{"Claw pivot", tune_claw_pivot},
+	{"Turn",       tune_turn},
+	{"Drive",      tune_drive},
 };
