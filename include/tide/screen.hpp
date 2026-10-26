@@ -60,8 +60,8 @@ namespace detail {
 namespace color {
 inline const lv_color_t BG       = lv_color_hex(0x000000);
 inline const lv_color_t BUTTON   = lv_color_hex(0x2A2A2A);
-inline const lv_color_t PRESSED  = lv_color_hex(0x505050);
-inline const lv_color_t SELECTED = lv_color_hex(0xFFFFFF);
+inline const lv_color_t PRESSED  = lv_color_hex(0x34495A);	// Blue-gray flash while held
+inline const lv_color_t SELECTED = lv_color_hex(0x7FC8F8);	// Light blue
 inline const lv_color_t TEXT     = lv_color_hex(0xFFFFFF);
 inline const lv_color_t RED      = lv_color_hex(0xC62828);
 inline const lv_color_t BLUE     = lv_color_hex(0x1565C0);
@@ -111,7 +111,7 @@ inline lv_obj_t* text(lv_obj_t* parent, const char* str) {
 	return obj;
 }
 
-// Flat gray; filled with `on` while selected
+// Flat gray; filled with `on` while selected (dark text on light blue)
 inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on, lv_event_cb_t onClick, int index) {
 	lv_obj_t* btn = plain(parent);
 	lv_obj_set_size(btn, w, 56);
