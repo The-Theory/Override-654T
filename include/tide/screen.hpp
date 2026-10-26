@@ -60,6 +60,8 @@ struct Tuner {
 namespace theme {
 inline const lv_color_t BG     = lv_color_hex(0x0B1622);	// Deep water
 inline const lv_color_t PANEL  = lv_color_hex(0x15293D);
+inline const lv_color_t BUTTON = lv_color_hex(0x1C3550);	// Unselected fill, lighter than the background
+inline const lv_color_t LINE   = lv_color_hex(0x4A7BA6);	// Button borders; the Brain's LCD washes out anything subtler
 inline const lv_color_t ACCENT = lv_color_hex(0x1EC8E6);	// Surf
 inline const lv_color_t TEXT   = lv_color_hex(0xE6F1F8);
 inline const lv_color_t MUTED  = lv_color_hex(0x7C93A8);
@@ -85,7 +87,7 @@ inline int tunerIdx = 0;
 inline Alliance side = Alliance::RED;
 
 // Tuners run outside the LVGL task, so they hand text over through a buffer the refresh timer picks up
-inline char report[512] = "Pick a tuner, then press RIGHT on the controller.";
+inline char report[512] = "Pick a tuner, then press Right on the controller to run it.";
 inline std::atomic<int> reportVersion = 1;
 
 inline std::vector<lv_obj_t*> autonBtns, tunerBtns;
@@ -123,17 +125,27 @@ inline lv_obj_t* label(lv_obj_t* parent, const char* text, const lv_font_t* font
 	return obj;
 }
 
-// Selected state (LV_STATE_CHECKED) fills with `on` and darkens the text
+// Bordered so its edges are obvious; selected (LV_STATE_CHECKED) fills with `on` and darkens the text
+inline void styleButton(lv_obj_t* btn, lv_color_t on) {
+	lv_obj_set_style_bg_color(btn, theme::BUTTON, 0);
+	lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
+	lv_obj_set_style_bg_color(btn, theme::LINE, LV_STATE_PRESSED);
+	lv_obj_set_style_bg_color(btn, on, LV_STATE_CHECKED);
+	lv_obj_set_style_border_color(btn, theme::LINE, 0);
+	lv_obj_set_style_border_color(btn, on, LV_STATE_CHECKED);
+	lv_obj_set_style_border_width(btn, 2, 0);
+	lv_obj_set_style_radius(btn, 6, 0);
+	lv_obj_set_style_shadow_width(btn, 0, 0);
+	lv_obj_set_style_text_color(btn, theme::TEXT, 0);
+	lv_obj_set_style_text_color(btn, theme::BG, LV_STATE_CHECKED);
+}
+
 inline lv_obj_t* button(lv_obj_t* parent, const char* text, lv_color_t on, lv_event_cb_t onClick, int index) {
 	lv_obj_t* btn = lv_button_create(parent);
-	lv_obj_set_style_bg_color(btn, theme::BG, 0);
-	lv_obj_set_style_bg_color(btn, on, LV_STATE_CHECKED);
-	lv_obj_set_style_border_color(btn, on, 0);
-	lv_obj_set_style_border_width(btn, 2, 0);
-	lv_obj_set_style_radius(btn, 8, 0);
-	lv_obj_set_style_shadow_width(btn, 0, 0);
-	lv_obj_t* text_ = label(btn, text, &lv_font_montserrat_16, theme::TEXT);
-	lv_obj_set_style_text_color(text_, theme::BG, LV_STATE_CHECKED);
+	styleButton(btn, on);
+	lv_obj_t* text_ = lv_label_create(btn);	// Color comes from the button so it flips when selected
+	lv_label_set_text(text_, text);
+	lv_obj_set_style_text_font(text_, &lv_font_montserrat_18, 0);
 	lv_obj_center(text_);
 	lv_obj_add_event_cb(btn, onClick, LV_EVENT_CLICKED, (void*)(intptr_t)index);
 	return btn;
@@ -151,7 +163,7 @@ inline void refreshSelection() {
 	check(tunerBtns, tunerIdx);
 	check({redBtn, blueBtn}, side == Alliance::RED ? 0 : 1);
 	if (autons.empty()) return;
-	lv_label_set_text_fmt(selectedLabel, "%s  " LV_SYMBOL_RIGHT "  %s", autons[autonIdx].name, side == Alliance::RED ? "RED" : "BLUE");
+	lv_label_set_text_fmt(selectedLabel, "%s  " LV_SYMBOL_RIGHT "  %s", autons[autonIdx].name, side == Alliance::RED ? "Red" : "Blue");
 	lv_obj_set_style_text_color(selectedLabel, side == Alliance::RED ? theme::RED : theme::BLUE, 0);
 	lv_label_set_text(noteLabel, autons[autonIdx].note);
 }
@@ -165,7 +177,7 @@ inline lv_obj_t* grid(lv_obj_t* parent, int width) {
 	lv_obj_set_style_bg_opa(obj, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_border_width(obj, 0, 0);
 	lv_obj_set_style_pad_all(obj, 0, 0);
-	lv_obj_set_style_pad_gap(obj, 6, 0);
+	lv_obj_set_style_pad_gap(obj, 8, 0);
 	lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW_WRAP);
 	return obj;
 }
@@ -198,23 +210,23 @@ inline void buildHeader(lv_obj_t* scr, const char* title) {
 inline void buildAutonTab(lv_obj_t* tab) {
 	// Alliance column
 	lv_obj_t* sideCol = lv_obj_create(tab);
-	lv_obj_set_size(sideCol, 96, LV_PCT(100));
+	lv_obj_set_size(sideCol, 112, LV_PCT(100));
 	lv_obj_set_style_bg_opa(sideCol, LV_OPA_TRANSP, 0);
 	lv_obj_set_style_border_width(sideCol, 0, 0);
 	lv_obj_set_style_pad_all(sideCol, 0, 0);
-	lv_obj_set_style_pad_gap(sideCol, 6, 0);
+	lv_obj_set_style_pad_gap(sideCol, 8, 0);
 	lv_obj_set_flex_flow(sideCol, LV_FLEX_FLOW_COLUMN);
 	lv_obj_remove_flag(sideCol, LV_OBJ_FLAG_SCROLLABLE);
 	auto onSide = [](lv_event_t* e) {
 		side = clickedIndex(e) == 0 ? Alliance::RED : Alliance::BLUE;
 		refreshSelection();
 	};
-	redBtn  = button(sideCol, "RED",  theme::RED,  onSide, 0);
-	blueBtn = button(sideCol, "BLUE", theme::BLUE, onSide, 1);
-	for (lv_obj_t* btn : {redBtn, blueBtn}) lv_obj_set_size(btn, LV_PCT(100), 64);
+	redBtn  = button(sideCol, "Red",  theme::RED,  onSide, 0);
+	blueBtn = button(sideCol, "Blue", theme::BLUE, onSide, 1);
+	for (lv_obj_t* btn : {redBtn, blueBtn}) lv_obj_set_size(btn, LV_PCT(100), 72);
 
 	// Auton grid + note
-	lv_obj_t* right = grid(tab, 356);
+	lv_obj_t* right = grid(tab, 348);
 	lv_obj_align(right, LV_ALIGN_TOP_RIGHT, 0, 0);
 	auto onAuton = [](lv_event_t* e) {
 		autonIdx = clickedIndex(e);
@@ -222,7 +234,7 @@ inline void buildAutonTab(lv_obj_t* tab) {
 	};
 	for (int i = 0; i < (int)autons.size(); i++) {
 		autonBtns.push_back(button(right, autons[i].name, theme::ACCENT, onAuton, i));
-		lv_obj_set_size(autonBtns.back(), 172, 44);
+		lv_obj_set_size(autonBtns.back(), 170, 58);
 	}
 	noteLabel = label(right, "", &lv_font_montserrat_14, theme::MUTED);
 	lv_obj_set_width(noteLabel, LV_PCT(100));
@@ -230,26 +242,27 @@ inline void buildAutonTab(lv_obj_t* tab) {
 }
 
 inline void buildTuneTab(lv_obj_t* tab) {
-	lv_obj_t* left = grid(tab, 160);
+	lv_obj_t* row = grid(tab, 468);
+	lv_obj_set_height(row, 52);
 	auto onTuner = [](lv_event_t* e) {
 		tunerIdx = clickedIndex(e);
 		refreshSelection();
 	};
 	for (int i = 0; i < (int)tuners.size(); i++) {
-		tunerBtns.push_back(button(left, tuners[i].name, theme::ACCENT, onTuner, i));
-		lv_obj_set_size(tunerBtns.back(), LV_PCT(100), 36);
+		tunerBtns.push_back(button(row, tuners[i].name, theme::ACCENT, onTuner, i));
+		lv_obj_set_size(tunerBtns.back(), 111, 52);
 	}
 
 	lv_obj_t* box = panel(tab);
-	lv_obj_set_size(box, 288, LV_PCT(100));
-	lv_obj_align(box, LV_ALIGN_TOP_RIGHT, 0, 0);
+	lv_obj_set_size(box, 468, 94);
+	lv_obj_align(box, LV_ALIGN_BOTTOM_MID, 0, 0);
 	reportLabel = label(box, report, &lv_font_montserrat_14, theme::TEXT);
 	lv_obj_set_width(reportLabel, LV_PCT(100));
 	lv_label_set_long_mode(reportLabel, LV_LABEL_LONG_WRAP);
 }
 
 inline void buildInfoTab(lv_obj_t* tab) {
-	infoLabel = label(tab, "", &lv_font_montserrat_14, theme::TEXT);
+	infoLabel = label(tab, "", &lv_font_montserrat_16, theme::TEXT);
 	lv_obj_set_width(infoLabel, LV_PCT(100));
 }
 
@@ -293,26 +306,27 @@ inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners,
 	lv_obj_set_size(tabs, 480, 206);
 	lv_obj_align(tabs, LV_ALIGN_BOTTOM_MID, 0, 0);
 	lv_obj_set_style_bg_color(tabs, theme::BG, 0);
-	lv_tabview_set_tab_bar_size(tabs, 30);
+	lv_tabview_set_tab_bar_size(tabs, 44);
 	lv_obj_remove_flag(lv_tabview_get_content(tabs), LV_OBJ_FLAG_SCROLLABLE);	// No accidental swipes between tabs
 
 	lv_obj_t* tabBar = lv_tabview_get_tab_bar(tabs);
 	lv_obj_set_style_bg_color(tabBar, theme::BG, 0);
+	lv_obj_set_style_pad_all(tabBar, 4, 0);
+	lv_obj_set_style_pad_column(tabBar, 8, 0);
 	auto addTab = [&](const char* name, void (*build)(lv_obj_t*)) {
 		lv_obj_t* tab = lv_tabview_add_tab(tabs, name);
 		lv_obj_set_style_pad_all(tab, 6, 0);
 		build(tab);
 	};
-	addTab("AUTON", buildAutonTab);
-	addTab("TUNE",  buildTuneTab);
-	addTab("INFO",  buildInfoTab);
+	addTab("Autons", buildAutonTab);
+	addTab("Tune",   buildTuneTab);
+	addTab("Info",   buildInfoTab);
 	for (uint32_t i = 0; i < lv_obj_get_child_count(tabBar); i++) {
 		lv_obj_t* tabBtn = lv_obj_get_child(tabBar, i);
-		lv_obj_set_style_bg_opa(tabBtn, LV_OPA_TRANSP, 0);
-		lv_obj_set_style_text_color(tabBtn, theme::MUTED, 0);
-		lv_obj_set_style_text_color(tabBtn, theme::ACCENT, LV_STATE_CHECKED);
-		lv_obj_set_style_border_color(tabBtn, theme::ACCENT, LV_STATE_CHECKED);
-		lv_obj_set_style_text_font(tabBtn, &lv_font_montserrat_16, 0);
+		styleButton(tabBtn, theme::ACCENT);
+		lv_obj_set_style_border_side(tabBtn, LV_BORDER_SIDE_FULL, 0);
+		lv_obj_set_style_border_side(tabBtn, LV_BORDER_SIDE_FULL, LV_STATE_CHECKED);
+		lv_obj_set_style_text_font(tabBtn, &lv_font_montserrat_18, 0);
 	}
 
 	refreshSelection();
