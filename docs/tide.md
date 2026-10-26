@@ -281,3 +281,57 @@ ctl.when(L).bidir(winchPID);
 ```
 
 >Unlike `bidir` on a motor, letting go holds the mechanism where it is instead of stopping it.
+
+
+
+
+---
+
+
+
+
+
+## Odom Helpers
+
+`tide/odom.hpp` sits on top of a **LemLib** chassis and swaps battery- and tile-dependent moves for ones that end in the same place every time:
+
+```cpp
+tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
+	// sensor          right [in]  forward [in]  facing
+	{leftDistance,     -6,         2,            WEST},
+	{middleDistance,   0,          7,            NORTH},
+});
+```
+
+Each distance sensor is listed with where it sits relative to the tracking center and which way it points (`tide::dir` headings, relative to the robot's front).
+
+- `odom.wallReset(tide::Wall::RED)` corrects the one coordinate facing that wall, using whichever sensor points at it. It skips the reset (returns `false`) if no sensor is within 15° of square or the wall is over 40" away.
+- `odom.driveDist(-3)` drives straight along the current heading by odometry. Negative backs up.
+- `odom.pushUntilStall(6500)` drives into a wall or Toggle at a voltage and stops once the tracking wheel stops.
+
+>Only reset while stopped, with the beam on bare wall, not a Loader or Scoring Objects on the wall.
+
+`tide::dir` holds the LemLib headings (`NORTH = 0`, `EAST = 90`, ...), pulled in with `using namespace tide::dir;`.
+
+
+
+
+---
+
+
+
+
+
+## Auton Selector
+
+`tide/selector.hpp` picks the auton with the **Brain** screen's left and right buttons:
+
+```cpp
+const std::vector<tide::selector::Auton> autons = {
+	{"Skills", skills_auton},
+	{"Left",   left_auton},
+};
+
+void initialize() { tide::selector::init(autons); }
+void autonomous() { tide::selector::run(); }
+```

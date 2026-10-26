@@ -1,4 +1,15 @@
-# `src/main.cpp` - Walkthrough V2
+# Robot Code - Walkthrough V2
+
+| File | What's in it |
+|---|---|
+| `src/main.cpp` | Competition entry points (`initialize`, `autonomous`, `opcontrol`) and driver bindings |
+| `src/robot.cpp` | Ports, drivetrain, odometry, PID tuning, distance sensor mounts, mechanism PIDs |
+| `src/macros.cpp` | Claw/winch macros and `doubleToggle` |
+| `src/autons.cpp` | Auton routes and the selector list |
+| `include/robot.hpp` | Shared declarations for all of the above |
+| `include/tide/` | **Tide** library, see `docs/tide.md` |
+
+>The sections below were written when everything lived in `src/main.cpp`; the code now sits in the files above.
 
 This document explains what the main `src/main.cpp` achieves for our robot. Each section is in the same order as the file, top to bottom. Our code is built on two main software libraries: **PROS** (an operating system for the **Brain**) and **LemLib** (a driving and odometry library). Furthermore, we have a custom library, **Tide**, for macro control and controller bindings.
  
