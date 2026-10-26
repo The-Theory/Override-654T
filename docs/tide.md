@@ -334,22 +334,34 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 
 
 
-## Auton Selector
+## Brain Screen
 
-`tide/selector.hpp` picks the auton with the **Brain** screen's left and right buttons:
+`tide/screen.hpp` replaces the default **Brain** screen with a touchscreen UI:
+
+- **Header**: team name, the selected auton and alliance (in alliance color), battery.
+- **AUTON** tab: RED / BLUE toggle and a grid of autons, with a one-line note under the selected one.
+- **TUNE** tab: list of tuners and the last tuner's result.
+- **INFO** tab: live text you supply, refreshed 10 times a second.
 
 ```cpp
-const std::vector<tide::selector::Auton> autons = {
-	{"Skills", skills_auton},
-	{"Left",   left_auton},
+void x_auton(tide::Alliance side) { ... }
+std::string tune_winch() { return tide::autotune(...).summary; }
+
+const std::vector<tide::screen::Auton> autons = {
+	{"X", x_auton, "Audience wall, facing the Toggle"},
+};
+const std::vector<tide::screen::Tuner> tuners = {
+	{"Winch", tune_winch},
 };
 
-void initialize() { tide::selector::init(autons); }
-void autonomous() { tide::selector::run(); }
+void initialize() { tide::screen::init(autons, tuners, robotInfo, "654T TSUNAMI"); }
+void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected alliance
+// In opcontrol: .when(RIGHT).run(tide::screen::runTuner)
 ```
 
+Autons receive the selected `tide::Alliance`; `tide::screen::alliance()` reads it anywhere else. Tuners return the text to show when they finish.
 
-
+>Tuners only run from the controller, never from a tap on the screen, so nobody's hand is on the robot when it starts moving.
 
 ---
 
@@ -366,7 +378,7 @@ tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .ampli
 tide::autotune("turn",  tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
 ```
 
-Results print on the **Brain** screen and terminal: `kP / kI / kD / kG` for `tide::Gains`, plus the same scaled for **LemLib** `ControllerSettings`.
+Results print to the terminal and come back in `TuneResult::summary` (show it on the **Brain** with a screen tuner): `kP / kI / kD / kG` for `tide::Gains`, plus the same scaled for **LemLib** `ControllerSettings`.
 
 - `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it.
 - `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
