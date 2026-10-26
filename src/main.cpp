@@ -261,31 +261,11 @@ void clawIntakeMacro() {
 	
 }
 
-void driveStraight(int delay, int volts=6500) {
-	if (delay < 0) {
-		delay *= -1;
-		volts *= -1;
-	}
-
-	leftMotors.move_voltage(volts);
-	rightMotors.move_voltage(volts);
-	pros::delay(delay);
-	leftMotors.move_voltage(0);
-	rightMotors.move_voltage(0);
-}
-
 void tareClaw() {
 	clawPivotPID.release();
 	pros::delay(400);
 	clawPivotPID.tare();
 	clawPivotPID.start();
-}
-
-void doubleToggle() {
-	driveStraight(-200);
-	driveStraight(500);
-	driveStraight(-200);
-	driveStraight(500);
 }
 
 #pragma endregion
@@ -312,12 +292,113 @@ const int SOUTH_WEST = 180 + 45;
 const int CUPPIN_1 = 400;
 const int SCORE_CUPPIN_1 = 120;
 
+////////////////////////////////////////////////////////////////
+#pragma region Odom ////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Field frame: origin at center, +x toward blue station, +y away from audience
+const double WALL = 70.2;	// center to inside face of perimeter [in] (70.25 on metal perimeters)
+enum class Wall { RED, BLUE, AUDIENCE, FAR };
+
+// Measured from the tracking center. Unmeasured until filled in; resets are wrong before then
+struct DistanceMount {
+	pros::Distance& sensor;
+	double right;	// [in], + is robot right
+	double forward;	// [in], + is robot front
+	double facing;	// [deg] clockwise from robot front
+};
+const DistanceMount distanceMounts[] = {
+	{leftDistance,   0, 0, WEST},
+	{rightDistance,  0, 0, EAST},
+	{middleDistance, 0, 0, NORTH},
+};
+
+const double MAX_RESET_RANGE = 40;	// [in] sensor error is ~5% of range past 8", so far walls hurt more than help
+const double MAX_RESET_ANGLE = 15;	// [deg] off-perpendicular before beam can hit wall junk instead of the wall
+
+/**
+ * Corrects the odom axis normal to a wall from a distance reading. Robot must be
+ * stopped with the beam on bare perimeter (not a Loader or wall Scoring Objects).
+ * Uses whichever sensor faces the wall; leaves the pose alone if none can.
+ */
+bool wallReset(Wall wall) {
+	pros::delay(50);	// Sensor lags; get a reading taken after stopping
+
+	const bool xAxis = wall == Wall::RED || wall == Wall::BLUE;
+	const double sign = (wall == Wall::BLUE || wall == Wall::FAR) ? 1 : -1;
+	const double wallHeading = xAxis ? (sign > 0 ? EAST : WEST) : (sign > 0 ? NORTH : SOUTH);
+	const lemlib::Pose pose = chassis.getPose();
+
+	for (const DistanceMount& mount : distanceMounts) {
+		const double beam = pose.theta + mount.facing;
+		if (std::fabs(lemlib::angleError(beam, wallHeading, false)) > MAX_RESET_ANGLE) continue;
+
+		const std::int32_t mm = mount.sensor.get();
+		if (mm == PROS_ERR || mm >= 9999) continue;	// 9999 = nothing in range
+		const double dist = mm / 25.4;
+		if (dist > MAX_RESET_RANGE) continue;
+
+		const double heading = lemlib::degToRad(pose.theta);
+		const double beamRad = lemlib::degToRad(beam);
+		if (xAxis) {
+			const double offset = mount.right * std::cos(heading) + mount.forward * std::sin(heading);
+			chassis.setPose(sign * WALL - offset - dist * std::sin(beamRad), pose.y, pose.theta);
+		} else {
+			const double offset = -mount.right * std::sin(heading) + mount.forward * std::cos(heading);
+			chassis.setPose(pose.x, sign * WALL - offset - dist * std::cos(beamRad), pose.theta);
+		}
+		return true;
+	}
+	return false;
+}
+
+// Straight along current heading; negative backs up
+void driveDist(double inches, int timeout = 1500) {
+	const lemlib::Pose pose = chassis.getPose(true);
+	chassis.moveToPoint(pose.x + inches * std::sin(pose.theta), pose.y + inches * std::cos(pose.theta),
+		timeout, {.forwards = inches > 0}, false);
+}
+
+const int STALL_GRACE    = 200;		// [ms] to get moving before stall checks start
+const int STALL_VELOCITY = 11000;	// [centideg/s] tracking wheel, ~2 in/s
+
+/**
+ * Drives into a hard stop (wall, Toggle) and cuts power once the tracking wheel stops,
+ * so the end position doesn't depend on battery or tiles like a timed drive does.
+ */
+void pushUntilStall(int mv, int timeout = 1500) {
+	leftMotors.move_voltage(mv);
+	rightMotors.move_voltage(mv);
+	const std::uint32_t start = pros::millis();
+	pros::delay(STALL_GRACE);
+	while (pros::millis() - start < timeout && std::abs(verticalEncoder.get_velocity()) > STALL_VELOCITY)
+		pros::delay(10);
+	leftMotors.move_voltage(0);
+	rightMotors.move_voltage(0);
+}
+
+const double TOGGLE_BACKOFF = 4;	// [in] tune: was a 200 ms timed back-up
+
+// Two hits on the Toggle in front of the robot
+void doubleToggle() {
+	for (int i = 0; i < 2; i++) {
+		driveDist(-TOGGLE_BACKOFF);
+		pushUntilStall(6500);
+	}
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+const int TURN_TIMEOUT = 1000;	// [ms] safety cap; shorter ones cut turns off early on a weak battery
+
 void x_auton() {
+	chassis.setPose(0, -65, SOUTH);  // Placed flush on the audience wall, facing it
 	winchPID.moveTo(195);
 	doubleToggle();
+	wallReset(Wall::AUDIENCE);
 
 	// Go to goal
-	chassis.setPose(0, -65, SOUTH);  // Reset
 	clawPivotUp();
 	pros::delay(200);
 	winchPID.moveTo(60);
@@ -329,13 +410,13 @@ void x_auton() {
 	// Drive away from goal w/ claw up
 	claw.move_voltage(0);
 	winchPID.moveBy(50);
-	chassis.moveToPoint(-5, -47, 750);
+	chassis.moveToPoint(-5, -47, 1500);
 	pickupMacroPart1();
 
 	// To cuppin with claw ready
-	chassis.turnToHeading(42, 500, {}, false);
-	driveStraight(-1500);
-	driveStraight(100);
+	chassis.turnToHeading(42, TURN_TIMEOUT, {}, false);
+	pushUntilStall(-6500);
+	driveDist(2);
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
@@ -344,16 +425,15 @@ void x_auton() {
 	winchPID.moveBy(400);
 	
 	// Turn out
-	chassis.turnToHeading(45, 500, {}, false);
+	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
 	clawPivotUp();
-	driveStraight(-150);
-	chassis.turnToHeading(55, 500, {}, false);
-	chassis.turnToHeading(90, 500, {}, false);
-	chassis.setPose(-24, -60, 90);  // Reset
-	chassis.moveToPose(-12, -60, 90, 1000, {}, false);
-	chassis.setPose(-12, -60, 90);  // Reset
+	driveDist(-3);
+	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
+	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
+	wallReset(Wall::AUDIENCE);
+	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
 	clawPivotUp();
-	chassis.turnToHeading(SOUTH_EAST, 500, {}, false);
+	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
 	chassis.moveToPose(-26, -45, SOUTH_EAST, 1100, {.forwards = false}, false);
 
 	// Score
@@ -374,14 +454,14 @@ void x_auton() {
 	pros::delay(500);
 	tareClaw();
 	pros::delay(500);
-	chassis.moveToPoint(4, -47, 750, {}, false);
+	chassis.moveToPoint(4, -47, 1500, {}, false);
 
 	// To new cupping with claw
 	pickupMacroPart1();
-	chassis.turnToHeading(-40, 500, {}, false);
+	chassis.turnToHeading(-40, TURN_TIMEOUT, {}, false);
 	winchPID.moveTo(200);
-	driveStraight(-1500);
-	driveStraight(100);
+	pushUntilStall(-6500);
+	driveDist(2);
 
 	// Pickup
 	winchPID.moveTo(0);
@@ -391,12 +471,13 @@ void x_auton() {
 }
 
 void left_base_auton() {
+	chassis.setPose(-65, 0, WEST);  // Placed flush on the red wall, facing it
 	pros::delay(100);
 	clawIntakeMacro();
 	doubleToggle();
+	wallReset(Wall::RED);
 
 	// Go to goal
-	chassis.setPose(-65, 0, WEST);
 	clawPivotUp();
 	pros::delay(100);
 	winchPID.moveTo(60);
@@ -407,7 +488,7 @@ void left_base_auton() {
 
 	// Go to cuppin
 	winchPID.moveTo(400);
-	chassis.moveToPose(-48, -10, NORTH, 600, {.minSpeed=50});
+	chassis.moveToPose(-48, -10, NORTH, 1000, {.minSpeed=50});
 	chassis.moveToPose(-24 - 2.2, -24 + 2.2, NORTH_WEST, 1500, {.forwards = false, .minSpeed=40}, false);
 
 	// Pickup cuppin
@@ -420,7 +501,7 @@ void left_base_auton() {
 	claw.move_velocity(0);
 
 	// Score cuppin
-	chassis.turnToPoint(48, 24, 600, {}, false);
+	chassis.turnToPoint(48, 24, TURN_TIMEOUT, {}, false);
 	chassis.moveToPoint(-48 + 3, -24, 600, {.forwards = false, .minSpeed=50}, false);
 	winchPID.moveTo(15);
 	pros::delay(400);
@@ -431,8 +512,8 @@ void left_base_auton() {
 
 	// Go to new cuppin
 	pros::delay(400);
-	chassis.moveToPoint(-30, -24, 800, {}, false);
-	chassis.turnToPoint(-47, -48, 800, {.forwards = false}, false);
+	chassis.moveToPoint(-30, -24, 1500, {}, false);
+	chassis.turnToPoint(-47, -48, TURN_TIMEOUT, {.forwards = false}, false);
 	chassis.moveToPoint(-43 , -43, 2000, {.forwards = false}, false);
 
 	// Pickup new cuppin
@@ -445,7 +526,7 @@ void left_base_auton() {
 	claw.move_velocity(0);
 
 	// Score new cuppin
-	chassis.turnToPoint(-48, -24, 800, {.forwards = false}, false);
+	chassis.turnToPoint(-48, -24, TURN_TIMEOUT, {.forwards = false}, false);
 	chassis.moveToPoint(-48, -24 - 3, 800, {.forwards = false, .maxSpeed=100}, false);
 	winchPID.moveTo(15);
 	pros::delay(400);
@@ -456,7 +537,7 @@ void left_base_auton() {
 	pros::delay(500);
 
 	// Back out
-	chassis.moveToPoint(-48, -48, 800, {}, false);
+	chassis.moveToPoint(-48, -48, 1500, {}, false);
 }
 
 void left_auton() {
@@ -470,11 +551,10 @@ void skills_auton() {
 	winchPID.moveTo(200);
 
 	// Park
-	chassis.turnToPoint(-5, -5, 800, {.forwards=false}, false);
+	chassis.turnToPoint(-5, -5, TURN_TIMEOUT, {.forwards=false}, false);
 	chassis.moveToPoint(-5, -5, 1600, {.forwards=false}, false);
 
-	// Get new 
-	chassis.setPose(-5, -5, SOUTH_WEST);
+	// Get new
 	chassis.moveToPoint(-10, -10, 800, {}, false );
 	chassis.turnToPoint(-24, 32, 2000, {}, false);
 	clawIntakeMacro();
