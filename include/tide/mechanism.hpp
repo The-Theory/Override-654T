@@ -13,6 +13,7 @@
 #pragma once
 
 #include "pros/abstract_motor.hpp"
+#include "pros/error.h"
 #include "pros/misc.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
@@ -34,6 +35,7 @@ struct Gains {
 	double kD;          // Per update, not per second
 	double windup = 0;  // Integral only builds inside this error, 0 means always [deg]
 	double settle = 0;  // Inside this error the motor brakes instead of correcting [deg]
+	double kG     = 0;  // Constant voltage that holds the load against gravity, so the integral doesn't have to [mV]
 };
 
 /**
@@ -50,11 +52,28 @@ public:
 	Mechanism(pros::AbstractMotor& motor, pros::Rotation& sensor, Gains gains, double ratio = 1.0)
 		: motor(motor), sensor(sensor), gains(gains), ratio(ratio) {}
 
-	// Zeroes the sensor and starts holding there
+	// Zeroes the sensor where the mechanism is now and starts holding there
 	void start() {
 		tare();
-		moveTo(0);
-		pros::Task([this] { loop(); });
+		begin();
+	}
+
+	/**
+	 * Keeps the sensor's count from the last program run, so a program restart
+	 * mid-event doesn't re-zero wherever the mechanism happens to be.
+	 * - A power cycle still loses the count; use startAbsolute() if travel allows.
+	 */
+	void resume() { begin(); }
+
+	/**
+	 * Zero from the sensor's absolute angle, which survives restarts and power cycles.
+	 * Only for mechanisms whose sensor turns less than one revolution over full travel.
+	 * - zeroAngle: rotation.get_angle() / 100.0, read with the mechanism at its zero [deg]
+	 */
+	void startAbsolute(double zeroAngle) {
+		const double fromZero = std::remainder(sensor.get_angle() / 100.0 - zeroAngle, 360.0);
+		sensor.set_position(std::lround(fromZero * 100));
+		begin();
 	}
 
 	void tare() {
@@ -102,8 +121,17 @@ private:
 	bool   pidActive = false;
 	double integral  = 0;
 	double prevError = 0;
+	bool   running   = false;
 
 	static double clampMv(double mv) { return std::clamp(mv, -(double)MAX_MV, (double)MAX_MV); }
+
+	// Holds where it is; only the first call spawns the loop, or repeat starts (tareClaw) stack tasks fighting over one motor
+	void begin() {
+		moveTo(sensor.get_position() == PROS_ERR ? 0 : position());
+		if (running) return;
+		running = true;
+		pros::Task([this] { loop(); });
+	}
 
 	void resetPID() {
 		integral  = 0;
@@ -143,9 +171,9 @@ private:
 			} else if (std::fabs(error) < gains.settle) {
 				// Keep the built-up integral pushing, or a loaded mechanism sags to the band edge
 				prevError = error;
-				motor.move_voltage(clampMv(integral * gains.kI));
+				motor.move_voltage(clampMv(integral * gains.kI + gains.kG));
 			} else {
-				motor.move_voltage(clampMv(pid(error)));
+				motor.move_voltage(clampMv(pid(error) + gains.kG));
 			}
 			pros::delay(10);
 		}
