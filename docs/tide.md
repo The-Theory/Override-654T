@@ -282,6 +282,18 @@ ctl.when(L).bidir(winchPID);
 
 >Unlike `bidir` on a motor, letting go holds the mechanism where it is instead of stopping it.
 
+For a lift or arm, set `.kG` to the voltage that just holds the load still. It's added to every PID output, so the integral doesn't have to hold the weight. The auto-tuner below measures it for you.
+
+### Zeroing
+
+| Call | Zero is… | Survives a program restart | Survives a power cycle |
+|---|---|---|---|
+| `start()` | wherever the mechanism is when called | no | no |
+| `resume()` | whatever the sensor counted last run | yes | no |
+| `startAbsolute(zeroAngle)` | from the sensor's absolute angle | yes | yes |
+
+`startAbsolute()` only works if the sensor turns less than one revolution over the mechanism's full travel (an arm pivot, not a winch spool). To get `zeroAngle`, put the mechanism at its zero and read `rotation.get_angle() / 100.0`.
+
 
 
 
@@ -335,3 +347,30 @@ const std::vector<tide::selector::Auton> autons = {
 void initialize() { tide::selector::init(autons); }
 void autonomous() { tide::selector::run(); }
 ```
+
+
+
+
+---
+
+
+
+
+
+## Auto-Tuning
+
+`tide/autotune.hpp` runs a relay auto-tune: it drives full swing one way and the other around a setpoint, measures the oscillation the system settles into, and turns that into PID gains (Ziegler-Nichols). It also finds the voltage that holds the load (`kG`).
+
+```cpp
+tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200});
+tide::autotune("turn",  tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
+```
+
+Results print on the **Brain** screen and terminal: `kP / kI / kD / kG` for `tide::Gains`, plus the same scaled for **LemLib** `ControllerSettings`.
+
+- `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it.
+- `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
+- `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`.
+- Anything can be tuned by giving a `tide::Plant` with `measure()` (position) and `apply(mV)`.
+
+>The gains are a starting point. The chassis especially (friction, wheel slip) usually needs a little hand-tuning afterward.
