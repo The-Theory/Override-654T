@@ -1,4 +1,5 @@
 #include "robot.hpp"
+#include "tide/autotune.hpp"
 
 using namespace tide::dir;
 using tide::Wall;
@@ -188,9 +189,43 @@ void skills_auton() {
 }
 
 
+////////////////////////////////////////////////////////////////
+#pragma region Tuning //////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Relay auto-tunes. Pick on the brain, run with LEFT in driver; results print on the brain and terminal.
+// Starting settings: raise amplitude if it reports no oscillation, lower it if the swing is violent.
+
+void tune_winch() {
+	tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
+	winchPID.moveTo(0);
+}
+
+void tune_claw_pivot() {
+	tide::autotune("claw pivot", tide::mechanismPlant(clawPivotPID), {.setpoint = -70, .amplitude = 3000, .maxDeviation = 60, .hysteresis = 1});
+	clawPivotUp();
+}
+
+// Needs ~2 ft clear around the robot
+void tune_turn() {
+	tide::autotune("turn", tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
+}
+
+// Needs ~1 ft clear in front and behind
+void tune_drive() {
+	tide::autotune("drive", tide::drivePlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
+		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25});
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
 // Brain buttons cycle through these; first is the default
 const std::vector<tide::selector::Auton> autons = {
 	{"Skills", skills_auton},
 	{"X",      x_auton},
 	{"Left",   left_auton},
+	{"TUNE winch",      tune_winch},
+	{"TUNE claw pivot", tune_claw_pivot},
+	{"TUNE turn",       tune_turn},
+	{"TUNE drive",      tune_drive},
 };
