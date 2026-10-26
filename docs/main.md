@@ -2,10 +2,11 @@
 
 | File | What's in it |
 |---|---|
-| `src/main.cpp` | Competition entry points (`initialize`, `autonomous`, `opcontrol`) and driver bindings |
-| `src/robot.cpp` | Ports, drivetrain, odometry, PID tuning, distance sensor mounts, mechanism PIDs |
+| `src/main.cpp` | Competition entry points (`initialize`, `autonomous`, `opcontrol`) and driver bindings only |
+| `src/robot.cpp` | Ports, drivetrain, odometry, PID tuning, distance sensor mounts, mechanism PIDs, `initRobot()` startup |
 | `src/macros.cpp` | Claw/winch macros and `doubleToggle` |
-| `src/autons.cpp` | Auton routes and the selector list |
+| `src/autons.cpp` | Auton routes, tuners, and the lists shown on the **Brain** screen |
+| `src/screen.cpp` | Text for the **Brain** INFO tab |
 | `include/robot.hpp` | Shared declarations for all of the above |
 | `include/tide/` | **Tide** library, see `docs/tide.md` |
 
