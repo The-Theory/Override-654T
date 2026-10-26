@@ -10,27 +10,23 @@
 // under GPL-3.0 license									  //
 ////////////////////////////////////////////////////////////////
 
-// Entry points and driver binds. Hardware: robot.cpp, macros: macros.cpp,
-// autons & tuners: autons.cpp, INFO tab: screen.cpp
-
 #include "robot.hpp"
 #include "tide/control.hpp"
 
 using namespace tide::btn;
 
-
+////////////////////////////////////////////////////////////////
 
 void initialize() {
-	tide::screen::init(autons, tuners, robotInfo);	// First, so the screen is up during IMU calibration
+	tide::screen::init(autons, tuners, robotInfo);
 	initRobot();
 }
 
 void disabled() {}
-
 void competition_initialize() {}
-
-// Auton is picked on the brain screen
 void autonomous() { tide::screen::runAuton(); }
+
+////////////////////////////////////////////////////////////////
 
 void opcontrol() {
 	tide::Control ctl(controller);

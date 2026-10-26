@@ -5,9 +5,6 @@
 using tide::screen::hottest;
 using tide::screen::inches;
 
-
-
-// INFO tab: calibration and diagnostics, refreshed 10x a second
 std::string robotInfo() {
 	const lemlib::Pose pose = chassis.getPose();
 	char text[512];
