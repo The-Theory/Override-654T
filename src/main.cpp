@@ -163,6 +163,9 @@ void initialize() {
 	pros::lcd::register_btn0_cb(prevAuton);
 	pros::lcd::register_btn2_cb(nextAuton);
 	showAuton();
+	// Here, not opcontrol: field auton runs before opcontrol, so motors would still coast
+	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	chassis.calibrate();
 	clawPivotPID.start();
 	winchPID.tare();
@@ -523,9 +526,6 @@ void autonomous() { autons[selectedAuton].run(); }
  * not in competition mode.
  */
 void opcontrol() {
-	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
-	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
-
 	// Def controls
 	tide::Control tide(controller);
 	tide.when(R).bidir(intakeMotor)
