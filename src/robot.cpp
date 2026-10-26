@@ -119,9 +119,6 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 
 // Ratios scale encoder degrees
 tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
-	// .kP     = 400,	// [mV/deg]
-	// .kI     = 3,	// counteracts grav.
-	// .kD     = 800,
 	.kP     = 200,	// [mV/deg]
 	.kI     = 0,	// counteracts grav.
 	.kD     = 1400,
@@ -130,11 +127,15 @@ tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
 }, 1.0);
 
 tide::Mechanism winchPID(winch, winchEncoder, {
-	.kP     = 100,
-	.kI     = 14,
-	.kD     = 400,
-	.windup = 20,
-	.settle = 5,
+	// .kP     = 100,
+	// .kI     = 14,
+	// .kD     = 400,
+	// .windup = 20,
+	// .settle = 5,
+	.kP     = 69.04,
+	.kI     = 4.4186,
+	.kD     = 719.2,
+	.kG		= 2025,
 }, 1.0);
 
 #pragma endregion
