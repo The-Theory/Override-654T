@@ -125,7 +125,7 @@ private:
 
 	static double clampMv(double mv) { return std::clamp(mv, -(double)MAX_MV, (double)MAX_MV); }
 
-	// Holds where it is; only the first call spawns the loop, or repeat starts (tareClaw) stack tasks fighting over one motor
+	// Holds where it is; only the first call spawns the loop, or repeat starts (tareClawPivot) stack tasks fighting over one motor
 	void begin() {
 		moveTo(sensor.get_position() == PROS_ERR ? 0 : position());
 		if (running) return;
