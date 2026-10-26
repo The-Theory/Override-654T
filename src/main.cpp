@@ -24,7 +24,7 @@ using namespace tide::btn;
  * Initalization triggered upon execution.
  */
 void initialize() {
-	tide::screen::init(autons, tuners, robotInfo, "654T TSUNAMI");	// First, so the screen is up during IMU calibration
+	tide::screen::init(autons, tuners, robotInfo);	// First, so the screen is up during IMU calibration
 	initRobot();
 }
 

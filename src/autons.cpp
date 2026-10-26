@@ -192,7 +192,7 @@ void skills_auton(tide::Alliance) {
 ////////////////////////////////////////////////////////////////
 #pragma region Tuning //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-// Relay auto-tunes. Pick on the brain TUNE tab, run with RIGHT in driver; results show on that tab and the terminal.
+// Relay auto-tunes. Pick on the brain Tune page, run with RIGHT in driver; results show there and in the terminal.
 // Starting settings: raise amplitude if it reports no oscillation, lower it if the swing is violent.
 
 std::string tune_winch() {
@@ -221,15 +221,15 @@ std::string tune_drive() {
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
-// Brain AUTON tab; first is the default. Routes are written for red: the field is
+// Brain Auton page; first is the default. Routes are written for red: the field is
 // rotationally symmetric, so a blue robot placed in the mirrored spot runs the same code
 const std::vector<tide::screen::Auton> autons = {
-	{"X",      x_auton,      "Audience wall, centered on the Toggle, facing it"},
-	{"Left",   left_auton,   "Alliance wall, centered on the Toggle, facing it"},
-	{"Skills", skills_auton, "Skills only: crosses the Auton Line"},
+	{"X",      x_auton},		// Audience wall, centered on the Toggle, facing it
+	{"Left",   left_auton},		// Alliance wall, centered on the Toggle, facing it
+	{"Skills", skills_auton},	// Skills only: crosses the Auton Line
 };
 
-// Brain TUNE tab
+// Brain Tune page
 const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tune_winch},
 	{"Claw pivot", tune_claw_pivot},
