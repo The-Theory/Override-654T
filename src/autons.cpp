@@ -4,9 +4,11 @@
 using namespace tide::dir;
 using tide::Wall;
 
+const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
-
-const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on a weak battery
+////////////////////////////////////////////////////////////////
+#pragma region Routines ////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
 void xAuton(tide::Alliance) {
 	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall, facing it
@@ -186,12 +188,12 @@ void skillsAuton(tide::Alliance) {
 	claw.move_voltage(-12000);
 }
 
+#pragma endregion
+////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 #pragma region Tuning //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-// Relay auto-tunes: pick on the Tune page, run with RIGHT in driver; results show there and in the terminal.
-// Raise amplitude if it reports no oscillation, lower it if the swing is violent.
 
 std::string tuneWinch() {
 	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
@@ -219,12 +221,15 @@ std::string tuneDrive() {
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
-// Auton page; first is the default. Written for red: the field is rotationally
-// symmetric, so blue runs the same code from the mirrored spot
+////////////////////////////////////////////////////////////////
+#pragma region SelectorScreen //////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Auton page
 const std::vector<tide::screen::Auton> autons = {
-	{"X",      xAuton},		// Audience wall, centered on the Toggle, facing it
+	{"X",      xAuton},			// Audience wall, centered on the Toggle, facing it
 	{"Left",   leftAuton},		// Alliance wall, centered on the Toggle, facing it
-	{"Skills", skillsAuton},	// Skills only: crosses the Auton Line
+	{"Skills", skillsAuton},	// Skills only - crosses Auton Line
 };
 
 // Tune page
@@ -234,3 +239,6 @@ const std::vector<tide::screen::Tuner> tuners = {
 	{"Turn",       tuneTurn},
 	{"Drive",      tuneDrive},
 };
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
