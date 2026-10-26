@@ -13,6 +13,7 @@
 #pragma once
 
 #include "pros/abstract_motor.hpp"
+#include "pros/misc.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
 #include <algorithm>
@@ -131,7 +132,10 @@ private:
 			}
 			const double pos   = raw / 100.0 * ratio;
 			const double error = target - pos;
-			if (!pidActive) {
+			// Motors get no power while the field disables the robot, so any sag would wind up the integral and slam at auton start
+			if (pros::competition::is_disabled()) {
+				resetPID();
+			} else if (!pidActive) {
 				target = pos;  // So moveBy() after manual/release is relative to where it ended up
 				resetPID();
 				if (manualMv == 0) motor.brake();
