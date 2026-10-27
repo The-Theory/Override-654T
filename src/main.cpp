@@ -18,7 +18,7 @@ using namespace tide::btn;
 ////////////////////////////////////////////////////////////////
 
 void initialize() {
-	tide::screen::init(autons, tuners, robotInfo);
+	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
 }
 

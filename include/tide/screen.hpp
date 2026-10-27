@@ -20,6 +20,7 @@
 #include <atomic>
 #include <cstdint>
 #include <cstdio>
+#include <cstring>
 #include <functional>
 #include <string>
 #include <vector>
@@ -30,7 +31,7 @@ namespace tide {
 
 enum class Alliance { RED, BLUE };
 
-// Brain touchscreen: Auton (alliance + auton), Tune (tuners + result), Info (live readings)
+// Brain touchscreen: Auton (alliance, options, auton), Tune (tuners + result), Info (live readings)
 namespace screen {
 
 ////////////////////////////////////////////////////////////////
@@ -58,17 +59,27 @@ struct Tuner {
 namespace detail {
 
 namespace color {
-inline const lv_color_t BG       = lv_color_hex(0x000000);
-inline const lv_color_t BUTTON   = lv_color_hex(0x2A2A2A);
-inline const lv_color_t PRESSED  = lv_color_hex(0x34495A);	// Blue-gray flash while held
+inline const lv_color_t BG       = lv_color_hex(0x0A1A2F);
+inline const lv_color_t BUTTON   = lv_color_hex(0x1C3350);
+inline const lv_color_t PRESSED  = lv_color_hex(0x2A4A70);	// Lighter flash while held
+inline const lv_color_t PANEL    = lv_color_hex(0x12263F);
+inline const lv_color_t DIVIDER  = lv_color_hex(0x4A6A90);
 inline const lv_color_t SELECTED = lv_color_hex(0x7FC8F8);	// Light blue
 inline const lv_color_t TEXT     = lv_color_hex(0xFFFFFF);
+inline const lv_color_t DIM      = lv_color_hex(0x8FA6C2);	// Unselected tabs, info labels
 inline const lv_color_t RED      = lv_color_hex(0xC62828);
-inline const lv_color_t BLUE     = lv_color_hex(0x1565C0);
+inline const lv_color_t BLUE     = lv_color_hex(0x1E6FD9);
 }
+
+// 468 x 180 page area, split into 56 px rows with 6 px gaps
+constexpr int GAP    = 6;
+constexpr int ROW    = 56;
+constexpr int PAGE_W = 480 - 2 * GAP;
+constexpr int PAGE_H = 3 * ROW + 2 * GAP;
 
 inline std::vector<Auton> autons;
 inline std::vector<Tuner> tuners;
+inline std::vector<const char*> options;
 inline std::function<std::string()> info;
 
 // Written by touch callbacks (LVGL task), read by auton/driver tasks; plain ints are fine
@@ -76,13 +87,14 @@ inline int autonIdx = 0;
 inline int tunerIdx = 0;
 inline int pageIdx  = 0;
 inline Alliance side = Alliance::RED;
+inline std::vector<char> optionOn;
 
 // Tuners run outside the LVGL task, so they hand text over through a buffer the refresh timer picks up
 inline char report[512] = "";
 inline std::atomic<int> reportVersion = 0;
 
-inline std::vector<lv_obj_t*> autonBtns, tunerBtns, sideBtns, pageBtns, pages;
-inline lv_obj_t *reportLabel, *infoLabel;
+inline std::vector<lv_obj_t*> autonBtns, tunerBtns, pageBtns, pages;
+inline lv_obj_t *sideBtn, *reportLabel, *infoKeys, *infoValues;
 
 }
 
@@ -103,18 +115,19 @@ inline lv_obj_t* plain(lv_obj_t* parent) {
 	return obj;
 }
 
-inline lv_obj_t* text(lv_obj_t* parent, const char* str) {
+inline lv_obj_t* text(lv_obj_t* parent, const char* str, lv_color_t col = color::TEXT) {
 	lv_obj_t* obj = lv_label_create(parent);
 	lv_label_set_text(obj, str);
 	lv_obj_set_style_text_font(obj, &lv_font_montserrat_16, 0);
-	lv_obj_set_style_text_color(obj, color::TEXT, 0);
+	lv_obj_set_style_text_color(obj, col, 0);
+	lv_obj_set_style_text_line_space(obj, 6, 0);
 	return obj;
 }
 
-// Flat gray; filled with `on` while selected (dark text on light blue)
+// Flat navy; filled with `on` while selected (dark text on light blue)
 inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on, lv_event_cb_t onClick, int index) {
 	lv_obj_t* btn = plain(parent);
-	lv_obj_set_size(btn, w, 56);
+	lv_obj_set_size(btn, w, ROW);
 	lv_obj_add_flag(btn, LV_OBJ_FLAG_CLICKABLE);
 	lv_obj_set_style_bg_opa(btn, LV_OPA_COVER, 0);
 	lv_obj_set_style_bg_color(btn, color::BUTTON, 0);
@@ -133,19 +146,36 @@ inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on
 inline int clickedIndex(lv_event_t* e) { return (int)(intptr_t)lv_event_get_user_data(e); }
 
 inline void check(const std::vector<lv_obj_t*>& btns, int selected) {
-	for (int i = 0; i < (int)btns.size(); i++) {
-		if (i == selected) lv_obj_add_state(btns[i], LV_STATE_CHECKED);
-		else               lv_obj_remove_state(btns[i], LV_STATE_CHECKED);
-	}
+	for (int i = 0; i < (int)btns.size(); i++) lv_obj_set_state(btns[i], LV_STATE_CHECKED, i == selected);
 }
 
-// Area under the page buttons; contents wrap left to right with 4 px gaps
+// Stacks children top to bottom with the standard gap
+inline lv_obj_t* column(lv_obj_t* parent, int x, int w) {
+	lv_obj_t* obj = plain(parent);
+	lv_obj_set_pos(obj, x, 0);
+	lv_obj_set_size(obj, w, PAGE_H);
+	lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_COLUMN);
+	lv_obj_set_style_pad_gap(obj, GAP, 0);
+	return obj;
+}
+
+// Slightly lighter block behind text output
+inline lv_obj_t* panel(lv_obj_t* parent, int x, int w) {
+	lv_obj_t* obj = plain(parent);
+	lv_obj_set_pos(obj, x, 0);
+	lv_obj_set_size(obj, w, PAGE_H);
+	lv_obj_set_style_bg_opa(obj, LV_OPA_COVER, 0);
+	lv_obj_set_style_bg_color(obj, color::PANEL, 0);
+	lv_obj_set_style_pad_hor(obj, 12, 0);
+	lv_obj_set_style_pad_ver(obj, 10, 0);
+	return obj;
+}
+
+// Area under the tabs
 inline lv_obj_t* page(lv_obj_t* scr) {
 	lv_obj_t* obj = plain(scr);
-	lv_obj_set_pos(obj, 0, 60);
-	lv_obj_set_size(obj, 480, 180);
-	lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_style_pad_gap(obj, 4, 0);
+	lv_obj_set_pos(obj, GAP, 40 + 2 * GAP);
+	lv_obj_set_size(obj, PAGE_W, PAGE_H);
 	pages.push_back(obj);
 	return obj;
 }
@@ -159,6 +189,13 @@ inline void showPage(int idx) {
 	check(pageBtns, idx);
 }
 
+// The alliance button is always filled, so its color and name are the selection
+inline void showSide() {
+	const bool red = side == Alliance::RED;
+	lv_obj_set_style_bg_color(sideBtn, red ? color::RED : color::BLUE, LV_STATE_CHECKED);
+	lv_label_set_text(lv_obj_get_child(sideBtn, 0), red ? "Red" : "Blue");
+}
+
 }
 
 #pragma endregion
@@ -170,15 +207,41 @@ inline void showPage(int idx) {
 
 namespace detail {
 
+// Alliance + options on the left, divider, autons in a grid that goes 3 wide past 6
 inline void buildAutonPage(lv_obj_t* scr) {
 	lv_obj_t* p = page(scr);
-	auto onSide = [](lv_event_t* e) {
-		side = clickedIndex(e) == 0 ? Alliance::RED : Alliance::BLUE;
-		check(sideBtns, clickedIndex(e));
-	};
-	sideBtns = {button(p, "Red", 238, color::RED, onSide, 0), button(p, "Blue", 238, color::BLUE, onSide, 1)};
+	constexpr int LEFT_W = 96;
+
+	lv_obj_t* left = column(p, 0, LEFT_W);
+	sideBtn = button(left, "", LEFT_W, color::RED, [](lv_event_t*) {
+		side = side == Alliance::RED ? Alliance::BLUE : Alliance::RED;
+		showSide();
+	}, 0);
+	lv_obj_add_state(sideBtn, LV_STATE_CHECKED);
+	for (int i = 0; i < (int)options.size(); i++) {
+		button(left, options[i], LEFT_W, color::SELECTED, [](lv_event_t* e) {
+			const int idx = clickedIndex(e);
+			optionOn[idx] = !optionOn[idx];
+			lv_obj_set_state(lv_event_get_target_obj(e), LV_STATE_CHECKED, optionOn[idx]);
+		}, i);
+	}
+
+	lv_obj_t* divider = plain(p);
+	lv_obj_set_pos(divider, LEFT_W + GAP, 0);
+	lv_obj_set_size(divider, 1, PAGE_H);
+	lv_obj_set_style_bg_opa(divider, LV_OPA_COVER, 0);
+	lv_obj_set_style_bg_color(divider, color::DIVIDER, 0);
+
+	const int gridX = LEFT_W + 2 * GAP + 2;
+	const int gridW = PAGE_W - gridX;
+	const int cols  = autons.size() > 6 ? 3 : 2;
+	lv_obj_t* grid = plain(p);
+	lv_obj_set_pos(grid, gridX, 0);
+	lv_obj_set_size(grid, gridW, PAGE_H);
+	lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
+	lv_obj_set_style_pad_gap(grid, GAP, 0);
 	for (int i = 0; i < (int)autons.size(); i++) {
-		autonBtns.push_back(button(p, autons[i].name, 157, color::SELECTED, [](lv_event_t* e) {
+		autonBtns.push_back(button(grid, autons[i].name, (gridW - GAP * (cols - 1)) / cols, color::SELECTED, [](lv_event_t* e) {
 			autonIdx = clickedIndex(e);
 			check(autonBtns, autonIdx);
 		}, i));
@@ -187,18 +250,40 @@ inline void buildAutonPage(lv_obj_t* scr) {
 
 inline void buildTunePage(lv_obj_t* scr) {
 	lv_obj_t* p = page(scr);
+	constexpr int LEFT_W = 152;
+	lv_obj_t* left = column(p, 0, LEFT_W);
 	for (int i = 0; i < (int)tuners.size(); i++) {
-		tunerBtns.push_back(button(p, tuners[i].name, 117, color::SELECTED, [](lv_event_t* e) {
+		tunerBtns.push_back(button(left, tuners[i].name, LEFT_W, color::SELECTED, [](lv_event_t* e) {
 			tunerIdx = clickedIndex(e);
 			check(tunerBtns, tunerIdx);
 		}, i));
 	}
-	reportLabel = text(p, "");
-	lv_obj_set_width(reportLabel, 480);
+	reportLabel = text(panel(p, LEFT_W + GAP, PAGE_W - LEFT_W - GAP), "");
+	lv_obj_set_width(reportLabel, LV_PCT(100));
 }
 
 inline void buildInfoPage(lv_obj_t* scr) {
-	infoLabel = text(page(scr), "");
+	lv_obj_t* box = panel(page(scr), 0, PAGE_W);
+	infoKeys   = text(box, "", color::DIM);
+	infoValues = text(box, "");
+	lv_obj_set_x(infoValues, 86);
+}
+
+// Info lines are "Key\tvalues"; keys go in a dim column so the values line up
+inline void showInfo(const std::string& str) {
+	std::string keys, values;
+	size_t start = 0;
+	while (start < str.size()) {
+		size_t end = str.find('\n', start);
+		if (end == std::string::npos) end = str.size();
+		const std::string line = str.substr(start, end - start);
+		const size_t tab = line.find('\t');
+		keys   += (tab == std::string::npos ? "" : line.substr(0, tab)) + "\n";
+		values += (tab == std::string::npos ? line : line.substr(tab + 1)) + "\n";
+		start = end + 1;
+	}
+	lv_label_set_text(infoKeys, keys.c_str());
+	lv_label_set_text(infoValues, values.c_str());
 }
 
 // Runs in the LVGL task, so it's the only place outside touch callbacks that touches widgets
@@ -208,7 +293,7 @@ inline void refresh(lv_timer_t*) {
 		seenReport = reportVersion;
 		lv_label_set_text(reportLabel, report);
 	}
-	if (info && pageIdx == 2) lv_label_set_text(infoLabel, info().c_str());
+	if (info && pageIdx == 2) showInfo(info());
 }
 
 }
@@ -222,13 +307,17 @@ inline void refresh(lv_timer_t*) {
 
 /**
  * Builds the screen. Call once in initialize().
- * - info: text for the Info page, refreshed 10x a second while it's open
+ * - info: text for the Info page as "Key\tvalues" lines, refreshed 10x a second while it's open
+ * - options: on/off toggles under the alliance button (room for 2), read with option()
  */
-inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners, std::function<std::string()> info = {}) {
+inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners, std::function<std::string()> info = {},
+				 std::vector<const char*> options = {}) {
 	using namespace detail;
-	detail::autons = autons;
-	detail::tuners = tuners;
-	detail::info   = info;
+	detail::autons  = autons;
+	detail::tuners  = tuners;
+	detail::info    = info;
+	detail::options = options;
+	optionOn.assign(options.size(), false);
 
 	lv_obj_t* scr = lv_screen_active();
 	lv_obj_remove_style_all(scr);
@@ -236,20 +325,29 @@ inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners, std::func
 	lv_obj_set_style_bg_opa(scr, LV_OPA_COVER, 0);
 	lv_obj_remove_flag(scr, LV_OBJ_FLAG_SCROLLABLE);
 
-	// Page buttons along the top
+	// Tabs along the top: text only until selected
 	lv_obj_t* nav = plain(scr);
-	lv_obj_set_size(nav, 480, 56);
+	lv_obj_set_pos(nav, GAP, GAP);
+	lv_obj_set_size(nav, PAGE_W, 40);
 	lv_obj_set_flex_flow(nav, LV_FLEX_FLOW_ROW);
-	lv_obj_set_style_pad_gap(nav, 4, 0);
+	lv_obj_set_style_pad_gap(nav, GAP, 0);
 	const char* names[] = {"Auton", "Tune", "Info"};
-	for (int i = 0; i < 3; i++)
-		pageBtns.push_back(button(nav, names[i], 157, color::SELECTED, [](lv_event_t* e) { showPage(clickedIndex(e)); }, i));
+	for (int i = 0; i < 3; i++) {
+		lv_obj_t* tab = button(nav, names[i], (PAGE_W - 2 * GAP) / 3, color::SELECTED, [](lv_event_t* e) { showPage(clickedIndex(e)); }, i);
+		lv_obj_set_height(tab, 40);
+		lv_obj_set_style_bg_opa(tab, LV_OPA_TRANSP, 0);
+		lv_obj_set_style_bg_opa(tab, LV_OPA_COVER, LV_STATE_PRESSED);
+		lv_obj_set_style_bg_opa(tab, LV_OPA_COVER, LV_STATE_CHECKED);
+		lv_obj_set_style_text_color(tab, color::DIM, 0);
+		lv_obj_set_style_text_font(lv_obj_get_child(tab, 0), &lv_font_montserrat_18, 0);
+		pageBtns.push_back(tab);
+	}
 
 	buildAutonPage(scr);
 	buildTunePage(scr);
 	buildInfoPage(scr);
 
-	check(sideBtns, side == Alliance::RED ? 0 : 1);
+	showSide();
 	check(autonBtns, autonIdx);
 	check(tunerBtns, tunerIdx);
 	showPage(0);
@@ -257,6 +355,13 @@ inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners, std::func
 }
 
 inline Alliance alliance() { return detail::side; }
+
+// Whether the named option toggle is on; false for names not passed to init()
+inline bool option(const char* name) {
+	for (int i = 0; i < (int)detail::options.size(); i++)
+		if (std::strcmp(detail::options[i], name) == 0) return detail::optionOn[i];
+	return false;
+}
 
 // Plays the selected auton for the selected alliance
 inline void runAuton() {

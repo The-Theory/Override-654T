@@ -345,11 +345,11 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 
 `tide/screen.hpp` replaces the default **Brain** screen with three pages, picked with the buttons along the top:
 
-- **Auton**: Red / Blue, then one button per auton.
-- **Tune**: one button per tuner, and the last result as text.
-- **Info**: live text you supply, refreshed 10 times a second.
+- **Auton**: on the left, the alliance (tap to flip Red / Blue) and up to 2 on/off options; past a divider, one button per auton (2 columns, 3 past 6 autons, 9 max).
+- **Tune**: one button per tuner on the left, the last result in a panel on the right.
+- **Info**: live `"Key\tvalues"` lines you supply, refreshed 10 times a second; keys sit in a dim column so values line up.
 
-Buttons are flat and 56 px tall; the selected one is light blue (or red / blue for the alliance).
+Flat navy theme, 6 px gaps, 56 px rows; the selected button is light blue.
 
 ```cpp
 void x_auton(tide::Alliance side) { ... }
@@ -358,12 +358,12 @@ std::string tune_winch() { return tide::autotune(...).summary; }
 const std::vector<tide::screen::Auton> autons = {{"X", x_auton}};
 const std::vector<tide::screen::Tuner> tuners = {{"Winch", tune_winch}};
 
-void initialize() { tide::screen::init(autons, tuners, robotInfo); }
+void initialize() { tide::screen::init(autons, tuners, robotInfo, {"Nanny"}); }
 void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected alliance
 // In opcontrol: .when(RIGHT).run(tide::screen::runTuner)
 ```
 
-`tide::screen::alliance()` reads the selected alliance anywhere. `tide::screen::inches(sensor)` and `tide::screen::hottest(motors)` help format info text.
+`tide::screen::alliance()` reads the selected alliance anywhere, `tide::screen::option("Nanny")` an option. `tide::screen::inches(sensor)` and `tide::screen::hottest(motors)` help format info text.
 
 >Tuners only run from the controller, never from a tap on the screen, so nobody's hand is on the robot when it starts moving.
 
