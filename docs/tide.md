@@ -379,10 +379,10 @@ void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected 
 
 ```cpp
 tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200});
-tide::autotune("turn",  tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
+tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
 ```
 
-Results print to the terminal and come back in `TuneResult::summary` (show it on the **Brain** with a screen tuner): only the gains to paste: `kP / kI / kD / kG` for a `tide::Gains` plant, or `kP / kI / kD` already scaled for **LemLib** `ControllerSettings` on the turn and drive plants.
+Results print to the terminal and come back in `TuneResult::summary` (show it on the **Brain** with a screen tuner): only the gains to paste: `kP / kI / kD / kG` for a `tide::Gains` plant, or `kP / kI / kD` already scaled for **LemLib** `ControllerSettings` on the angular and lateral plants.
 
 - `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it.
 - `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
