@@ -326,7 +326,7 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 - `odom.moveBy(-tide::TILE)` moves relative to where the robot is: forward, then optional right and turn (`odom.moveBy(12, 12, 90)`), all from the current pose. Negative forward backs up; heading holds unless `turn` is given. A sideways offset curves there, since tank can't strafe. Chained relative moves stack their small errors, so follow with an absolute move or `wallReset` when it matters.
 - `odom.reachPoint(goal)` drives straight at a spot and stops with the **tool** on it instead of the tracking center. It backs in if the tool is on the back. `odom.reachPose(goal, EAST)` does the same but arrives facing a heading. Set where the tool sits with `.toolRight` / `.toolForward` in the settings: `tide::Odom odom(chassis, ..., {mounts}, {.toolForward = -6});`
 - `odom.turnBy(-90)` turns relative to the current heading. Positive is clockwise, and it turns that way even past 180°.
-- `odom.pushUntilStall(6500)` drives into a wall or Toggle at a voltage and stops once the tracking wheel stops.
+- `odom.pushUntilStall(6500)` drives into a wall or Toggle at a voltage and stops once the tracking wheel stops. `odom.pushUntilStall(6500, 1500, 250)` then keeps pushing at full voltage for 250 ms. On a soft wall that bends and stops the robot early, that steady push still turns the Toggle over.
 
 >Only reset while stopped, with the beam on bare wall, not a Loader or Scoring Objects on the wall.
 
