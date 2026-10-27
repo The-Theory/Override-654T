@@ -162,14 +162,21 @@ public:
 	/**
 	 * Drives into a hard stop (wall, Toggle) and cuts power once the tracking wheel stops,
 	 * so the end position doesn't depend on battery or tiles like a timed drive does.
+	 * - holdMs: full-voltage push after the stop, since a soft wall bends and stops the robot early
 	 */
-	void pushUntilStall(int mv, int timeout = 1500) {
+	void pushUntilStall(int mv, int timeout = 1500, int holdMs = 0) {
 		left.move_voltage(mv);
 		right.move_voltage(mv);
 		const std::uint32_t start = pros::millis();
 		pros::delay(settings.stallGrace);
 		while (pros::millis() - start < timeout && std::abs(tracking.get_velocity()) > settings.stallVelocity)
 			pros::delay(10);
+		if (holdMs > 0) {
+			const int full = mv < 0 ? -12000 : 12000;
+			left.move_voltage(full);
+			right.move_voltage(full);
+			pros::delay(holdMs);
+		}
 		left.move_voltage(0);
 		right.move_voltage(0);
 	}

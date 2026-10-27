@@ -5,6 +5,7 @@
 ////////////////////////////////////////////////////////////////
 
 const double TOGGLE_BACKOFF = 4;	// [in]
+const int    TOGGLE_HOLD    = 250;	// [ms]
 
 // From scoring height; ends with the winch down
 void score() {
@@ -20,7 +21,7 @@ void score() {
 void doubleToggle() {
 	for (int i = 0; i < 2; i++) {
 		odom.moveBy(-TOGGLE_BACKOFF);
-		odom.pushUntilStall(6500);
+		odom.pushUntilStall(6500, 1500, TOGGLE_HOLD);
 	}
 }
 
