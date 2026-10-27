@@ -29,16 +29,16 @@ void autonomous() { tide::screen::runAuton(); }
 ////////////////////////////////////////////////////////////////
 
 void opcontrol() {
-	tide::Control ctl(controller);
-	ctl.when(L).bidir(winchPID)
+	tide::Control ctlr(controller);
+	ctlr.when(L).bidir(winchPID)
 		.when(R).bidir(claw)
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner);
 
 	while (true) {
-		ctl.update();
-		chassis.curvature(ctl.axis(LY), ctl.axis(RX));
+		ctlr.update();
+		chassis.curvature(ctlr.axis(LY), ctlr.axis(RX));
 		pros::delay(25);
 	}
 }
