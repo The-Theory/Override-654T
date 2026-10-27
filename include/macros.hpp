@@ -1,14 +1,21 @@
+#pragma once
+
 #include "robot.hpp"
 
 ////////////////////////////////////////////////////////////////
 #pragma region Macros //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-const double TOGGLE_BACKOFF = 4;	// [in]
-const int    TOGGLE_HOLD    = 250;	// [ms]
+constexpr double TOGGLE_BACKOFF = 4;	// [in]
+constexpr int    TOGGLE_HOLD    = 250;	// [ms]
+
+// Claw control
+inline void intakeClaw() 	{ claw.move_voltage(12000); }
+inline void stopClaw() 	{ claw.move_voltage(0); 	}
+inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
 
 // From scoring height; ends with the winch down
-void score() {
+inline void score() {
 	outtakeClaw();
 	pros::delay(300);
 	winchPID.moveBy(200);		// Lift off the stack
@@ -18,17 +25,12 @@ void score() {
 }
 
 // Two hits on the Toggle in front of the robot
-void doubleToggle() {
+inline void doubleToggle() {
 	for (int i = 0; i < 2; i++) {
 		odom.moveBy(-TOGGLE_BACKOFF);
 		odom.pushUntilStall(6500, 1500, TOGGLE_HOLD);
 	}
 }
-
-// Claw control
-void intakeClaw() 	{ claw.move_voltage(12000); }
-void stopClaw() 	{ claw.move_voltage(0); 	}
-void outtakeClaw() 	{ claw.move_voltage(-12000);}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

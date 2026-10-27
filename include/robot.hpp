@@ -23,36 +23,133 @@
 
 
 
-// Hardware & chassis, defined in robot.cpp
-extern pros::MotorGroup leftMotors;
-extern pros::MotorGroup rightMotors;
-extern pros::Rotation verticalEncoder;
-extern pros::Rotation winchEncoder;
-extern pros::Imu imu;
-extern pros::Distance leftDistance;
-extern pros::Distance rightDistance;
-extern pros::Distance middleDistance;
-extern pros::Motor claw;
-extern pros::Motor activeToggle;
-extern pros::MotorGroup winch;
+////////////////////////////////////////////////////////////////
+#pragma region Ports ///////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
-extern pros::Controller controller;
-extern lemlib::Chassis chassis;
-extern tide::Odom odom;
-extern tide::Mechanism winchPID;
+// Drivetrain
+inline pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
+inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
-// Startup, defined in robot.cpp
-void initRobot();
+// Sensors
+inline pros::Rotation verticalEncoder(-5);
+inline pros::Rotation winchEncoder(4);
+inline pros::Imu imu(13);
+inline pros::Distance leftDistance(3);
+inline pros::Distance rightDistance(2);
+inline pros::Distance middleDistance(1);
+
+// Mechanisms
+inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
+inline pros::Motor claw(18, pros::MotorGearset::green);
+inline pros::MotorGroup winch({-21, 20, 19}, pros::MotorGearset::blue);
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Control /////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+inline pros::Controller controller(pros::E_CONTROLLER_MASTER);
+
+// Driver curves
+inline lemlib::ExpoDriveCurve throttleCurve(
+	3,		// deadband		[/127]
+	10,		// min output	[/127]
+	1.019	// expo gain
+);
+inline lemlib::ExpoDriveCurve steerCurve(
+	3,		// deadband		[/127]
+	10,		// min output	[/127]
+	1.019	// expo gain
+);
+
+inline lemlib::Drivetrain drivetrain(
+	&leftMotors,
+	&rightMotors,
+	11.4173,					// track width [in]
+	lemlib::Omniwheel::NEW_275,
+	450,						// [rpm]
+	1							// horizontal drift; LemLib suggests 2 for all-omni
+);
+
+// Odometry
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, lemlib::Omniwheel::NEW_2, 0);
+inline lemlib::OdomSensors sensors(
+	&verticalWheel,
+	nullptr, nullptr, nullptr,
+	&imu
+);
+
+// Chassis PID
+inline lemlib::ControllerSettings lateralController(
+	8,		// kP
+	0,		// kI
+	20,		// kD
+	3,		// anti windup
+	1,		// small error		[in]
+	100,	// small timeout	[ms]
+	3,		// large error		[in]
+	500,	// large timeout	[ms]
+	0		// slew
+);
+inline lemlib::ControllerSettings angularController(
+	2,		// kP
+	0,		// kI
+	10,		// kD
+	3,		// anti windup
+	1,		// small error		[deg]
+	100,	// small timeout	[ms]
+	3,		// large error		[deg]
+	500,	// large timeout	[ms]
+	0		// slew
+);
+
+inline lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
+
+// Offsets from the tracking center
+inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
+	// sensor			right [in]	forward [in]	facing
+	{leftDistance,		0,			0,				tide::dir::WEST},
+	{rightDistance,		0,			0,				tide::dir::EAST},
+	{middleDistance,	0,			0,				tide::dir::NORTH},
+}, {.toolForward = -3});	// TODO: Remeasure
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region MechanismPID ////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+inline tide::Mechanism winchPID(winch, winchEncoder, {
+	.kP		= 24.02,
+	.kI		= 2.2345,
+	.kD		= 172.1,
+	.kG		= 1039,	// [mV]
+}, {.min = 0});	// Boots resting on bottom
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Startup /////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+inline void initRobot() {
+	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+	activeToggle.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	chassis.calibrate();
+	winchPID.start();
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
 
 // INFO tab text, defined in screen.cpp
 std::string robotInfo();
-
-// Macros, defined in macros.cpp
-void score();
-void doubleToggle();
-void intakeClaw();
-void stopClaw();
-void outtakeClaw();
 
 // Autons & tuners, defined in autons.cpp
 extern const std::vector<tide::screen::Auton> autons;
