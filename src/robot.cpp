@@ -92,7 +92,7 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		0,			0,				WEST},
 	{rightDistance,		0,			0,				EAST},
 	{middleDistance,	0,			0,				NORTH},
-}, {.toolForward = 0});	// Claw from the tracking center [in], unmeasured on the rebuild
+}, {.toolForward = 0});	// Unmeasured on the rebuild
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ tide::Mechanism winchPID(winch, winchEncoder, {
 	.kI		= 5.3885,
 	.kD		= 755.3,
 	.kG		= 2055,	// [mV]
-}, {.min = 0});	// Zero is the boot posture, resting on the bottom
+}, {.min = 0});	// Boots resting on the bottom
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

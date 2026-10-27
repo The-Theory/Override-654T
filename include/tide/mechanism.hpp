@@ -37,7 +37,7 @@ struct Gains {
 	double kG     = 0;  // Constant voltage that holds the load against gravity, so the integral doesn't have to [mV]
 };
 
-// Hard stops, so a target can't sit where the mechanism can't reach
+// Hard stops targets are clamped to
 struct Travel {
 	double min = -INFINITY;
 	double max = INFINITY;
@@ -88,7 +88,7 @@ public:
 
 	double position() const { return sensor.get_position() / 100.0 * ratio; }
 
-	// maxMv caps the PID's push on top of kG, so lower is slower [mV]
+	// maxMv caps the PID push, not kG [mV]
 	void moveTo(double to, int maxMv = MAX_MV) {
 		motor.set_brake_mode_all(pros::E_MOTOR_BRAKE_HOLD);
 		target    = std::clamp(to, travel.min, travel.max);
@@ -97,7 +97,7 @@ public:
 		pidActive = true;
 	}
 
-	// From where it is now, not the last target, which it may not have reached
+	// From the current position, since the last target may not have been reached
 	void moveBy(double delta, int maxMv = MAX_MV) { moveTo(positionOr(target) + delta, maxMv); }
 
 	// Holds wherever it is now
@@ -134,10 +134,10 @@ private:
 
 	static double clampMv(double mv) { return std::clamp(mv, -(double)MAX_MV, (double)MAX_MV); }
 
-	// Unplugged or not-yet-ready sensor reads PROS_ERR, which would make a garbage target
+	// PROS_ERR would make a garbage target
 	double positionOr(double fallback) const { return sensor.get_position() == PROS_ERR ? fallback : position(); }
 
-	// Resting on the stop gravity pushes it into needs no holding; kG there lifts it off and it hunts
+	// The stop holds the load; kG there lifts it off and it hunts
 	double holdMv() const {
 		const bool onStop = gains.kG > 0 ? target <= travel.min : target >= travel.max;
 		return onStop ? 0 : gains.kG;
