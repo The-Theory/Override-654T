@@ -46,7 +46,7 @@
 <path d="M-70.2 -13V13M70.2 -13V13M-13 70.2H13M-13 -70.2H13" stroke="#f5b400" stroke-width="2"/>
 
 <!-- Blue side, ghosted: mirror of red -->
-<g opacity="0.3">
+<g opacity="0.15">
   <use xlink:href="#goal" x="47.1" y="-23.6" fill="#1846c4"/>
   <use xlink:href="#goal" x="23.6" y="-47.1" fill="#1846c4"/>
   <use xlink:href="#goal" x="47.1" y="23.5" fill="#1a1a1a" color="#fff"/>
@@ -119,8 +119,6 @@
 
 <text class="quad" x="-46.8" y="0" text-anchor="middle">Q1</text>
 <text class="quad" x="0" y="46.8" text-anchor="middle">Q2</text>
-<text x="52" y="-62" text-anchor="middle" font-size="3" font-weight="bold" fill="#0f2f8a">blue side</text>
-<text x="52" y="-58" text-anchor="middle" fill="#0f2f8a">mirror of red</text>
 
 <!-- Compass: LemLib heading, 0° = +y, clockwise -->
 <g transform="translate(0 -46.8)" text-anchor="middle" font-size="2.2" font-weight="bold">
