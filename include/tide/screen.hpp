@@ -131,7 +131,30 @@ inline lv_obj_t* text(lv_obj_t* parent, const char* str, lv_color_t col = color:
 	return obj;
 }
 
-// Flat navy; filled with `on` while selected (dark text on light blue)
+// LVGL only rounds corners, so cut them by painting BG triangles over the drawn background
+// ponytail: assumes the button sits directly on BG; draw a real polygon if one ever goes on a panel
+inline void clipCorners(lv_event_t* e) {
+	constexpr int CUT = 6;
+	lv_area_t a;
+	lv_obj_get_coords(lv_event_get_target_obj(e), &a);
+	const int x1 = a.x1, y1 = a.y1, x2 = a.x2 + 1, y2 = a.y2 + 1;
+	const lv_point_precise_t corners[4][3] = {
+		{{x1, y1}, {x1 + CUT, y1}, {x1, y1 + CUT}},
+		{{x2, y1}, {x2 - CUT, y1}, {x2, y1 + CUT}},
+		{{x1, y2}, {x1 + CUT, y2}, {x1, y2 - CUT}},
+		{{x2, y2}, {x2 - CUT, y2}, {x2, y2 - CUT}},
+	};
+	lv_draw_triangle_dsc_t dsc;
+	lv_draw_triangle_dsc_init(&dsc);
+	dsc.bg_color = color::BG;
+	dsc.bg_opa   = LV_OPA_COVER;
+	for (const auto& tri : corners) {
+		std::copy(tri, tri + 3, dsc.p);
+		lv_draw_triangle(lv_event_get_layer(e), &dsc);
+	}
+}
+
+// Flat navy with clipped corners; filled with `on` while selected (dark text on light blue)
 inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on, lv_event_cb_t onClick, int index) {
 	lv_obj_t* btn = plain(parent);
 	lv_obj_set_size(btn, w, ROW);
@@ -147,6 +170,7 @@ inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on
 	lv_obj_set_style_text_font(label, &rajdhani_20, 0);
 	lv_obj_center(label);
 	lv_obj_add_event_cb(btn, onClick, LV_EVENT_CLICKED, (void*)(intptr_t)index);
+	lv_obj_add_event_cb(btn, clipCorners, LV_EVENT_DRAW_MAIN_END, nullptr);
 	return btn;
 }
 
