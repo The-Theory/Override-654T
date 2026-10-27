@@ -92,7 +92,7 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		0,			0,				WEST},
 	{rightDistance,		0,			0,				EAST},
 	{middleDistance,	0,			0,				NORTH},
-}, {.toolForward = -3});	// From the old routines' offsets; measure on the rebuild
+}, {.toolForward = -3});	// TODO: Remeasure
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -106,7 +106,7 @@ tide::Mechanism winchPID(winch, winchEncoder, {
 	.kI		= 5.3885,
 	.kD		= 755.3,
 	.kG		= 2055,	// [mV]
-}, {.min = 0});	// Boots resting on the bottom
+}, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -116,7 +116,6 @@ tide::Mechanism winchPID(winch, winchEncoder, {
 ////////////////////////////////////////////////////////////////
 
 void initRobot() {
-	// Field auton runs before opcontrol, so brake modes go here
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	chassis.calibrate();
