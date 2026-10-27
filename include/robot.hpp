@@ -28,20 +28,16 @@ extern pros::MotorGroup leftMotors;
 extern pros::MotorGroup rightMotors;
 extern pros::Rotation verticalEncoder;
 extern pros::Rotation winchEncoder;
-extern pros::Rotation clawEncoder;
 extern pros::Imu imu;
 extern pros::Distance leftDistance;
 extern pros::Distance rightDistance;
 extern pros::Distance middleDistance;
-extern pros::Motor clawPivot;
 extern pros::Motor claw;
 extern pros::MotorGroup winch;
-extern pros::Motor intake;
 
 extern pros::Controller controller;
 extern lemlib::Chassis chassis;
 extern tide::Odom odom;
-extern tide::Mechanism clawPivotPID;
 extern tide::Mechanism winchPID;
 
 // Startup, defined in robot.cpp
@@ -51,14 +47,7 @@ void initRobot();
 std::string robotInfo();
 
 // Macros, defined in macros.cpp
-bool isWinchDown();
-void clawPivotUp();
-void clawPivotDown();
 void score();
-void raiseForPickup();
-void pickup(int time = 1000);
-void lowerToIntake();
-void tareClawPivot();
 void doubleToggle();
 
 // Autons & tuners, defined in autons.cpp

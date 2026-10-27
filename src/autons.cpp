@@ -17,7 +17,6 @@ void xAuton(tide::Alliance) {
 	odom.wallReset(Wall::AUDIENCE);
 
 	// To goal
-	clawPivotUp();
 	pros::delay(200);
 	winchPID.moveTo(60);
 	chassis.moveToPose(-24, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
@@ -29,7 +28,6 @@ void xAuton(tide::Alliance) {
 	claw.move_voltage(0);
 	winchPID.moveBy(50);
 	chassis.moveToPoint(-5, -47, 1500);
-	raiseForPickup();
 
 	// To cuppin
 	chassis.turnToHeading(42, TURN_TIMEOUT, {}, false);
@@ -38,19 +36,16 @@ void xAuton(tide::Alliance) {
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
-	pickup();
 	claw.move_voltage(12000);
 	winchPID.moveBy(400);
 	
 	// Turn out
 	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
-	clawPivotUp();
 	odom.moveBy(-3);
 	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
 	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
 	odom.wallReset(Wall::AUDIENCE);
 	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
-	clawPivotUp();
 	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
 	chassis.moveToPose(-26, -45, SOUTH_EAST, 1100, {.forwards = false}, false);
 
@@ -58,7 +53,6 @@ void xAuton(tide::Alliance) {
 	claw.move_voltage(0);
 	winchPID.moveTo(100);
 	pros::delay(500);
-	clawPivotPID.release();
 	pros::delay(200);
 	claw.move_voltage(-12000);
 	pros::delay(500);
@@ -70,12 +64,10 @@ void xAuton(tide::Alliance) {
 	chassis.moveToPose(0, -36, 0, 2000);
 	winchPID.moveTo(0);
 	pros::delay(500);
-	tareClawPivot();
 	pros::delay(500);
 	chassis.moveToPoint(4, -47, 1500, {}, false);
 
 	// To next cuppin
-	raiseForPickup();
 	chassis.turnToHeading(-40, TURN_TIMEOUT, {}, false);
 	winchPID.moveTo(200);
 	odom.pushUntilStall(-6500);
@@ -83,7 +75,6 @@ void xAuton(tide::Alliance) {
 
 	// Pickup
 	winchPID.moveTo(0);
-	pickup();
 	claw.move_voltage(12000);
 	winchPID.moveBy(400);
 }
@@ -91,12 +82,10 @@ void xAuton(tide::Alliance) {
 void leftBase() {
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
 	pros::delay(100);
-	lowerToIntake();
 	doubleToggle();
 	odom.wallReset(Wall::RED);
 
 	// To goal
-	clawPivotUp();
 	pros::delay(100);
 	winchPID.moveTo(60);
 	chassis.moveToPose(-48, -23, NORTH, 2000, {.forwards = false, .minSpeed=50}, false);
@@ -110,7 +99,6 @@ void leftBase() {
 	chassis.moveToPose(-24 - 2.2, -24 + 2.2, NORTH_WEST, 1500, {.forwards = false, .minSpeed=40}, false);
 
 	// Pickup cuppin
-	clawPivotUp();
 	claw.move_velocity(12000);
 	pros::delay(100);
 	winchPID.moveTo(20);
@@ -135,7 +123,6 @@ void leftBase() {
 	chassis.moveToPoint(-43, -43, 2000, {.forwards = false}, false);
 
 	// Pickup
-	clawPivotUp();
 	pros::delay(800);
 	claw.move_velocity(12000);
 	winchPID.moveTo(30);
@@ -174,14 +161,11 @@ void skillsAuton(tide::Alliance) {
 	// Grab from midfield
 	chassis.moveToPoint(-10, -10, 800, {}, false);
 	chassis.turnToPoint(-24, 32, 2000, {}, false);
-	lowerToIntake();
-	intake.move_voltage(12000);
 	claw.move_voltage(12000);
 	chassis.moveToPose(-24, 32, NORTH, 2000, {}, false);
 	pros::delay(4000);
 
 	// Score
-	clawPivotUp();
 	winchPID.moveTo(250);
 	claw.move_voltage(0);
 	chassis.moveToPoint(0, 0, 2000, {.forwards=false}, false);
@@ -198,12 +182,6 @@ void skillsAuton(tide::Alliance) {
 std::string tuneWinch() {
 	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
 	winchPID.moveTo(0);
-	return result.summary;
-}
-
-std::string tuneClawPivot() {
-	const tide::TuneResult result = tide::autotune("claw pivot", tide::mechanismPlant(clawPivotPID), {.setpoint = -70, .amplitude = 3000, .maxDeviation = 60, .hysteresis = 1});
-	clawPivotUp();
 	return result.summary;
 }
 
@@ -235,7 +213,6 @@ const std::vector<tide::screen::Auton> autons = {
 // Tune page
 const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tuneWinch},
-	{"Claw pivot", tuneClawPivot},
 	{"Turn",       tuneTurn},
 	{"Drive",      tuneDrive},
 };

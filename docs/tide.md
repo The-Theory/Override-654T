@@ -271,8 +271,10 @@ Now how often you need to _run a function when you release a button after it's b
 For arms and lifts with a rotation sensor, `tide::Mechanism` holds the motor at a target using PID instead of the motor's built-in encoder:
 
 ```cpp
-tide::Mechanism winchPID(winch, winchEncoder, {.kP = 30, .kI = 0.5, .kD = 100, .windup = 20, .settle = 5});
+tide::Mechanism winchPID(winch, winchEncoder, {.kP = 30, .kI = 0.5, .kD = 100, .windup = 20}, {.min = 0, .max = 1100});
 ```
+
+The second braces are the hard stops. Targets get clamped into them, so the mechanism is never asked to go somewhere it can't reach. Leave either one out if that side has no stop.
 
 Call `winchPID.start()` in `initialize()`. Then move it with `moveTo()` / `moveBy()`, let it go limp with `release()`, or drive it by hand with `bidir`:
 
@@ -282,7 +284,10 @@ ctl.when(L).bidir(winchPID);
 
 >Unlike `bidir` on a motor, letting go holds the mechanism where it is instead of stopping it.
 
-For a lift or arm, set `.kG` to the voltage that just holds the load still. It's added to every PID output, so the integral doesn't have to hold the weight. The auto-tuner below measures it for you.
+- `moveBy(200)` moves from where the mechanism is now, not from its last target.
+- Both take an optional voltage cap for slower moves: `winchPID.moveTo(800, 6000)`. The cap applies to the PID's push, and `kG` still gets added on top, so a slow lift can still hold its load.
+
+For a lift or arm, set `.kG` to the voltage that just holds the load still. It's added to every PID output, so the integral doesn't have to hold the weight. The auto-tuner below measures it for you. When the target is the stop that gravity pushes it into, `kG` is skipped, because the stop already holds the load.
 
 ### Zeroing
 
