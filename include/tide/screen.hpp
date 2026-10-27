@@ -25,6 +25,13 @@
 #include <string>
 #include <vector>
 
+// Rajdhani SemiBold, generated into src/fonts/ with lv_font_conv (ASCII + °)
+extern "C" {
+LV_FONT_DECLARE(rajdhani_16)
+LV_FONT_DECLARE(rajdhani_18)
+LV_FONT_DECLARE(rajdhani_20)
+}
+
 
 
 namespace tide {
@@ -118,7 +125,7 @@ inline lv_obj_t* plain(lv_obj_t* parent) {
 inline lv_obj_t* text(lv_obj_t* parent, const char* str, lv_color_t col = color::TEXT) {
 	lv_obj_t* obj = lv_label_create(parent);
 	lv_label_set_text(obj, str);
-	lv_obj_set_style_text_font(obj, &lv_font_montserrat_16, 0);
+	lv_obj_set_style_text_font(obj, &rajdhani_16, 0);
 	lv_obj_set_style_text_color(obj, col, 0);
 	lv_obj_set_style_text_line_space(obj, 6, 0);
 	return obj;
@@ -137,7 +144,7 @@ inline lv_obj_t* button(lv_obj_t* parent, const char* name, int w, lv_color_t on
 	if (lv_color_eq(on, color::SELECTED)) lv_obj_set_style_text_color(btn, color::BG, LV_STATE_CHECKED);
 	lv_obj_t* label = lv_label_create(btn);	// No color of its own, so it follows the button's checked state
 	lv_label_set_text(label, name);
-	lv_obj_set_style_text_font(label, &lv_font_montserrat_20, 0);
+	lv_obj_set_style_text_font(label, &rajdhani_20, 0);
 	lv_obj_center(label);
 	lv_obj_add_event_cb(btn, onClick, LV_EVENT_CLICKED, (void*)(intptr_t)index);
 	return btn;
@@ -339,7 +346,7 @@ inline void init(std::vector<Auton> autons, std::vector<Tuner> tuners, std::func
 		lv_obj_set_style_bg_opa(tab, LV_OPA_COVER, LV_STATE_PRESSED);
 		lv_obj_set_style_bg_opa(tab, LV_OPA_COVER, LV_STATE_CHECKED);
 		lv_obj_set_style_text_color(tab, color::DIM, 0);
-		lv_obj_set_style_text_font(lv_obj_get_child(tab, 0), &lv_font_montserrat_18, 0);
+		lv_obj_set_style_text_font(lv_obj_get_child(tab, 0), &rajdhani_18, 0);
 		pageBtns.push_back(tab);
 	}
 
