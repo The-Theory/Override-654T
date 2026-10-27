@@ -71,7 +71,7 @@ struct OdomSettings {
 	double maxResetAngle  = 15;		// [deg] off-perpendicular before beam can hit wall junk instead of the wall
 	int    stallGrace     = 200;	// [ms] to get moving before stall checks start
 	int    stallVelocity  = 11000;	// [centideg/s] tracking wheel speed counted as stopped
-	double toolRight      = 0;		// [in] what reachPose/reachPoint put on the target, from the tracking center
+	double toolRight      = 0;		// [in] scoring point for reachPose/reachPoint, from the tracking center
 	double toolForward    = 0;		// [in] negative for a tool on the back
 };
 
@@ -119,10 +119,10 @@ public:
 	}
 
 	/**
-	 * Moves by an offset from where the robot is now, ending at heading + turn [deg].
-	 * Negative forward backs up. Tank can't strafe, so a sideways offset curves there.
+	 * Moves by an offset from the current pose, ending at heading + turn [deg].
+	 * - Tank can't strafe, so a sideways offset curves there.
+	 * - Chained moves stack their error; an absolute move or wallReset clears it.
 	 */
-	// ponytail: relative to the measured pose, so error stacks over chained moves; an absolute move or wallReset clears it
 	void moveBy(double forward, double right = 0, double turn = 0, int timeout = 1500,
 				lemlib::MoveToPoseParams params = {}, bool async = false) {
 		const lemlib::Pose pose = chassis.getPose();
@@ -138,7 +138,7 @@ public:
 		chassis.moveToPose(at.x, at.y, heading, timeout, params, async);
 	}
 
-	// Straight at target, stopping with the tool on it; backs in if the tool is on the back. Exact for a tool on the centerline
+	// Straight at target, backing in for a tool on the back; exact for a centerline tool
 	void reachPoint(Point target, int timeout = 2000, lemlib::MoveToPointParams params = {}, bool async = false) {
 		const lemlib::Pose pose = chassis.getPose();
 		params.forwards = settings.toolForward >= 0;
