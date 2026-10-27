@@ -71,7 +71,7 @@ struct OdomSettings {
 	double maxResetAngle  = 15;		// [deg] off-perpendicular before beam can hit wall junk instead of the wall
 	int    stallGrace     = 200;	// [ms] to get moving before stall checks start
 	int    stallVelocity  = 11000;	// [centideg/s] tracking wheel speed counted as stopped
-	double toolRight      = 0;		// [in] scoring point for reachPose/reachPoint, from the tracking center
+	double toolRight      = 0;		// [in] scoring point, from the tracking center
 	double toolForward    = 0;		// [in] negative for a tool on the back
 };
 
@@ -145,6 +145,12 @@ public:
 		const double heading = bearing({pose.x, pose.y}, target) + (params.forwards ? 0 : 180);
 		const Point at = centerFor(target, heading);
 		chassis.moveToPoint(at.x, at.y, timeout, params, async);
+	}
+
+	// Turns the tool to face target
+	void aim(Point target, int timeout = 1000, lemlib::TurnToPointParams params = {}, bool async = false) {
+		params.forwards = settings.toolForward >= 0;
+		chassis.turnToPoint(target.x, target.y, timeout, params, async);
 	}
 
 	// Positive is clockwise; turns that way even past 180°

@@ -92,7 +92,7 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		0,			0,				WEST},
 	{rightDistance,		0,			0,				EAST},
 	{middleDistance,	0,			0,				NORTH},
-}, {.toolForward = 0});	// Unmeasured on the rebuild
+}, {.toolForward = -3});	// From the old routines' offsets; measure on the rebuild
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
