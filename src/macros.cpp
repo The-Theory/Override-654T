@@ -9,11 +9,11 @@ const int    TOGGLE_HOLD    = 250;	// [ms]
 
 // From scoring height; ends with the winch down
 void score() {
-	claw.move_voltage(-12000);	// Spit out
+	outtakeClaw();
 	pros::delay(300);
 	winchPID.moveBy(200);		// Lift off the stack
 	pros::delay(500);			// Time for the driver to back away
-	claw.move_voltage(0);
+	stopClaw();
 	winchPID.moveTo(0);
 }
 
@@ -24,6 +24,11 @@ void doubleToggle() {
 		odom.pushUntilStall(6500, 1500, TOGGLE_HOLD);
 	}
 }
+
+// Claw control
+void intakeClaw() { intakeClaw(); }
+void stopClaw() { stopClaw(); }
+void outtakeClaw() { outtakeClaw(); }
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
