@@ -19,10 +19,16 @@
     <use xlink:href="#cup"/>
     <circle r="1.0" stroke="#000" stroke-width="0.2"/>
   </g>
-  <g id="cross" stroke-width="1.6">
-    <path d="M2 0H8M0 -2V-8" stroke="#1846c4"/>
-    <path d="M-2 0H-8M0 2V8" stroke="#c8102e"/>
-    <path d="M2 0H4.5M-2 0H-4.5M0 2V4.5M0 -2V-4.5" stroke="#f5b400"/>
+  <g id="pin">
+    <path d="M4.6 -0.9H2.9A0.9 0.9 0 0 0 2.9 0.9H4.6Z" fill="#f5b400"/>
+    <path d="M4.6 -0.9H7.6A0.9 0.9 0 0 1 7.6 0.9H4.6Z"/>
+    <path d="M2.9 -0.9H7.6A0.9 0.9 0 0 1 7.6 0.9H2.9A0.9 0.9 0 0 1 2.9 -0.9Z" fill="none" stroke="#000" stroke-width="0.25"/>
+  </g>
+  <g id="cross">
+    <use xlink:href="#pin" fill="#1846c4"/>
+    <use xlink:href="#pin" fill="#1846c4" transform="rotate(-90)"/>
+    <use xlink:href="#pin" fill="#c8102e" transform="rotate(180)"/>
+    <use xlink:href="#pin" fill="#c8102e" transform="rotate(90)"/>
     <use xlink:href="#cup"/>
   </g>
 </defs>
