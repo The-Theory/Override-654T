@@ -6,13 +6,34 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
-// Goal centers from Appendix A, red side only since blue runs mirrored. Q1 is by the red station, Q2 by the audience
+// Field positions [in] from Appendix A, red side only since blue runs mirrored. Map: docs/field-map.svg
+// Q1 is the quadrant by the red station, Q2 the one by the audience
 namespace goal {
 constexpr tide::Point Q1_ALLIANCE = {-47.1, -23.5};
 constexpr tide::Point Q1_NEUTRAL  = {-47.1,  23.6};
 constexpr tide::Point Q2_ALLIANCE = {-23.5, -47.1};
 constexpr tide::Point Q2_NEUTRAL  = { 23.6, -47.1};
 constexpr tide::Point MIDFIELD    = {  0,     0  };
+}
+
+// Pin in a Cup. Wall ones sit between two empty Cups, touching the wall
+namespace cuppin {
+constexpr tide::Point RED_WALL_S      = {-68.6, -23.5};
+constexpr tide::Point RED_WALL_N      = {-68.6,  23.6};
+constexpr tide::Point AUDIENCE_WALL_W = {-23.5, -68.6};
+constexpr tide::Point AUDIENCE_WALL_E = { 23.6, -68.6};
+constexpr tide::Point DIAGONAL_INNER  = {-23.5, -23.5};	// yellow Pin
+constexpr tide::Point DIAGONAL_OUTER  = {-47.1, -47.1};	// yellow Pin
+constexpr tide::Point MIDFIELD_W      = {-23.5,   0  };	// red Pin, on a Midfield corner
+constexpr tide::Point MIDFIELD_S      = {  0,   -23.5};	// red Pin, on a Midfield corner
+}
+
+// Cup with four Pins lying around it, on the Auton Line so either alliance can take them
+namespace cross {
+constexpr tide::Point Q1_INNER = {-23.5,  23.6};
+constexpr tide::Point Q1_OUTER = {-47.1,  47.1};
+constexpr tide::Point Q2_INNER = { 23.6, -23.5};
+constexpr tide::Point Q2_OUTER = { 47.1, -47.1};
 }
 
 ////////////////////////////////////////////////////////////////
