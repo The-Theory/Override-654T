@@ -2,7 +2,8 @@
 <style>
   text { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 2.1px; fill: #111; }
   .goal   { font-weight: bold; }
-  .goal, .cuppin, .cross { dominant-baseline: central; }
+  .goal, .cuppin, .cross, .toggle { dominant-baseline: central; }
+  .toggle { text-anchor: middle; }
   .cuppin { fill: #5c2e00; }
   .cross  { fill: #222; }
   .wall   { font-size: 2.5px; font-weight: bold; }
@@ -117,8 +118,8 @@
 <text class="cuppin" x="-66.2" y="16.76">cuppin::RED_WALL_S</text>
 <text class="cuppin" x="-66.2" y="-30.34">cuppin::RED_WALL_N</text>
 <text class="cuppin" x="-23.5" y="19.9" text-anchor="middle">cuppin::DIAGONAL_INNER</text>
-<text x="-66.2" y="0.7">toggle::Q1</text>
-<text x="0" y="67.6" text-anchor="middle">toggle::Q2</text>
+<text class="toggle" x="-67.2" y="0" transform="rotate(-90 -67.2 0)">toggle::Q1</text>
+<text class="toggle" x="0" y="67.2">toggle::Q2</text>
 
 <text class="quad" x="-46.8" y="0" text-anchor="middle">Q1</text>
 <text class="quad" x="0" y="46.8" text-anchor="middle">Q2</text>
