@@ -21,7 +21,7 @@ pros::Distance middleDistance(1);
 // Mechanisms
 pros::Motor activeToggle(-17, pros::MotorGearset::green); 
 pros::Motor claw(-18, pros::MotorGearset::green);
-pros::MotorGroup winch({21, -20, 19}, pros::MotorGearset::blue);
+pros::MotorGroup winch({-21, 20, 19}, pros::MotorGearset::blue);
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

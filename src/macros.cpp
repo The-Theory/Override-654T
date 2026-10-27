@@ -26,9 +26,9 @@ void doubleToggle() {
 }
 
 // Claw control
-void intakeClaw() { intakeClaw(); }
-void stopClaw() { stopClaw(); }
-void outtakeClaw() { outtakeClaw(); }
+void intakeClaw() 	{ claw.move_voltage(12000); }
+void stopClaw() 	{ claw.move_voltage(0); 	}
+void outtakeClaw() 	{ claw.move_voltage(-12000);}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
