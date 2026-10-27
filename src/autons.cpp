@@ -35,7 +35,8 @@ constexpr tide::Point Q2_INNER = { 23.6, -23.5};
 constexpr tide::Point Q2_OUTER = { 47.1, -47.1};
 }
 
-// Wall-mount centers; ram with pushUntilStall, the Toggle's depth varies by mount
+// Wall-mount centers
+// Ram with pushUntilStall
 namespace toggle {
 constexpr tide::Point Q1 = {-70.2,   0  };
 constexpr tide::Point Q2 = {  0,   -70.2};
