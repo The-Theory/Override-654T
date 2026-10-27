@@ -115,7 +115,7 @@
 </g>
 <text class="cuppin" x="-66.2" y="16.8">cuppin::RED_WALL_S</text>
 <text class="cuppin" x="-66.2" y="-30.4">cuppin::RED_WALL_N</text>
-<text class="cuppin" x="-20.6" y="19.6">cuppin::DIAGONAL_INNER</text>
+<text class="cuppin" x="-23.5" y="19.6" text-anchor="middle">cuppin::DIAGONAL_INNER</text>
 <text x="-66.2" y="0.7">toggle::Q1</text>
 <text x="0" y="67.6" text-anchor="middle">toggle::Q2</text>
 
