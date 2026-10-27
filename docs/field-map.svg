@@ -1,173 +1,141 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-84 -86 168 200" width="840" height="1000" font-family="-apple-system, Helvetica, Arial, sans-serif">
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="-84 -86 168 200" width="840" height="1000">
+<style>
+  text { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 2.1px; fill: #111; paint-order: stroke; stroke: #fff; stroke-width: 0.55px; stroke-linejoin: round; }
+  .goal   { font-weight: bold; }
+  .cuppin { fill: #7a3e00; }
+  .cross  { fill: #2b2b2b; }
+  .wall   { font-size: 2.5px; font-weight: bold; stroke: none; }
+  .quad   { font-size: 6px; font-weight: bold; fill: #a30d24; }
+  .note   { fill: #444; stroke: none; }
+  .legend { stroke: none; }
+  .grid   { stroke: #fff; stroke-width: 0.3; stroke-opacity: 0.7; }
+</style>
+
+<defs>
+  <g id="goal">
+    <rect x="-2.8" y="-2.8" width="5.6" height="5.6" rx="0.8" stroke="#000" stroke-width="0.3"/>
+    <circle r="1.2" fill="#fff" stroke="#000" stroke-width="0.2"/>
+  </g>
+  <circle id="cup" r="1.6" fill="#8a919c" stroke="#2f3540" stroke-width="0.3"/>
+  <g id="cuppin">
+    <use xlink:href="#cup"/>
+    <circle r="1.0" stroke="#000" stroke-width="0.2"/>
+  </g>
+  <g id="cross" stroke-width="1.6">
+    <path d="M2 0H8M0 -2V-8" stroke="#1846c4"/>
+    <path d="M-2 0H-8M0 2V8" stroke="#c8102e"/>
+    <path d="M2 0H4.5M-2 0H-4.5M0 2V4.5M0 -2V-4.5" stroke="#f5b400"/>
+    <use xlink:href="#cup"/>
+  </g>
+</defs>
+
 <rect x="-84" y="-86" width="168" height="200" fill="#fff"/>
-<polygon points="-70.2,70.2 70.2,70.2 -70.2,-70.2" fill="#f6dede"/>
-<polygon points="70.2,-70.2 70.2,70.2 -70.2,-70.2" fill="#e6ebf4"/>
-<line x1="-46.8" y1="70.2" x2="-46.8" y2="-70.2" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="46.8" x2="70.2" y2="46.8" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-23.4" y1="70.2" x2="-23.4" y2="-70.2" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="23.4" x2="70.2" y2="23.4" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="0.0" y1="70.2" x2="0.0" y2="-70.2" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="-0.0" x2="70.2" y2="-0.0" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="23.4" y1="70.2" x2="23.4" y2="-70.2" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="-23.4" x2="70.2" y2="-23.4" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="46.8" y1="70.2" x2="46.8" y2="-70.2" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="-46.8" x2="70.2" y2="-46.8" stroke="#fff" stroke-width="0.25" opacity="1"/>
-<line x1="-70.2" y1="-70.2" x2="70.2" y2="70.2" stroke="#fff" stroke-width="1.6" opacity="1"/>
-<line x1="-70.2" y1="70.2" x2="70.2" y2="-70.2" stroke="#fff" stroke-width="0.5" stroke-dasharray="1.5 1" opacity="1"/>
+
+<!-- Field -->
+<polygon points="-70.2,70.2 70.2,70.2 -70.2,-70.2" fill="#eb9a9a"/>
+<polygon points="70.2,-70.2 70.2,70.2 -70.2,-70.2" fill="#9db6e6"/>
+<path class="grid" d="M-46.8 -70.2V70.2M-23.4 -70.2V70.2M0 -70.2V70.2M23.4 -70.2V70.2M46.8 -70.2V70.2M-70.2 -46.8H70.2M-70.2 -23.4H70.2M-70.2 0H70.2M-70.2 23.4H70.2M-70.2 46.8H70.2"/>
+<line x1="-70.2" y1="-70.2" x2="70.2" y2="70.2" stroke="#fff" stroke-width="1.6"/>
+<line x1="-70.2" y1="70.2" x2="70.2" y2="-70.2" stroke="#fff" stroke-width="0.5" stroke-dasharray="1.5 1"/>
 <polygon points="-23.4,0 0,-23.4 23.4,0 0,23.4" fill="none" stroke="#fff" stroke-width="1"/>
-<rect x="-70.2" y="-70.2" width="140.4" height="140.4" fill="none" stroke="#444" stroke-width="1.2"/>
-<line x1="-70.2" y1="13" x2="-70.2" y2="-13" stroke="#f2c200" stroke-width="1.8" opacity="1"/>
-<line x1="70.2" y1="13" x2="70.2" y2="-13" stroke="#f2c200" stroke-width="1.8" opacity="1"/>
-<line x1="-13" y1="70.2" x2="13" y2="70.2" stroke="#f2c200" stroke-width="1.8" opacity="1"/>
-<line x1="-13" y1="-70.2" x2="13" y2="-70.2" stroke="#f2c200" stroke-width="1.8" opacity="1"/>
-<rect x="44.300000000000004" y="-26.400000000000002" width="5.6" height="5.6" rx="0.8" fill="#36c" stroke="#111" stroke-width="0.3" opacity="0.35"/>
-<circle cx="47.1" cy="-23.6" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="0.35"/>
-<rect x="20.8" y="-49.9" width="5.6" height="5.6" rx="0.8" fill="#36c" stroke="#111" stroke-width="0.3" opacity="0.35"/>
-<circle cx="23.6" cy="-47.1" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="0.35"/>
-<rect x="44.300000000000004" y="20.7" width="5.6" height="5.6" rx="0.8" fill="#222" stroke="#111" stroke-width="0.3" opacity="0.35"/>
-<circle cx="47.1" cy="23.5" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="0.35"/>
-<rect x="-26.3" y="-49.9" width="5.6" height="5.6" rx="0.8" fill="#222" stroke="#111" stroke-width="0.3" opacity="0.35"/>
-<circle cx="-23.5" cy="-47.1" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="0.35"/>
-<circle cx="68.6" cy="-20.44" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="-26.76" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="-23.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="-23.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="68.6" cy="26.66" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="20.34" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="23.5" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="68.6" cy="23.5" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="20.44" cy="-68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="26.76" cy="-68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="23.6" cy="-68.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="23.6" cy="-68.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="-26.66" cy="-68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="-20.34" cy="-68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="-23.5" cy="-68.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="-23.5" cy="-68.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="23.6" cy="-23.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="23.6" cy="-23.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="47.1" cy="-47.1" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="47.1" cy="-47.1" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="23.6" cy="0" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="23.6" cy="0" r="1.0" fill="#36c" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<circle cx="0" cy="-23.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="0.35"/>
-<circle cx="0" cy="-23.6" r="1.0" fill="#36c" stroke="#333" stroke-width="0.2" opacity="0.35"/>
-<rect x="-49.9" y="20.7" width="5.6" height="5.6" rx="0.8" fill="#d33" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="-47.1" cy="23.5" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<rect x="-26.3" y="44.300000000000004" width="5.6" height="5.6" rx="0.8" fill="#d33" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="-23.5" cy="47.1" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<rect x="-49.9" y="-26.400000000000002" width="5.6" height="5.6" rx="0.8" fill="#222" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="-47.1" cy="-23.6" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<rect x="20.8" y="44.300000000000004" width="5.6" height="5.6" rx="0.8" fill="#222" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="23.6" cy="47.1" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<rect x="-3.25" y="-3.25" width="6.5" height="6.5" rx="0.8" fill="#222" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="0" cy="0" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<circle cx="-68.6" cy="26.66" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="20.34" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="23.5" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="23.5" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="-68.6" cy="-20.44" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="-26.76" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="-23.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-68.6" cy="-23.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="-26.66" cy="68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-20.34" cy="68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-23.5" cy="68.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-23.5" cy="68.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="20.44" cy="68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="26.76" cy="68.6" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="23.6" cy="68.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="23.6" cy="68.6" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="-23.5" cy="23.5" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-23.5" cy="23.5" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="-47.1" cy="47.1" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-47.1" cy="47.1" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="-23.5" cy="0" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="-23.5" cy="0" r="1.0" fill="#d33" stroke="#333" stroke-width="0.2" opacity="1"/>
-<circle cx="0" cy="23.5" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="0" cy="23.5" r="1.0" fill="#d33" stroke="#333" stroke-width="0.2" opacity="1"/>
-<line x1="-21.5" y1="-23.6" x2="-15.5" y2="-23.6" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="-21.5" y1="-23.6" x2="-19.0" y2="-23.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-25.5" y1="-23.6" x2="-31.5" y2="-23.6" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="-25.5" y1="-23.6" x2="-28.0" y2="-23.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-23.5" y1="-25.6" x2="-23.5" y2="-31.6" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="-23.5" y1="-25.6" x2="-23.5" y2="-28.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-23.5" y1="-21.6" x2="-23.5" y2="-15.600000000000001" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="-23.5" y1="-21.6" x2="-23.5" y2="-19.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<circle cx="-23.5" cy="-23.6" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<line x1="-45.1" y1="-47.1" x2="-39.1" y2="-47.1" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="-45.1" y1="-47.1" x2="-42.6" y2="-47.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-49.1" y1="-47.1" x2="-55.1" y2="-47.1" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="-49.1" y1="-47.1" x2="-51.6" y2="-47.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-47.1" y1="-49.1" x2="-47.1" y2="-55.1" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="-47.1" y1="-49.1" x2="-47.1" y2="-51.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="-47.1" y1="-45.1" x2="-47.1" y2="-39.1" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="-47.1" y1="-45.1" x2="-47.1" y2="-42.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<circle cx="-47.1" cy="-47.1" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<line x1="25.6" y1="23.5" x2="31.6" y2="23.5" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="25.6" y1="23.5" x2="28.1" y2="23.5" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="21.6" y1="23.5" x2="15.600000000000001" y2="23.5" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="21.6" y1="23.5" x2="19.1" y2="23.5" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="23.6" y1="21.5" x2="23.6" y2="15.5" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="23.6" y1="21.5" x2="23.6" y2="19.0" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="23.6" y1="25.5" x2="23.6" y2="31.5" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="23.6" y1="25.5" x2="23.6" y2="28.0" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<circle cx="23.6" cy="23.5" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<line x1="49.1" y1="47.1" x2="55.1" y2="47.1" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="49.1" y1="47.1" x2="51.6" y2="47.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="45.1" y1="47.1" x2="39.1" y2="47.1" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="45.1" y1="47.1" x2="42.6" y2="47.1" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="47.1" y1="45.1" x2="47.1" y2="39.1" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="47.1" y1="45.1" x2="47.1" y2="42.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="47.1" y1="49.1" x2="47.1" y2="55.1" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="47.1" y1="49.1" x2="47.1" y2="51.6" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<circle cx="47.1" cy="47.1" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<text x="-47.1" y="29.2" font-size="2.3" text-anchor="middle" fill="#111" font-weight="bold">goal::Q1_ALLIANCE</text>
-<text x="-47.1" y="-17.9" font-size="2.3" text-anchor="middle" fill="#111" font-weight="bold">goal::Q1_NEUTRAL</text>
-<text x="-23.5" y="52.8" font-size="2.3" text-anchor="middle" fill="#111" font-weight="bold">goal::Q2_ALLIANCE</text>
-<text x="23.6" y="52.8" font-size="2.3" text-anchor="middle" fill="#111" font-weight="bold">goal::Q2_NEUTRAL</text>
-<text x="0" y="6.2" font-size="2.3" text-anchor="middle" fill="#111" font-weight="bold">goal::MIDFIELD</text>
-<text x="-66.5" y="16.8" font-size="2.3" text-anchor="start" fill="#7a5a00" font-weight="normal">cuppin::RED_WALL_S</text>
-<text x="-66.5" y="-30.4" font-size="2.3" text-anchor="start" fill="#7a5a00" font-weight="normal">cuppin::RED_WALL_N</text>
-<text x="-23.5" y="64.2" font-size="2.3" text-anchor="middle" fill="#7a5a00" font-weight="normal">cuppin::AUDIENCE_WALL_W</text>
-<text x="23.6" y="64.2" font-size="2.3" text-anchor="middle" fill="#7a5a00" font-weight="normal">cuppin::AUDIENCE_WALL_E</text>
-<text x="-20.8" y="19.6" font-size="2.3" text-anchor="start" fill="#7a5a00" font-weight="normal">cuppin::DIAGONAL_INNER</text>
-<text x="-47.1" y="42.2" font-size="2.3" text-anchor="middle" fill="#7a5a00" font-weight="normal">cuppin::DIAGONAL_OUTER</text>
-<text x="-23.5" y="-3.2" font-size="2.3" text-anchor="middle" fill="#7a5a00" font-weight="normal">cuppin::MIDFIELD_W</text>
-<text x="0" y="28.8" font-size="2.3" text-anchor="middle" fill="#7a5a00" font-weight="normal">cuppin::MIDFIELD_S</text>
-<text x="-23.5" y="-33.6" font-size="2.3" text-anchor="middle" fill="#444" font-weight="normal">cross::Q1_INNER</text>
-<text x="-47.1" y="-37.4" font-size="2.3" text-anchor="middle" fill="#444" font-weight="normal">cross::Q1_OUTER</text>
-<text x="23.6" y="33.4" font-size="2.3" text-anchor="middle" fill="#444" font-weight="normal">cross::Q2_INNER</text>
-<text x="47.1" y="57.4" font-size="2.3" text-anchor="middle" fill="#444" font-weight="normal">cross::Q2_OUTER</text>
-<text x="-58" y="-4" font-size="6" text-anchor="middle" fill="#b22" font-weight="bold">Q1</text>
-<text x="4" y="58" font-size="6" text-anchor="middle" fill="#b22" font-weight="bold">Q2</text>
-<text x="52" y="-62" font-size="3" text-anchor="middle" fill="#36c" font-weight="bold">blue side</text>
-<text x="52" y="-57.6" font-size="2.1" text-anchor="middle" fill="#36c" font-weight="normal">mirror of red: run red code</text>
-<text x="-75" y="0" font-size="2.6" text-anchor="middle" fill="#d33" font-weight="bold" transform="rotate(-90 -75 0)">RED wall · Wall::RED · x = −70.2</text>
-<text x="75.5" y="0" font-size="2.6" text-anchor="middle" fill="#36c" font-weight="bold" transform="rotate(90 75.5 0)">BLUE wall · Wall::BLUE · x = +70.2</text>
-<text x="0" y="-73" font-size="2.6" text-anchor="middle" fill="#222" font-weight="bold">FAR wall · Wall::FAR · y = +70.2</text>
-<text x="0" y="75.5" font-size="2.6" text-anchor="middle" fill="#222" font-weight="bold">AUDIENCE wall · Wall::AUDIENCE · y = −70.2</text>
-<text x="-66" y="-79.5" font-size="2.4" text-anchor="start" fill="#222" font-weight="normal">NORTH 0°  ↑</text>
-<text x="66" y="-79.5" font-size="2.4" text-anchor="end" fill="#222" font-weight="normal">EAST 90°  →</text>
-<circle cx="0" cy="0" r="0.5" fill="#fff" stroke="#fff" stroke-width="0" opacity="1"/>
-<rect x="-66.8" y="81.2" width="5.6" height="5.6" rx="0.8" fill="#d33" stroke="#111" stroke-width="0.3" opacity="1"/>
-<circle cx="-64" cy="84" r="1.2" fill="#fff" stroke="#111" stroke-width="0.2" opacity="1"/>
-<text x="-54" y="84.8" font-size="2.3" text-anchor="start" fill="#222" font-weight="normal">Goal (red Alliance / black neutral)</text>
-<circle cx="6" cy="84" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<circle cx="6" cy="84" r="1.0" fill="#f2c200" stroke="#333" stroke-width="0.2" opacity="1"/>
-<text x="16" y="84.8" font-size="2.3" text-anchor="start" fill="#222" font-weight="normal">cuppin: Pin in a Cup (dot = Pin color)</text>
-<circle cx="-64" cy="96" r="1.58" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<text x="-54" y="96.8" font-size="2.3" text-anchor="start" fill="#222" font-weight="normal">empty Cup (beside the wall cuppins)</text>
-<line x1="8" y1="96" x2="14" y2="96" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="8" y1="96" x2="10.5" y2="96.0" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="4" y1="96" x2="-2" y2="96" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="4" y1="96" x2="1.5" y2="96.0" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="6" y1="94" x2="6" y2="88" stroke="#36c" stroke-width="1.6" opacity="1"/>
-<line x1="6" y1="94" x2="6.0" y2="91.5" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<line x1="6" y1="98" x2="6" y2="104" stroke="#d33" stroke-width="1.6" opacity="1"/>
-<line x1="6" y1="98" x2="6.0" y2="100.5" stroke="#f2c200" stroke-width="1.6" opacity="1"/>
-<circle cx="6" cy="96" r="1.6" fill="#bbb" stroke="#555" stroke-width="0.3" opacity="1"/>
-<text x="16" y="96.8" font-size="2.3" text-anchor="start" fill="#222" font-weight="normal">cross: Cup + 4 Pins lying flat, Auton Line</text>
-<text x="0" y="108.5" font-size="2.2" text-anchor="middle" fill="#555" font-weight="normal">Inches, LemLib frame: origin at field center, +x toward blue, +y away from audience. Tiles are 23.4".</text>
-<text x="0" y="112" font-size="2.2" text-anchor="middle" fill="#555" font-weight="normal">Names cover the red side only: blue runs the same code from the spot rotated 180°.</text>
+<rect x="-70.2" y="-70.2" width="140.4" height="140.4" fill="none" stroke="#1a1a1a" stroke-width="1.4"/>
+<path d="M-70.2 -13V13M70.2 -13V13M-13 70.2H13M-13 -70.2H13" stroke="#f5b400" stroke-width="2"/>
+
+<!-- Blue side, ghosted: mirror of red -->
+<g opacity="0.3">
+  <use xlink:href="#goal" x="47.1" y="-23.6" fill="#1846c4"/>
+  <use xlink:href="#goal" x="23.6" y="-47.1" fill="#1846c4"/>
+  <use xlink:href="#goal" x="47.1" y="23.5" fill="#1a1a1a"/>
+  <use xlink:href="#goal" x="-23.5" y="-47.1" fill="#1a1a1a"/>
+  <use xlink:href="#cup" x="68.6" y="-20.44"/>
+  <use xlink:href="#cup" x="68.6" y="-26.76"/>
+  <use xlink:href="#cuppin" x="68.6" y="-23.6" fill="#f5b400"/>
+  <use xlink:href="#cup" x="68.6" y="26.66"/>
+  <use xlink:href="#cup" x="68.6" y="20.34"/>
+  <use xlink:href="#cuppin" x="68.6" y="23.5" fill="#f5b400"/>
+  <use xlink:href="#cup" x="20.44" y="-68.6"/>
+  <use xlink:href="#cup" x="26.76" y="-68.6"/>
+  <use xlink:href="#cuppin" x="23.6" y="-68.6" fill="#f5b400"/>
+  <use xlink:href="#cup" x="-26.66" y="-68.6"/>
+  <use xlink:href="#cup" x="-20.34" y="-68.6"/>
+  <use xlink:href="#cuppin" x="-23.5" y="-68.6" fill="#f5b400"/>
+  <use xlink:href="#cuppin" x="23.6" y="-23.6" fill="#f5b400"/>
+  <use xlink:href="#cuppin" x="47.1" y="-47.1" fill="#f5b400"/>
+  <use xlink:href="#cuppin" x="23.6" y="0" fill="#1846c4"/>
+  <use xlink:href="#cuppin" x="0" y="-23.6" fill="#1846c4"/>
+</g>
+
+<!-- Red side -->
+<use xlink:href="#goal" x="-47.1" y="23.5" fill="#c8102e"/>
+<use xlink:href="#goal" x="-23.5" y="47.1" fill="#c8102e"/>
+<use xlink:href="#goal" x="-47.1" y="-23.6" fill="#1a1a1a"/>
+<use xlink:href="#goal" x="23.6" y="47.1" fill="#1a1a1a"/>
+<use xlink:href="#goal" transform="scale(1.16)" fill="#1a1a1a"/>
+<use xlink:href="#cup" x="-68.6" y="26.66"/>
+<use xlink:href="#cup" x="-68.6" y="20.34"/>
+<use xlink:href="#cuppin" x="-68.6" y="23.5" fill="#f5b400"/>
+<use xlink:href="#cup" x="-68.6" y="-20.44"/>
+<use xlink:href="#cup" x="-68.6" y="-26.76"/>
+<use xlink:href="#cuppin" x="-68.6" y="-23.6" fill="#f5b400"/>
+<use xlink:href="#cup" x="-26.66" y="68.6"/>
+<use xlink:href="#cup" x="-20.34" y="68.6"/>
+<use xlink:href="#cuppin" x="-23.5" y="68.6" fill="#f5b400"/>
+<use xlink:href="#cup" x="20.44" y="68.6"/>
+<use xlink:href="#cup" x="26.76" y="68.6"/>
+<use xlink:href="#cuppin" x="23.6" y="68.6" fill="#f5b400"/>
+<use xlink:href="#cuppin" x="-23.5" y="23.5" fill="#f5b400"/>
+<use xlink:href="#cuppin" x="-47.1" y="47.1" fill="#f5b400"/>
+<use xlink:href="#cuppin" x="-23.5" y="0" fill="#c8102e"/>
+<use xlink:href="#cuppin" x="0" y="23.5" fill="#c8102e"/>
+<use xlink:href="#cross" x="-23.5" y="-23.6"/>
+<use xlink:href="#cross" x="-47.1" y="-47.1"/>
+<use xlink:href="#cross" x="23.6" y="23.5"/>
+<use xlink:href="#cross" x="47.1" y="47.1"/>
+
+<!-- Position names -->
+<g text-anchor="middle">
+  <text class="goal" x="-47.1" y="29.4">goal::Q1_ALLIANCE</text>
+  <text class="goal" x="-47.1" y="-17.7">goal::Q1_NEUTRAL</text>
+  <text class="goal" x="-23.5" y="53">goal::Q2_ALLIANCE</text>
+  <text class="goal" x="23.6" y="53">goal::Q2_NEUTRAL</text>
+  <text class="goal" x="0" y="6.4">goal::MIDFIELD</text>
+  <text class="cuppin" x="-23.5" y="64.2">cuppin::AUDIENCE_WALL_W</text>
+  <text class="cuppin" x="23.6" y="64.2">cuppin::AUDIENCE_WALL_E</text>
+  <text class="cuppin" x="-47.1" y="42.2">cuppin::DIAGONAL_OUTER</text>
+  <text class="cuppin" x="-23.5" y="-3.2">cuppin::MIDFIELD_W</text>
+  <text class="cuppin" x="0" y="28.8">cuppin::MIDFIELD_S</text>
+  <text class="cross" x="-23.5" y="-33.6">cross::Q1_INNER</text>
+  <text class="cross" x="-47.1" y="-57.4">cross::Q1_OUTER</text>
+  <text class="cross" x="23.6" y="33.6">cross::Q2_INNER</text>
+  <text class="cross" x="47.1" y="57.6">cross::Q2_OUTER</text>
+</g>
+<text class="cuppin" x="-66.2" y="16.8">cuppin::RED_WALL_S</text>
+<text class="cuppin" x="-66.2" y="-30.4">cuppin::RED_WALL_N</text>
+<text class="cuppin" x="-20.6" y="19.6">cuppin::DIAGONAL_INNER</text>
+
+<text class="quad" x="-58" y="-4" text-anchor="middle">Q1</text>
+<text class="quad" x="4" y="60" text-anchor="middle">Q2</text>
+<text x="52" y="-62" text-anchor="middle" font-size="3" font-weight="bold" fill="#0f2f8a">blue side</text>
+<text x="52" y="-58" text-anchor="middle" fill="#0f2f8a">mirror of red: run red code</text>
+
+<!-- Walls -->
+<text class="wall" x="-75" y="0" text-anchor="middle" fill="#c8102e" transform="rotate(-90 -75 0)">RED wall · Wall::RED · x = −70.2</text>
+<text class="wall" x="75.5" y="0" text-anchor="middle" fill="#1846c4" transform="rotate(90 75.5 0)">BLUE wall · Wall::BLUE · x = +70.2</text>
+<text class="wall" x="0" y="-73" text-anchor="middle">FAR wall · Wall::FAR · y = +70.2</text>
+<text class="wall" x="0" y="75.8" text-anchor="middle">AUDIENCE wall · Wall::AUDIENCE · y = −70.2</text>
+<text class="legend" x="-66" y="-79.5" font-size="2.4">NORTH 0° ↑</text>
+<text class="legend" x="66" y="-79.5" font-size="2.4" text-anchor="end">EAST 90° →</text>
+
+<!-- Legend -->
+<use xlink:href="#goal" x="-64" y="84" fill="#c8102e"/>
+<text class="legend" x="-58" y="84.8">Goal (red Alliance / black neutral)</text>
+<use xlink:href="#cuppin" x="-64" y="96" fill="#f5b400"/>
+<text class="legend" x="-58" y="96.8">cuppin: Pin in a Cup (dot = Pin color)</text>
+<use xlink:href="#cup" x="-64" y="104"/>
+<text class="legend" x="-58" y="104.8">empty Cup (beside the wall cuppins)</text>
+<use xlink:href="#cross" x="24" y="96"/>
+<text class="legend" x="34" y="94.8">cross: Cup + 4 Pins</text>
+<text class="legend" x="34" y="97.8">lying flat, Auton Line</text>
+<text class="note" x="0" y="109.5" text-anchor="middle" font-size="1.9">Inches, LemLib frame: origin at field center, +x toward blue, +y away from audience. Tiles are 23.4".</text>
+<text class="note" x="0" y="112.5" text-anchor="middle" font-size="1.9">Names cover the red side only: blue runs the same code from the spot rotated 180°.</text>
 </svg>
