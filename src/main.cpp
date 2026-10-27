@@ -31,7 +31,8 @@ void autonomous() { tide::screen::runAuton(); }
 void opcontrol() {
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winchPID)
-		.when(R).bidir(claw)
+		.when(R1).toggle(claw)
+		.when(R2).toggle(activeToggle)
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner);

@@ -20,7 +20,7 @@ pros::Distance middleDistance(1);
 
 // Mechanisms
 pros::Motor activeToggle(-17, pros::MotorGearset::green); 
-pros::Motor claw(-18, pros::MotorGearset::green);
+pros::Motor claw(18, pros::MotorGearset::green);
 pros::MotorGroup winch({-21, 20, 19}, pros::MotorGearset::blue);
 
 #pragma endregion
@@ -103,10 +103,10 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 ////////////////////////////////////////////////////////////////
 
 tide::Mechanism winchPID(winch, winchEncoder, {
-	.kP		= 78.13,
-	.kI		= 5.3885,
-	.kD		= 755.3,
-	.kG		= 2055,	// [mV]
+	.kP		= 24.02,
+	.kI		= 2.2345,
+	.kD		= 172.1,
+	.kG		= 1039,	// [mV]
 }, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion
@@ -119,6 +119,7 @@ tide::Mechanism winchPID(winch, winchEncoder, {
 void initRobot() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
+	activeToggle.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
 	chassis.calibrate();
 	winchPID.start();
 }

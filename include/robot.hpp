@@ -33,6 +33,7 @@ extern pros::Distance leftDistance;
 extern pros::Distance rightDistance;
 extern pros::Distance middleDistance;
 extern pros::Motor claw;
+extern pros::Motor activeToggle;
 extern pros::MotorGroup winch;
 
 extern pros::Controller controller;
