@@ -9,8 +9,8 @@ const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 ////////////////////////////////////////////////////////////////
 #pragma region Field ///////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
-// Red side only, blue runs mirrored. Map in docs/field-map.svg
 
+// Map in docs/field-map.svg
 namespace goal {
 constexpr tide::Point Q1_ALLIANCE = {-47.1, -23.5};
 constexpr tide::Point Q1_NEUTRAL  = {-47.1,  23.6};
@@ -53,7 +53,7 @@ void xAuton(tide::Alliance) {
 	// To goal
 	pros::delay(200);
 	winchPID.moveTo(60);
-	chassis.moveToPose(-24, -48, 90, 2000, {.forwards = false, .minSpeed=50}, false);
+	odom.reachPose(goal::Q2_ALLIANCE, EAST, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
 	claw.move_voltage(-12000);
 	pros::delay(230);
@@ -64,7 +64,7 @@ void xAuton(tide::Alliance) {
 	chassis.moveToPoint(-5, -47, 1500);
 
 	// To cuppin
-	chassis.turnToHeading(42, TURN_TIMEOUT, {}, false);
+	odom.aim(cuppin::AUDIENCE_WALL_W, TURN_TIMEOUT);
 	odom.pushUntilStall(-6500);
 	odom.moveBy(2);
 
@@ -81,7 +81,7 @@ void xAuton(tide::Alliance) {
 	odom.wallReset(Wall::AUDIENCE);
 	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
 	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
-	chassis.moveToPose(-26, -45, SOUTH_EAST, 1100, {.forwards = false}, false);
+	odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
 
 	// Score
 	claw.move_voltage(0);
@@ -102,7 +102,7 @@ void xAuton(tide::Alliance) {
 	chassis.moveToPoint(4, -47, 1500, {}, false);
 
 	// To next cuppin
-	chassis.turnToHeading(-40, TURN_TIMEOUT, {}, false);
+	odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
 	winchPID.moveTo(200);
 	odom.pushUntilStall(-6500);
 	odom.moveBy(2);
@@ -122,7 +122,7 @@ void leftBase() {
 	// To goal
 	pros::delay(100);
 	winchPID.moveTo(60);
-	chassis.moveToPose(-48, -23, NORTH, 2000, {.forwards = false, .minSpeed=50}, false);
+	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
 	claw.move_voltage(-12000);
 	pros::delay(230);
@@ -130,7 +130,7 @@ void leftBase() {
 	// To cuppin
 	winchPID.moveTo(400);
 	chassis.moveToPose(-48, -10, NORTH, 1000, {.minSpeed=50});
-	chassis.moveToPose(-24 - 2.2, -24 + 2.2, NORTH_WEST, 1500, {.forwards = false, .minSpeed=40}, false);
+	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 1500, {.forwards = false, .minSpeed = 40});
 
 	// Pickup cuppin
 	claw.move_velocity(12000);
@@ -141,8 +141,8 @@ void leftBase() {
 	claw.move_velocity(0);
 
 	// Score cuppin
-	chassis.turnToPoint(48, 24, TURN_TIMEOUT, {}, false);
-	chassis.moveToPoint(-48 + 3, -24, 600, {.forwards = false, .minSpeed=50}, false);
+	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
+	odom.reachPoint(goal::Q1_ALLIANCE, 600, {.minSpeed = 50});
 	winchPID.moveTo(15);
 	pros::delay(400);
 	claw.move_velocity(-12000);
@@ -153,8 +153,8 @@ void leftBase() {
 	// To next cuppin
 	pros::delay(400);
 	chassis.moveToPoint(-30, -24, 1500, {}, false);
-	chassis.turnToPoint(-47, -48, TURN_TIMEOUT, {.forwards = false}, false);
-	chassis.moveToPoint(-43, -43, 2000, {.forwards = false}, false);
+	odom.aim(cuppin::DIAGONAL_OUTER, TURN_TIMEOUT);
+	odom.reachPoint(cuppin::DIAGONAL_OUTER);
 
 	// Pickup
 	pros::delay(800);
@@ -165,8 +165,8 @@ void leftBase() {
 	claw.move_velocity(0);
 
 	// Score
-	chassis.turnToPoint(-48, -24, TURN_TIMEOUT, {.forwards = false}, false);
-	chassis.moveToPoint(-48, -24 - 3, 800, {.forwards = false, .maxSpeed=100}, false);
+	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
+	odom.reachPoint(goal::Q1_ALLIANCE, 800, {.maxSpeed = 100});
 	winchPID.moveTo(15);
 	pros::delay(400);
 	claw.move_velocity(-12000);
@@ -202,7 +202,7 @@ void skillsAuton(tide::Alliance) {
 	// Score
 	winchPID.moveTo(250);
 	claw.move_voltage(0);
-	chassis.moveToPoint(0, 0, 2000, {.forwards=false}, false);
+	odom.reachPoint(goal::MIDFIELD);
 	claw.move_voltage(-12000);
 }
 
