@@ -2,6 +2,7 @@
 <style>
   text { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: 2.1px; fill: #111; }
   .goal   { font-weight: bold; }
+  .goal, .cuppin, .cross { dominant-baseline: central; }
   .cuppin { fill: #5c2e00; }
   .cross  { fill: #222; }
   .wall   { font-size: 2.5px; font-weight: bold; }
@@ -98,24 +99,24 @@
 
 <!-- Position names -->
 <g text-anchor="middle">
-  <text class="goal" x="-47.1" y="29.4">goal::Q1_ALLIANCE</text>
-  <text class="goal" x="-47.1" y="-17.7">goal::Q1_NEUTRAL</text>
-  <text class="goal" x="-23.5" y="53">goal::Q2_ALLIANCE</text>
-  <text class="goal" x="23.6" y="53">goal::Q2_NEUTRAL</text>
-  <text class="goal" x="0" y="6.4">goal::MIDFIELD</text>
-  <text class="cuppin" x="-23.5" y="64.2">cuppin::AUDIENCE_WALL_W</text>
-  <text class="cuppin" x="23.6" y="64.2">cuppin::AUDIENCE_WALL_E</text>
-  <text class="cuppin" x="-47.1" y="42.2">cuppin::DIAGONAL_OUTER</text>
-  <text class="cuppin" x="-23.5" y="-3.2">cuppin::MIDFIELD_W</text>
-  <text class="cuppin" x="0" y="28.8">cuppin::MIDFIELD_S</text>
-  <text class="cross" x="-23.5" y="-33.6">cross::Q1_INNER</text>
-  <text class="cross" x="-47.1" y="-57.4">cross::Q1_OUTER</text>
-  <text class="cross" x="23.6" y="33.6">cross::Q2_INNER</text>
+  <text class="goal" x="-47.1" y="28.3">goal::Q1_ALLIANCE</text>
+  <text class="goal" x="-47.1" y="-18.8">goal::Q1_NEUTRAL</text>
+  <text class="goal" x="-23.5" y="51.9">goal::Q2_ALLIANCE</text>
+  <text class="goal" x="23.6" y="51.9">goal::Q2_NEUTRAL</text>
+  <text class="goal" x="0" y="5.25">goal::MIDFIELD</text>
+  <text class="cuppin" x="-23.5" y="65">cuppin::AUDIENCE_WALL_W</text>
+  <text class="cuppin" x="23.6" y="65">cuppin::AUDIENCE_WALL_E</text>
+  <text class="cuppin" x="-47.1" y="43.5">cuppin::DIAGONAL_OUTER</text>
+  <text class="cuppin" x="-23.5" y="-3.6">cuppin::MIDFIELD_W</text>
+  <text class="cuppin" x="0" y="27.1">cuppin::MIDFIELD_S</text>
+  <text class="cross" x="-23.5" y="-34.1">cross::Q1_INNER</text>
+  <text class="cross" x="-47.1" y="-57.6">cross::Q1_OUTER</text>
+  <text class="cross" x="23.6" y="34">cross::Q2_INNER</text>
   <text class="cross" x="47.1" y="57.6">cross::Q2_OUTER</text>
 </g>
-<text class="cuppin" x="-66.2" y="16.8">cuppin::RED_WALL_S</text>
-<text class="cuppin" x="-66.2" y="-30.4">cuppin::RED_WALL_N</text>
-<text class="cuppin" x="-23.5" y="19.6" text-anchor="middle">cuppin::DIAGONAL_INNER</text>
+<text class="cuppin" x="-66.2" y="16.76">cuppin::RED_WALL_S</text>
+<text class="cuppin" x="-66.2" y="-30.34">cuppin::RED_WALL_N</text>
+<text class="cuppin" x="-23.5" y="19.9" text-anchor="middle">cuppin::DIAGONAL_INNER</text>
 <text x="-66.2" y="0.7">toggle::Q1</text>
 <text x="0" y="67.6" text-anchor="middle">toggle::Q2</text>
 
