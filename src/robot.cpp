@@ -13,17 +13,14 @@ pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 // Sensors
 pros::Rotation verticalEncoder(-5);
 pros::Rotation winchEncoder(4);
-pros::Rotation clawEncoder(6);
 pros::Imu imu(13);
 pros::Distance leftDistance(3);
 pros::Distance rightDistance(2);
 pros::Distance middleDistance(1);
 
 // Mechanisms
-pros::Motor clawPivot(19, pros::MotorGearset::green);
 pros::Motor claw(-18, pros::MotorGearset::green);
 pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
-pros::Motor intake(16, pros::MotorGearset::blue);
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -89,7 +86,7 @@ lemlib::ControllerSettings angularController(
 
 lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
 
-// Offsets from the tracking center, still unmeasured: wall resets are off until filled in
+// Offsets from the tracking center
 tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
 	{leftDistance,		0,			0,				WEST},
@@ -104,21 +101,12 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 #pragma region MechanismPID ////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-tide::Mechanism clawPivotPID(clawPivot, clawEncoder, {
-	.kP		= 45.62,
-	.kI		= 3.5091,
-	.kD		= 395.4,
-	.settle	= 1,	// [deg]
-	.kG		= -1019,	// [mV]
-});
-
 tide::Mechanism winchPID(winch, winchEncoder, {
 	.kP		= 78.13,
 	.kI		= 5.3885,
 	.kD		= 755.3,
-	.settle	= 4,	// [deg]
 	.kG		= 2055,	// [mV]
-});
+}, {.min = 0});	// Zero is the boot posture, resting on the bottom
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -132,7 +120,6 @@ void initRobot() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	chassis.calibrate();
-	clawPivotPID.start();
 	winchPID.start();
 }
 

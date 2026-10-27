@@ -30,16 +30,11 @@ void autonomous() { tide::screen::runAuton(); }
 
 void opcontrol() {
 	tide::Control ctl(controller);
-	ctl.when(R).bidir(intake)
-		.when(R1).onlyIf(isWinchDown).macro(lowerToIntake)
-		.when(L).bidir(winchPID)
+	ctl.when(L).bidir(winchPID)
 		.when(R).bidir(claw)
-		.when(A).altmacro(raiseForPickup, [] { pickup(); })
-		.when(X).altmacro(clawPivotUp, score)
-		.when(B).run([] { clawPivotPID.release(); })
+		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
-		.when(RIGHT).run(tide::screen::runTuner)
-		.when(Y).macro(tareClawPivot);
+		.when(RIGHT).run(tide::screen::runTuner);
 
 	while (true) {
 		ctl.update();
