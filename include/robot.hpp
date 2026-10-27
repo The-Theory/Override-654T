@@ -49,6 +49,9 @@ std::string robotInfo();
 // Macros, defined in macros.cpp
 void score();
 void doubleToggle();
+void intakeClaw();
+void stopClaw();
+void outtakeClaw();
 
 // Autons & tuners, defined in autons.cpp
 extern const std::vector<tide::screen::Auton> autons;

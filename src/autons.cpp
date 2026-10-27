@@ -4,8 +4,6 @@
 using namespace tide::dir;
 using tide::Wall;
 
-const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
-
 ////////////////////////////////////////////////////////////////
 #pragma region Field ///////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
@@ -50,22 +48,21 @@ constexpr tide::Point Q2 = {  0,   -70.2};
 #pragma region Routines ////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
+const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
+
 void xAuton(tide::Alliance) {
-	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall, facing it
-	winchPID.moveTo(195);
+	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall facing toggle
 	doubleToggle();
 	odom.wallReset(Wall::AUDIENCE);
 
 	// To goal
-	pros::delay(200);
-	winchPID.moveTo(60);
 	odom.reachPose(goal::Q2_ALLIANCE, EAST, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
-	claw.move_voltage(-12000);
+	outtakeClaw();
 	pros::delay(230);
 
 	// Back off the goal, claw up
-	claw.move_voltage(0);
+	stopClaw();
 	winchPID.moveBy(50);
 	chassis.moveToPoint(-5, -47, 1500);
 
@@ -76,7 +73,7 @@ void xAuton(tide::Alliance) {
 
 	// Pickup cuppin
 	winchPID.moveTo(0);
-	claw.move_voltage(12000);
+	intakeClaw();
 	winchPID.moveBy(400);
 	
 	// Turn out
@@ -90,15 +87,15 @@ void xAuton(tide::Alliance) {
 	odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
 
 	// Score
-	claw.move_voltage(0);
+	stopClaw();
 	winchPID.moveTo(100);
 	pros::delay(500);
 	pros::delay(200);
-	claw.move_voltage(-12000);
+	outtakeClaw();
 	pros::delay(500);
 	winchPID.moveTo(800);
 	pros::delay(500);
-	claw.move_voltage(0);
+	stopClaw();
 
 	// Reset for next cuppin
 	chassis.moveToPose(0, -36, 0, 2000);
@@ -115,7 +112,7 @@ void xAuton(tide::Alliance) {
 
 	// Pickup
 	winchPID.moveTo(0);
-	claw.move_voltage(12000);
+	intakeClaw();
 	winchPID.moveBy(400);
 }
 
@@ -130,7 +127,7 @@ void leftBase() {
 	winchPID.moveTo(60);
 	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
-	claw.move_voltage(-12000);
+	outtakeClaw();
 	pros::delay(230);
 
 	// To cuppin
@@ -139,21 +136,21 @@ void leftBase() {
 	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 1500, {.forwards = false, .minSpeed = 40});
 
 	// Pickup cuppin
-	claw.move_velocity(12000);
+	intakeClaw();
 	pros::delay(100);
 	winchPID.moveTo(20);
 	pros::delay(1500);
 	winchPID.moveTo(600);
-	claw.move_velocity(0);
+	stopClaw();
 
 	// Score cuppin
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
 	odom.reachPoint(goal::Q1_ALLIANCE, 600, {.minSpeed = 50});
 	winchPID.moveTo(15);
 	pros::delay(400);
-	claw.move_velocity(-12000);
+	outtakeClaw();
 	pros::delay(400);
-	claw.move_velocity(0);
+	stopClaw();
 	winchPID.moveTo(600);
 
 	// To next cuppin
@@ -164,20 +161,20 @@ void leftBase() {
 
 	// Pickup
 	pros::delay(800);
-	claw.move_velocity(12000);
+	intakeClaw();
 	winchPID.moveTo(30);
 	pros::delay(1000);
 	winchPID.moveTo(700);
-	claw.move_velocity(0);
+	stopClaw();
 
 	// Score
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
 	odom.reachPoint(goal::Q1_ALLIANCE, 800, {.maxSpeed = 100});
 	winchPID.moveTo(15);
 	pros::delay(400);
-	claw.move_velocity(-12000);
+	outtakeClaw();
 	pros::delay(800);
-	claw.move_velocity(0);
+	stopClaw();
 	winchPID.moveTo(1000);
 	pros::delay(500);
 
@@ -201,15 +198,19 @@ void skillsAuton(tide::Alliance) {
 	// Grab from midfield
 	chassis.moveToPoint(-10, -10, 800, {}, false);
 	chassis.turnToPoint(-24, 32, 2000, {}, false);
-	claw.move_voltage(12000);
+	intakeClaw();
 	chassis.moveToPose(-24, 32, NORTH, 2000, {}, false);
 	pros::delay(4000);
 
 	// Score
 	winchPID.moveTo(250);
-	claw.move_voltage(0);
+	stopClaw();
 	odom.reachPoint(goal::MIDFIELD);
-	claw.move_voltage(-12000);
+	outtakeClaw();
+}
+
+void testAuton(tide::Alliance) {
+
 }
 
 #pragma endregion
@@ -245,9 +246,10 @@ std::string tuneLateral() {
 
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
-	{"X",      xAuton},			// Audience wall, centered on the Toggle, facing it
-	{"Left",   leftAuton},		// Alliance wall, centered on the Toggle, facing it
-	{"Skills", skillsAuton},	// Skills only - crosses Auton Line
+	{"X",	xAuton},			// Audience wall, centered on the Toggle, facing it
+	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
+	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
+	{"Test",	testAuton}
 };
 
 // Tune page
