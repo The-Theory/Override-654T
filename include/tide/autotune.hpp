@@ -37,6 +37,7 @@ namespace tide {
 struct Plant {
 	std::function<double()> measure;		// in the units the gains will use
 	std::function<void(double)> apply;		// [mV], + must move measure() up
+	bool lemlib = false;					// gains go in lemlib ControllerSettings, not Gains
 };
 
 // Ziegler-Nichols variants, most to least aggressive
@@ -180,18 +181,18 @@ inline Plant mechanismPlant(Mechanism& mech) {
 	return {[&mech] { return mech.position(); }, [&mech](double mv) { mech.drive(std::lround(mv)); }};
 }
 
-// Heading [deg] from where the tune starts; gains go in lemlib angular ControllerSettings (× LEMLIB_SCALE)
+// Heading [deg] from where the tune starts; gains go in lemlib angular ControllerSettings
 inline Plant turnPlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu) {
 	const double start = imu.get_rotation();
 	return {[&imu, start] { return imu.get_rotation() - start; },
-			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(-mv); }};
+			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(-mv); }, true};
 }
 
-// Tracking wheel distance [in] from where the tune starts; gains go in lemlib lateral ControllerSettings (× LEMLIB_SCALE)
+// Tracking wheel distance [in] from where the tune starts; gains go in lemlib lateral ControllerSettings
 inline Plant drivePlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Rotation& tracking, double wheelDiameter) {
 	const double start = tracking.get_position();
 	return {[&tracking, start, wheelDiameter] { return (tracking.get_position() - start) / 36000.0 * std::numbers::pi * wheelDiameter; },
-			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(mv); }};
+			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(mv); }, true};
 }
 
 #pragma endregion
@@ -217,13 +218,17 @@ inline TuneResult autotune(const char* name, const Plant& plant, TuneSettings se
 	plant.apply(0);
 
 	TuneResult r = tuner.result();
-	char lines[5][64];
-	std::snprintf(lines[0], 64, "Tune %s: %s", name, r.ok ? "OK" : (tuner.failed() ? "FAILED (strayed)" : "FAILED (no oscillation, raise amplitude)"));
-	std::snprintf(lines[1], 64, "kP %.2f  kI %.4f  kD %.1f", r.kP, r.kI, r.kD);
-	std::snprintf(lines[2], 64, "kG %.0f mV", r.kG);
-	std::snprintf(lines[3], 64, "LemLib kP %.3f kI %.5f kD %.2f", r.kP * LEMLIB_SCALE, r.kI * LEMLIB_SCALE, r.kD * LEMLIB_SCALE);
-	std::snprintf(lines[4], 64, "Ku %.1f  Tu %.3f s", r.ku, r.tu);
-	for (const char* line : lines) r.summary += std::string(line) + "\n";
+	// Only what gets pasted into code
+	char line[64];
+	std::snprintf(line, 64, "Tune %s: %s\n", name, r.ok ? "OK" : (tuner.failed() ? "FAILED (strayed)" : "FAILED (no oscillation, raise amplitude)"));
+	r.summary = line;
+	if (r.ok && plant.lemlib) {
+		std::snprintf(line, 64, "kP %.3f  kI %.5f  kD %.2f\n", r.kP * LEMLIB_SCALE, r.kI * LEMLIB_SCALE, r.kD * LEMLIB_SCALE);
+		r.summary += line;
+	} else if (r.ok) {
+		std::snprintf(line, 64, "kP %.2f  kI %.4f  kD %.1f\nkG %.0f\n", r.kP, r.kI, r.kD, r.kG);
+		r.summary += line;
+	}
 	std::printf("%s", r.summary.c_str());
 	return r;
 }
