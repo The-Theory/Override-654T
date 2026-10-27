@@ -6,6 +6,15 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
+// Goal centers from Appendix A, red side only since blue runs mirrored. Q1 is by the red station, Q2 by the audience
+namespace goal {
+constexpr tide::Point Q1_ALLIANCE = {-47.1, -23.5};
+constexpr tide::Point Q1_NEUTRAL  = {-47.1,  23.6};
+constexpr tide::Point Q2_ALLIANCE = {-23.5, -47.1};
+constexpr tide::Point Q2_NEUTRAL  = { 23.6, -47.1};
+constexpr tide::Point MIDFIELD    = {  0,     0  };
+}
+
 ////////////////////////////////////////////////////////////////
 #pragma region Routines ////////////////////////////////////////
 ////////////////////////////////////////////////////////////////

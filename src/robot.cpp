@@ -92,7 +92,7 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		0,			0,				WEST},
 	{rightDistance,		0,			0,				EAST},
 	{middleDistance,	0,			0,				NORTH},
-});
+}, {.toolForward = 0});	// Claw from the tracking center [in], unmeasured on the rebuild
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
