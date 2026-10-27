@@ -182,14 +182,14 @@ inline Plant mechanismPlant(Mechanism& mech) {
 }
 
 // Heading [deg] from where the tune starts; gains go in lemlib angular ControllerSettings
-inline Plant turnPlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu) {
+inline Plant angularPlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu) {
 	const double start = imu.get_rotation();
 	return {[&imu, start] { return imu.get_rotation() - start; },
 			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(-mv); }, true};
 }
 
 // Tracking wheel distance [in] from where the tune starts; gains go in lemlib lateral ControllerSettings
-inline Plant drivePlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Rotation& tracking, double wheelDiameter) {
+inline Plant lateralPlant(pros::MotorGroup& left, pros::MotorGroup& right, pros::Rotation& tracking, double wheelDiameter) {
 	const double start = tracking.get_position();
 	return {[&tracking, start, wheelDiameter] { return (tracking.get_position() - start) / 36000.0 * std::numbers::pi * wheelDiameter; },
 			[&left, &right](double mv) { left.move_voltage(mv); right.move_voltage(mv); }, true};

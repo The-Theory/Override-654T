@@ -226,13 +226,13 @@ std::string tuneWinch() {
 }
 
 // Needs ~2 ft clear around the robot
-std::string tuneTurn() {
-	return tide::autotune("turn", tide::turnPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
+std::string tuneAngular() {
+	return tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
 }
 
 // Needs ~1 ft clear in front and behind
-std::string tuneDrive() {
-	return tide::autotune("drive", tide::drivePlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
+std::string tuneLateral() {
+	return tide::autotune("lateral", tide::lateralPlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
 		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25}).summary;
 }
 
@@ -253,8 +253,8 @@ const std::vector<tide::screen::Auton> autons = {
 // Tune page
 const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tuneWinch},
-	{"Turn",       tuneTurn},
-	{"Drive",      tuneDrive},
+	{"Angular",    tuneAngular},
+	{"Lateral",    tuneLateral},
 };
 
 #pragma endregion
