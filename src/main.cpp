@@ -18,13 +18,7 @@ using namespace tide::btn;
 
 ////////////////////////////////////////////////////////////////
 
-void initScreen();	// autons.cpp
-
-void initialize() {
-	initScreen();
-	initRobot();
-}
-
+// initialize() is in autons.cpp, next to the screen lists it sets up
 void disabled() {}
 void competition_initialize() {}
 void autonomous() { tide::screen::runAuton(); }

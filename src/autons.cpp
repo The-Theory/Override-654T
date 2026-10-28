@@ -242,9 +242,9 @@ std::string robotInfo() {
 	return text;
 }
 
-// Called from initialize()
-void initScreen() {
+void initialize() {
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
+	initRobot();
 }
 
 #pragma endregion
