@@ -1,4 +1,5 @@
 #include "robot.hpp"
+#include "tide/screen.hpp"
 #include <algorithm>
 #include <cstdio>
 

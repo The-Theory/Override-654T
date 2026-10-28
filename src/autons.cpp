@@ -1,5 +1,6 @@
 #include "macros.hpp"
 #include "tide/autotune.hpp"
+#include "tide/screen.hpp"
 
 using namespace tide::dir;
 using tide::Wall;
@@ -246,7 +247,7 @@ std::string tuneLateral() {
 ////////////////////////////////////////////////////////////////
 
 // Auton page
-const std::vector<tide::screen::Auton> autons = {
+extern const std::vector<tide::screen::Auton> autons = {
 	{"X",	xAuton},			// Audience wall, centered on the Toggle, facing it
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
@@ -254,7 +255,7 @@ const std::vector<tide::screen::Auton> autons = {
 };
 
 // Tune page
-const std::vector<tide::screen::Tuner> tuners = {
+extern const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tuneWinch},
 	{"Angular",    tuneAngular},
 	{"Lateral",    tuneLateral},
