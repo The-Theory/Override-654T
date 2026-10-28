@@ -50,23 +50,22 @@ inline bool toggleNeedsFlip() {
 	return toggleInReach() && !toggleShowsAlliance();
 }
 
-// Runs all match from initialize(): flips any Toggle in reach to alliance color
+// Flips any Toggle in reach to alliance color
 inline void autoToggle() {
 	bool lit = false;
 	while (true) {
 		const bool inReach = toggleInReach();
-		if (inReach != lit) colorSensor.set_led_pwm(inReach ? 100 : 0);	// Own light, so field lighting doesn't shift the hue
+		if (inReach != lit) colorSensor.set_led_pwm(inReach ? 100 : 0);  // Turn on light when near
 
-		// Hue from an unlit sample is unreliable, so wait one loop after lighting up
 		if (spinToggle || (lit && inReach && !toggleShowsAlliance())) activeToggle.move_voltage(TOGGLE_MV);
-		else activeToggle.brake();	// move_voltage(0) coasts past the face
+		else activeToggle.brake();
 
 		lit = inReach;
 		pros::delay(10);
 	}
 }
 
-// For autons: waits until autoToggle is done with the Toggle in reach; false on timeout
+// Waits until autoToggle is done with the Toggle in reach; false on timeout
 inline bool waitForToggle(int timeout = 3000) {
 	const std::uint32_t start = pros::millis();
 	while (toggleNeedsFlip() && pros::millis() - start < timeout) pros::delay(10);
