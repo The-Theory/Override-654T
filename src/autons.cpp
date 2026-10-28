@@ -236,12 +236,12 @@ std::string robotInfo() {
 		"Pose\tx %.1f\ty %.1f\theading %.1f°\n"
 		"Distance\tL %s in\tR %s in\tM %s in\n"
 		"Winch\t%.0f°\n"
-		"Toggle\thue %.0f°\t%s\n"
+		"Toggle\thue %.0f°\tnear %d\t%s\n"
 		"Temps\tdrive %.0f °C\twinch %.0f °C\tclaw %.0f °C",
 		pose.x, pose.y, pose.theta,
 		inches(leftDistance).c_str(), inches(rightDistance).c_str(), inches(middleDistance).c_str(),
 		winch.position(),
-		colorSensor.get_hue(), toggleShowsAlliance() ? "ours" : "not ours",
+		colorSensor.get_hue(), colorSensor.get_proximity(), toggleShowsAlliance() ? "ours" : "not ours",
 		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winchMotors), claw.get_temperature());
 	return text;
 }
