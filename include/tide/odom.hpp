@@ -13,6 +13,7 @@
 #pragma once
 
 #include "lemlib/api.hpp"	// IWYU pragma: keep
+#include "tide/field.hpp"
 #include "pros/distance.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/rotation.hpp"
@@ -25,36 +26,6 @@
 
 
 namespace tide {
-
-// LemLib headings, pulled in with `using namespace tide::dir;`
-namespace dir {
-constexpr double NORTH = 0;
-constexpr double EAST  = 90;
-constexpr double SOUTH = 180;
-constexpr double WEST  = 270;
-
-constexpr double NORTH_EAST = 45;
-constexpr double SOUTH_EAST = 135;
-constexpr double SOUTH_WEST = 225;
-constexpr double NORTH_WEST = 315;
-}
-
-constexpr double TILE = 23.4;	// [in] tile pitch: 140.4" inside the perimeter / 6
-
-// Field position or offset [in]
-struct Point { double x, y; };
-
-// Robot-frame offset [in] (+right, +forward) along field axes, for a LemLib heading [deg]
-inline Point toField(double right, double forward, double heading) {
-	const double h = lemlib::degToRad(heading);
-	return {right * std::cos(h) + forward * std::sin(h), -right * std::sin(h) + forward * std::cos(h)};
-}
-
-// LemLib heading [deg] that points from one spot at another
-inline double bearing(Point from, Point to) { return lemlib::radToDeg(std::atan2(to.x - from.x, to.y - from.y)); }
-
-// Perimeter walls; field frame has +x toward blue station, +y away from audience
-enum class Wall { RED, BLUE, AUDIENCE, FAR };
 
 // Where a distance sensor sits, measured from the tracking center
 struct DistanceMount {
