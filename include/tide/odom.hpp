@@ -156,33 +156,55 @@ public:
 	}
 
 	/**
-	 * Measures each distance mount's offset along its beam, so the tracking center never
-	 * has to be found by eye. Turns each sensor in turn to face the wall the first one faces,
-	 * spinning in place, so every reading is from the same center: they differ only by offset.
-	 * - Start with mounts[0] square to a wall and ~4" from it, with room to spin
+	 * Measures where each distance mount sits (right and forward of the tracking center),
+	 * so the center never has to be found by eye. Pushes into a wall to square up, backs off,
+	 * then sweeps each sensor across that wall, spinning in place so the center stays put:
+	 * - along the beam, every sensor sees the same center-to-wall distance minus its offset
+	 * - sideways, a sensor off the beam's center line reads longer turning one way than the other
 	 * - i, j: two mounts facing opposite ways; apart: tape-measured distance between their faces [in]
+	 * - squareMv: push that squares up on a flat bumper; negative backs into the wall
+	 * - Start a few inches from the wall; after backing off it needs room to spin
 	 */
-	std::string measureMounts(std::size_t i, std::size_t j, double apart) {
-		const double wall = chassis.getPose().theta + mounts[0].facing;
-		std::vector<double> readings;
-		for (const DistanceMount& mount : mounts) {
-			chassis.turnToHeading(wall - mount.facing, 1500, {}, false);
-			readings.push_back(readInches(mount.sensor));
-		}
-		chassis.turnToHeading(wall - mounts[0].facing, 1500, {}, false);
+	std::string measureMounts(std::size_t i, std::size_t j, double apart,
+							  int squareMv = -6000, double backOff = 6, double sweep = 15) {
+		pushUntilStall(squareMv, 1500, 300);
+		const double wall = chassis.getPose().theta + (squareMv < 0 ? 180 : 0);
+		moveBy(squareMv < 0 ? backOff : -backOff);
 
-		// Same center for every reading: reading + offset is the same center-to-wall distance
-		const double center = readings[i] + (apart + readings[j] - readings[i]) / 2;
-		std::string summary = "Mounts, along beam from center:\n";
-		char line[64];
+		// Per mount: beam angle off the wall's normal [rad], and the reading [in]
+		std::vector<std::vector<Point>> sweeps(mounts.size());
 		for (std::size_t k = 0; k < mounts.size(); k++) {
-			if (std::isnan(readings[k])) std::snprintf(line, 64, "%zu: no reading\n", k + 1);
-			else {
-				const double along = center - readings[k];
-				const double rad = mounts[k].facing * std::numbers::pi / 180;
-				if (std::fabs(std::sin(rad)) > 0.7) std::snprintf(line, 64, "%zu: right %.2f in\n", k + 1, along * std::sin(rad));
-				else                                std::snprintf(line, 64, "%zu: forward %.2f in\n", k + 1, along * std::cos(rad));
+			const double square = wall - mounts[k].facing;
+			for (double step = -sweep; step <= sweep; step += 5) {
+				chassis.turnToHeading(square + step, 1500, {}, false);
+				const double reading = readInches(mounts[k].sensor);
+				if (!std::isnan(reading)) sweeps[k].push_back({toRad(chassis.getPose().theta - square), reading});
 			}
+		}
+
+		// reading·cos φ = center - along·cos φ + side·sin φ; along·(1 - cos φ) is small, so refine it over a few passes
+		const std::size_t n = mounts.size();
+		std::vector<double> along(n, 0), side(n, NAN), square(n, NAN);
+		for (int pass = 0; pass < 3; pass++) {
+			for (std::size_t k = 0; k < n; k++) {
+				if (sweeps[k].size() < 3) continue;
+				std::vector<Point> line;
+				for (const Point& s : sweeps[k])
+					line.push_back({std::sin(s.x), s.y * std::cos(s.x) - along[k] * (1 - std::cos(s.x))});
+				fitLine(line, side[k], square[k]);
+			}
+			const double center = (apart + square[i] + square[j]) / 2;	// along[i] + along[j] = apart
+			for (std::size_t k = 0; k < n; k++) along[k] = center - square[k];
+		}
+
+		std::string summary = "Mounts from center [in]:\n";
+		char line[64];
+		for (std::size_t k = 0; k < n; k++) {
+			const double psi = toRad(mounts[k].facing);
+			if (std::isnan(side[k]) || std::isnan(along[k])) std::snprintf(line, 64, "%zu: no reading\n", k + 1);
+			else std::snprintf(line, 64, "%zu: right %.2f  forward %.2f\n", k + 1,
+							   along[k] * std::sin(psi) + side[k] * std::cos(psi),
+							   along[k] * std::cos(psi) - side[k] * std::sin(psi));
 			summary += line;
 		}
 		std::printf("%s", summary.c_str());
@@ -190,6 +212,17 @@ public:
 	}
 
 private:
+	static double toRad(double degrees) { return degrees * std::numbers::pi / 180; }
+
+	// Least-squares line through points
+	static void fitLine(const std::vector<Point>& points, double& slope, double& intercept) {
+		double sx = 0, sy = 0, sxx = 0, sxy = 0;
+		for (const Point& p : points) { sx += p.x; sy += p.y; sxx += p.x * p.x; sxy += p.x * p.y; }
+		const double count = points.size();
+		slope     = (count * sxy - sx * sy) / (count * sxx - sx * sx);
+		intercept = (sy - slope * sx) / count;
+	}
+
 	// Average of several readings, since one is noisy; NaN if out of range
 	static double readInches(pros::Distance& sensor, int samples = 10) {
 		pros::delay(100);	// Sensor lags; skip readings taken while turning
