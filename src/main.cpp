@@ -30,7 +30,8 @@ void opcontrol() {
 		.when(R1).toggle(claw)
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
-		.when(RIGHT).run(tide::screen::runTuner);
+		.when(RIGHT).run(tide::screen::runTuner)
+		.on([&] { spinToggle = ctlr.held(R2); });
 
 	while (true) {
 		ctlr.update();

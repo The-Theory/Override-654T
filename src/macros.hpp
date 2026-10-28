@@ -30,6 +30,8 @@ inline void score() {
 constexpr int TOGGLE_MV   = 12000; 	// Voltage for toggles
 constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles: 0 far, 255 touching; keep below the lowest Info "near" while one is in reach
 
+inline bool spinToggle = false;	// Driver override: autoToggle spins while true, since it owns the motor
+
 // Whether colorSensor sees alliance color
 inline bool toggleShowsAlliance() {
 	const double hue = colorSensor.get_hue();
@@ -56,7 +58,7 @@ inline void autoToggle() {
 		if (inReach != lit) colorSensor.set_led_pwm(inReach ? 100 : 0);	// Own light, so field lighting doesn't shift the hue
 
 		// Hue from an unlit sample is unreliable, so wait one loop after lighting up
-		if (lit && inReach && !toggleShowsAlliance()) activeToggle.move_voltage(TOGGLE_MV);
+		if (spinToggle || (lit && inReach && !toggleShowsAlliance())) activeToggle.move_voltage(TOGGLE_MV);
 		else activeToggle.brake();	// move_voltage(0) coasts past the face
 
 		lit = inReach;
