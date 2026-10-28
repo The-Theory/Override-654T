@@ -3,8 +3,9 @@
 #include "robot.hpp"
 #include "tide/screen.hpp"
 
-constexpr int TOGGLE_MV   = 8000;	// Slow enough to stop on the face, not past it
-constexpr int TOGGLE_NEAR = 100;	// colorSensor proximity (0 far - 255 touching) that counts as a Toggle in reach
+////////////////////////////////////////////////////////////////
+#pragma region Body ////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
 
 // Claw control
 inline void intakeClaw() 	{ claw.move_voltage(12000); }
@@ -19,14 +20,24 @@ inline void score() {
 	stopClaw();
 }
 
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Toggle //////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+constexpr int TOGGLE_MV   = 12000; 	// Voltage for toggles
+constexpr int TOGGLE_NEAR = 30;		// Proximity for toggles: 0 far, 255 touching; keep below the lowest Info "near" while one is in reach
+
 // Whether colorSensor sees alliance color
 inline bool toggleShowsAlliance() {
 	const double hue = colorSensor.get_hue();
-	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;	// Red wraps past 0
-	return hue > 190 && hue < 250;
+	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;  // Red
+	return hue > 190 && hue < 250;  // Blue
 }
 
-// Toggle in reach that isn't alliance color yet
+// Check if an opp. toggle is within range
 inline bool toggleNeedsFlip() {
 	const std::int32_t near = colorSensor.get_proximity();
 	return near != PROS_ERR && near >= TOGGLE_NEAR && !toggleShowsAlliance();	// Unplugged sensor never spins
@@ -46,3 +57,7 @@ inline bool waitForToggle(int timeout = 3000) {
 	while (toggleNeedsFlip() && pros::millis() - start < timeout) pros::delay(10);
 	return !toggleNeedsFlip();
 }
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
