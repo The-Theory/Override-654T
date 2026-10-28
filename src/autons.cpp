@@ -17,7 +17,7 @@ const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
 void xAuton(tide::Alliance) {
 	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall facing toggle
-	doubleToggle();
+	toggleToAlliance();
 	odom.wallReset(Wall::AUDIENCE);
 
 	// To goal
@@ -84,7 +84,7 @@ void xAuton(tide::Alliance) {
 void leftBase() {
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
 	pros::delay(100);
-	doubleToggle();
+	toggleToAlliance();
 	odom.wallReset(Wall::RED);
 
 	// To goal
@@ -236,10 +236,12 @@ std::string robotInfo() {
 		"Pose\tx %.1f\ty %.1f\theading %.1f°\n"
 		"Distance\tL %s in\tR %s in\tM %s in\n"
 		"Winch\t%.0f°\n"
+		"Toggle\thue %.0f°\t%s\n"
 		"Temps\tdrive %.0f °C\twinch %.0f °C\tclaw %.0f °C",
 		pose.x, pose.y, pose.theta,
 		inches(leftDistance).c_str(), inches(rightDistance).c_str(), inches(middleDistance).c_str(),
 		winch.position(),
+		colorSensor.get_hue(), toggleShowsAlliance() ? "ours" : "not ours",
 		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winchMotors), claw.get_temperature());
 	return text;
 }

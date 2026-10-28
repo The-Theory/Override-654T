@@ -32,11 +32,12 @@ inline pros::Imu imu(13);
 inline pros::Distance leftDistance(3);
 inline pros::Distance rightDistance(2);
 inline pros::Distance middleDistance(1);
+inline pros::Optical colorSensor(15);
 
 // Mechanisms
 inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
 inline pros::Motor claw(18, pros::MotorGearset::green);
-inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);	// + lifts; flip winchEncoder with these, or the PID runs away
+inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -136,6 +137,7 @@ inline void initRobot() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	activeToggle.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
+	colorSensor.set_led_pwm(100);	// Own light, so field lighting doesn't shift the hue
 	chassis.calibrate();
 	winch.start();
 }
