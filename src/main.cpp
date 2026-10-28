@@ -46,6 +46,5 @@ void opcontrol() {
 	while (true) {
 		ctlr.update();
 		chassis.curvature(ctlr.axis(LY), ctlr.axis(RX));
-		pros::delay(25);
 	}
 }
