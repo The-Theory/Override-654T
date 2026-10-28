@@ -430,12 +430,15 @@ public:
 	/**
 	 * New trigger toggles motor state.
 	 * Motor keeps running after release.
+	 * - Only sets the motor on a press, so macros on the same motor aren't overwritten.
 	 */
 	Control& toggle(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
 		const int voltage = Control::checkVoltage(mv);
-		// Reuses toggle() above to handle the on/off state
-		return toggle([&motor, voltage](bool state) {
-			motor.move_voltage(state ? voltage : 0);  // Lambda to move motor based on state
+		// Saves this binding to run every update()
+		return ctl.add({input}, [*this, &motor, voltage](Binding& self) {
+			if (!triggered(self)) return;
+			self.state = !self.state;
+			motor.move_voltage(self.state ? voltage : 0);
 		});
 	}
 
