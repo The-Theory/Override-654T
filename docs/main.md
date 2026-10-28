@@ -316,7 +316,6 @@ void opcontrol() {
 	while (true) {
 		// Refresh
 		ctl.update();
-		pros::delay(25);
 
 		// Move
 		chassis.curvature(ctl.axis(LY), ctl.axis(RX));

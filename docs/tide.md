@@ -53,7 +53,7 @@ tide::Control ctl(controller);
 
 
 
-Next, add `ctl.update();` in your driver loop, such as before your `pros::delay()` call.
+Next, add `ctl.update();` in your driver loop. It waits 10 ms each call, so the loop needs no `pros::delay()` of its own.
 
 So, a basic version of your operator function would look like this:
 
@@ -63,7 +63,6 @@ void opcontrol() {
 
     while (true) {
         ctl.update();
-        pros::delay(25);
     }
 }
 ```

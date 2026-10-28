@@ -154,10 +154,11 @@ public:
 	int axis(Axis a) const { return ctrl.get_analog(a.id); }  // -127 to 127
 
 	/**
-	 * Snapshots the controller state, then runs every binding.
-	 * Call each iteration.
+	 * Waits 10 ms, snapshots the controller state, then runs every binding.
+	 * Call each iteration; it paces the driver loop, so the loop needs no delay of its own.
 	 */
 	void update() {
+		pros::delay(10);	// Controller and motors refresh every 10 ms; waiting first keeps the snapshot fresh
 		time = pros::millis();  // Shared by every binding for hold timing
 		was = now;  // Save last cycle
 		now = 0;
