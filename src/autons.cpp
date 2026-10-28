@@ -3,48 +3,8 @@
 #include "tide/screen.hpp"
 
 using namespace tide::dir;
+using namespace tide::field;
 using tide::Wall;
-
-////////////////////////////////////////////////////////////////
-#pragma region Field ///////////////////////////////////////////
-////////////////////////////////////////////////////////////////
-
-// Map in docs/field-map.svg
-namespace goal {
-constexpr tide::Point Q1_ALLIANCE = {-47.1, -23.5};
-constexpr tide::Point Q1_NEUTRAL  = {-47.1,  23.6};
-constexpr tide::Point Q2_ALLIANCE = {-23.5, -47.1};
-constexpr tide::Point Q2_NEUTRAL  = { 23.6, -47.1};
-constexpr tide::Point MIDFIELD    = {  0,     0  };
-}
-
-namespace cuppin {
-constexpr tide::Point RED_WALL_S      = {-68.6, -23.5};
-constexpr tide::Point RED_WALL_N      = {-68.6,  23.6};
-constexpr tide::Point AUDIENCE_WALL_W = {-23.5, -68.6};
-constexpr tide::Point AUDIENCE_WALL_E = { 23.6, -68.6};
-constexpr tide::Point DIAGONAL_INNER  = {-23.5, -23.5};
-constexpr tide::Point DIAGONAL_OUTER  = {-47.1, -47.1};
-constexpr tide::Point MIDFIELD_W      = {-23.5,   0  };
-constexpr tide::Point MIDFIELD_S      = {  0,   -23.5};
-}
-
-namespace cross {
-constexpr tide::Point Q1_INNER = {-23.5,  23.6};
-constexpr tide::Point Q1_OUTER = {-47.1,  47.1};
-constexpr tide::Point Q2_INNER = { 23.6, -23.5};
-constexpr tide::Point Q2_OUTER = { 47.1, -47.1};
-}
-
-// Wall-mount centers
-// Ram with pushUntilStall
-namespace toggle {
-constexpr tide::Point Q1 = {-70.2,   0  };
-constexpr tide::Point Q2 = {  0,   -70.2};
-}
-
-#pragma endregion
-////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 #pragma region Routines ////////////////////////////////////////
