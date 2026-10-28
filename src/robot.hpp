@@ -69,7 +69,8 @@ inline lemlib::Drivetrain drivetrain(
 );
 
 // Odometry
-inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, lemlib::Omniwheel::NEW_2, 0);
+constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter, also used by tuneLateral
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0);
 inline lemlib::OdomSensors sensors(
 	&verticalWheel,
 	nullptr, nullptr, nullptr,

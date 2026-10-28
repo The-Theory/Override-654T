@@ -198,7 +198,7 @@ std::string tuneAngular() {
 
 // Needs ~1 ft clear in front and behind
 std::string tuneLateral() {
-	return tide::autotune("lateral", tide::lateralPlant(leftMotors, rightMotors, verticalEncoder, lemlib::Omniwheel::NEW_2),
+	return tide::autotune("lateral", tide::lateralPlant(leftMotors, rightMotors, verticalEncoder, TRACKING_WHEEL),
 		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25}).summary;
 }
 
