@@ -205,6 +205,11 @@ std::string tuneLateral() {
 		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25}).summary;
 }
 
+// Spins 5 turns in place; paste the result into verticalWheel
+std::string tuneOffset() {
+	return tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL);
+}
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -225,6 +230,7 @@ const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tuneWinch},
 	{"Angular",    tuneAngular},
 	{"Lateral",    tuneLateral},
+	{"Offset",     tuneOffset},
 };
 
 // Info page

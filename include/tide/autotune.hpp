@@ -236,4 +236,33 @@ inline TuneResult autotune(const char* name, const Plant& plant, TuneSettings se
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
+////////////////////////////////////////////////////////////////
+#pragma region Offset //////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+/**
+ * Spins in place and measures a vertical tracking wheel's offset [in] for lemlib::TrackingWheel,
+ * + right of the turning center. Spinning in place should move the wheel by offset × angle,
+ * so it needs no measuring, and drift averages out over several turns.
+ */
+inline std::string trackingOffset(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu,
+								  pros::Rotation& tracking, double wheelDiameter, int turns = 5, int mv = 4000) {
+	const Plant spin  = angularPlant(left, right, imu);
+	const Plant wheel = lateralPlant(left, right, tracking, wheelDiameter);
+	spin.apply(mv);
+	while (std::abs(spin.measure()) < turns * 360.0) pros::delay(10);
+	spin.apply(0);
+	pros::delay(500);	// Let it coast to a stop, so both readings cover the same motion
+
+	// Clockwise spin moves a wheel right of center backward
+	const double offset = -wheel.measure() / (spin.measure() * std::numbers::pi / 180);
+	char line[64];
+	std::snprintf(line, 64, "Tracking offset %.2f in\n", offset);
+	std::printf("%s", line);
+	return line;
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
 } // namespace tide

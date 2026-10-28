@@ -393,6 +393,7 @@ Results print to the terminal and come back in `TuneResult::summary` (show it on
 - `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it.
 - `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
 - `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`.
+- `tide::trackingOffset(left, right, imu, tracking, wheelDiameter)` spins in place and returns the vertical tracking wheel's offset for `lemlib::TrackingWheel`, so you don't have to find the turning center by eye.
 - Anything can be tuned by giving a `tide::Plant` with `measure()` (position) and `apply(mV)`.
 
 >The gains are a starting point. The chassis especially (friction, wheel slip) usually needs a little hand-tuning afterward.
