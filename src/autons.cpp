@@ -17,7 +17,7 @@ const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
 void xAuton(tide::Alliance) {
 	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall facing toggle
-	toggleToAlliance();
+	waitForToggle();
 	odom.wallReset(Wall::AUDIENCE);
 
 	// To goal
@@ -84,7 +84,7 @@ void xAuton(tide::Alliance) {
 void leftBase() {
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
 	pros::delay(100);
-	toggleToAlliance();
+	waitForToggle();
 	odom.wallReset(Wall::RED);
 
 	// To goal
@@ -249,6 +249,7 @@ std::string robotInfo() {
 void initialize() {
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
+	pros::Task{autoToggle};	// Braces: parens would declare a Task named autoToggle
 }
 
 #pragma endregion

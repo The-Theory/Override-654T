@@ -19,19 +19,30 @@ inline void score() {
 	stopClaw();
 }
 
-// Whether colorSensor sees our alliance's face; hue windows [deg] tuned with the Info page
+// Whether colorSensor sees alliance color
 inline bool toggleShowsAlliance() {
 	const double hue = colorSensor.get_hue();
 	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;	// Red wraps past 0
 	return hue > 190 && hue < 250;
 }
 
-// Spins the Toggle until it shows the alliance picked on the brain; false on timeout or no Toggle in reach
-inline bool toggleToAlliance(int timeout = 3000) {
-	if (colorSensor.get_proximity() < TOGGLE_NEAR) return false;
+// Toggle in reach that isn't alliance color yet
+inline bool toggleNeedsFlip() {
+	const std::int32_t near = colorSensor.get_proximity();
+	return near != PROS_ERR && near >= TOGGLE_NEAR && !toggleShowsAlliance();	// Unplugged sensor never spins
+}
+
+// Runs all match from initialize(): flips any Toggle in reach to alliance color
+inline void autoToggle() {
+	while (true) {
+		activeToggle.move_voltage(toggleNeedsFlip() ? TOGGLE_MV : 0);
+		pros::delay(10);
+	}
+}
+
+// For autons: waits until autoToggle is done with the Toggle in reach; false on timeout
+inline bool waitForToggle(int timeout = 3000) {
 	const std::uint32_t start = pros::millis();
-	activeToggle.move_voltage(TOGGLE_MV);
-	while (!toggleShowsAlliance() && pros::millis() - start < timeout) pros::delay(10);
-	activeToggle.move_voltage(0);
-	return toggleShowsAlliance();
+	while (toggleNeedsFlip() && pros::millis() - start < timeout) pros::delay(10);
+	return !toggleNeedsFlip();
 }
