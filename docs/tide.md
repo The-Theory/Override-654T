@@ -354,7 +354,7 @@ Each game gets its own header of named positions. `tide/override.hpp` names the 
 
 - **Auton**: on the left, the alliance (tap to flip Red / Blue) and up to 2 on/off options; past a divider, one button per auton (2 columns, 3 past 6 autons, 9 max).
 - **Tune**: one button per tuner on the left, the last result in a panel on the right.
-- **Info**: live `"Key\tvalues"` lines you supply, refreshed 10 times a second; keys sit in a dim column so values line up.
+- **Info**: live `"Key\tvalue\tvalue"` lines you supply, refreshed 10 times a second; keys sit in a dim column and each tab starts a fixed column (up to 3), so changing digits don't shift the line.
 
 Flat navy theme, 6 px gaps, 56 px rows; the selected button is light blue.
 
