@@ -84,6 +84,11 @@ constexpr int ROW    = 56;
 constexpr int PAGE_W = 480 - 2 * GAP;
 constexpr int PAGE_H = 3 * ROW + 2 * GAP;
 
+// Info page: a key column, then fixed value columns
+constexpr int INFO_KEY_W = 86;
+constexpr int INFO_COL_W = 120;
+constexpr int INFO_COLS  = 3;
+
 inline std::vector<Auton> autons;
 inline std::vector<Tuner> tuners;
 inline std::vector<const char*> options;
@@ -101,7 +106,8 @@ inline char report[512] = "";
 inline std::atomic<int> reportVersion = 0;
 
 inline std::vector<lv_obj_t*> autonBtns, tunerBtns, pageBtns, pages;
-inline lv_obj_t *sideBtn, *reportLabel, *infoKeys, *infoValues;
+inline lv_obj_t *sideBtn, *reportLabel;
+inline lv_obj_t* infoCols[1 + INFO_COLS];	// keys, then values
 
 }
 
@@ -271,26 +277,29 @@ inline void buildTunePage(lv_obj_t* scr) {
 
 inline void buildInfoPage(lv_obj_t* scr) {
 	lv_obj_t* box = panel(page(scr), 0, PAGE_W);
-	infoKeys   = text(box, "", color::DIM);
-	infoValues = text(box, "");
-	lv_obj_set_x(infoValues, 86);
+	for (int i = 0; i <= INFO_COLS; i++) {
+		infoCols[i] = text(box, "", i == 0 ? color::DIM : color::TEXT);
+		lv_obj_set_x(infoCols[i], i == 0 ? 0 : INFO_KEY_W + (i - 1) * INFO_COL_W);
+	}
 }
 
-// Info lines are "Key\tvalues"; keys go in a dim column so the values line up
+// Info lines are "Key\tvalue\tvalue"; each tab starts a fixed column, since digits vary in width
 inline void showInfo(const std::string& str) {
-	std::string keys, values;
+	std::string cols[1 + INFO_COLS];
 	size_t start = 0;
 	while (start < str.size()) {
 		size_t end = str.find('\n', start);
 		if (end == std::string::npos) end = str.size();
-		const std::string line = str.substr(start, end - start);
-		const size_t tab = line.find('\t');
-		keys   += (tab == std::string::npos ? "" : line.substr(0, tab)) + "\n";
-		values += (tab == std::string::npos ? line : line.substr(tab + 1)) + "\n";
+		int col = 0;
+		for (size_t i = start; i < end; i++) {
+			if (str[i] != '\t') cols[col] += str[i];
+			else if (col < INFO_COLS) col++;
+			else cols[col] += ' ';
+		}
+		for (std::string& c : cols) c += '\n';
 		start = end + 1;
 	}
-	lv_label_set_text(infoKeys, keys.c_str());
-	lv_label_set_text(infoValues, values.c_str());
+	for (int i = 0; i <= INFO_COLS; i++) lv_label_set_text(infoCols[i], cols[i].c_str());
 }
 
 // Runs in the LVGL task, so it's the only place outside touch callbacks that touches widgets
