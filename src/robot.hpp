@@ -120,10 +120,10 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 ////////////////////////////////////////////////////////////////
 
 inline tide::Mechanism winch(winchMotors, winchEncoder, {
-	.kP		= 24.02,
-	.kI		= 2.2345,
-	.kD		= 172.1,
-	.kG		= 1039,	// [mV]
+	.kP		= 26.18,
+	.kI		= 2.3804,
+	.kD		= 192.0,
+	.kG		= 1068,	// [mV]
 }, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion
