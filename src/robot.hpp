@@ -36,7 +36,7 @@ inline pros::Distance middleDistance(1);
 // Mechanisms
 inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
 inline pros::Motor claw(18, pros::MotorGearset::green);
-inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);
+inline pros::MotorGroup winchMotors({-21, 20, 19}, pros::MotorGearset::blue);	// + lifts; flip winchEncoder too if these flip, or the PID runs away
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
