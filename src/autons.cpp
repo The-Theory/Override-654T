@@ -175,7 +175,8 @@ void skillsAuton(tide::Alliance) {
 }
 
 void testAuton(tide::Alliance) {
-
+	chassis.setPose(toggle::Q1.x, toggle::Q1.y, 180);
+	odom.moveBy(-24);
 }
 
 #pragma endregion
@@ -213,10 +214,10 @@ std::string tuneLateral() {
 
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
+	{"Test",	testAuton},		// For testing only
 	{"X",	xAuton},			// Audience wall, centered on the Toggle, facing it
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
-	{"Test",	testAuton}
 };
 
 // Tune page
