@@ -210,7 +210,7 @@ std::string tuneOffset() {
 	return tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL);
 }
 
-// Left sensor square to a wall, ~4" from it; paste the results into odom's mounts
+// Back a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 0;	// [in] TODO: tape-measure left sensor face to right sensor face
 	return odom.measureMounts(0, 1, SENSOR_WIDTH);
