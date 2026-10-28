@@ -28,7 +28,7 @@ inline void score() {
 ////////////////////////////////////////////////////////////////
 
 constexpr int TOGGLE_MV   = 12000; 	// Voltage for toggles
-constexpr int TOGGLE_NEAR = 30;		// Proximity for toggles: 0 far, 255 touching; keep below the lowest Info "near" while one is in reach
+constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles: 0 far, 255 touching; keep below the lowest Info "near" while one is in reach
 
 // Whether colorSensor sees alliance color
 inline bool toggleShowsAlliance() {
@@ -46,7 +46,8 @@ inline bool toggleNeedsFlip() {
 // Runs all match from initialize(): flips any Toggle in reach to alliance color
 inline void autoToggle() {
 	while (true) {
-		activeToggle.move_voltage(toggleNeedsFlip() ? TOGGLE_MV : 0);
+		if (toggleNeedsFlip()) activeToggle.move_voltage(TOGGLE_MV);
+		else activeToggle.brake();	// move_voltage(0) coasts past the face
 		pros::delay(10);
 	}
 }
