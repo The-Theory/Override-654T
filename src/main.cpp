@@ -28,7 +28,6 @@ void opcontrol() {
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winch)
 		.when(R1).toggle(claw)
-		.when(R2).toggle(activeToggle)
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner);
