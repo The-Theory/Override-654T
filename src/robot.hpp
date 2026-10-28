@@ -80,26 +80,26 @@ inline lemlib::OdomSensors sensors(
 
 // Chassis PID
 inline lemlib::ControllerSettings lateralController(
-	8,		// kP
-	0,		// kI
-	20,		// kD
-	3,		// anti windup
-	1,		// small error		[in]
-	100,	// small timeout	[ms]
-	3,		// large error		[in]
-	500,	// large timeout	[ms]
-	0		// slew
+	7.339,		// kP
+	0.22324,	// kI
+	160.85,			// kD
+	3,			// anti windup
+	1,			// small error		[in]
+	100,		// small timeout	[ms]
+	3,			// large error		[in]
+	500,		// large timeout	[ms]
+	0			// slew
 );
 inline lemlib::ControllerSettings angularController(
-	2,		// kP
-	0,		// kI
-	10,		// kD
-	3,		// anti windup
-	1,		// small error		[deg]
-	100,	// small timeout	[ms]
-	3,		// large error		[deg]
-	500,	// large timeout	[ms]
-	0		// slew
+	1.373,		// kP
+	0.05783,	// kI
+	21.75,		// kD
+	3,			// anti windup
+	1,			// small error		[deg]
+	100,		// small timeout	[ms]
+	3,			// large error		[deg]
+	500,		// large timeout	[ms]
+	0			// slew
 );
 
 inline lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
