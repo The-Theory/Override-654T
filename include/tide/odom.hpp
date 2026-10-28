@@ -20,7 +20,10 @@
 #include "pros/rtos.hpp"
 #include <cmath>
 #include <cstdint>
+#include <cstdio>
 #include <cstdlib>
+#include <numbers>
+#include <string>
 #include <vector>
 
 
@@ -152,7 +155,54 @@ public:
 		right.move_voltage(0);
 	}
 
+	/**
+	 * Measures each distance mount's offset along its beam, so the tracking center never
+	 * has to be found by eye. Turns each sensor in turn to face the wall the first one faces,
+	 * spinning in place, so every reading is from the same center: they differ only by offset.
+	 * - Start with mounts[0] square to a wall and ~4" from it, with room to spin
+	 * - i, j: two mounts facing opposite ways; apart: tape-measured distance between their faces [in]
+	 */
+	std::string measureMounts(std::size_t i, std::size_t j, double apart) {
+		const double wall = chassis.getPose().theta + mounts[0].facing;
+		std::vector<double> readings;
+		for (const DistanceMount& mount : mounts) {
+			chassis.turnToHeading(wall - mount.facing, 1500, {}, false);
+			readings.push_back(readInches(mount.sensor));
+		}
+		chassis.turnToHeading(wall - mounts[0].facing, 1500, {}, false);
+
+		// Same center for every reading: reading + offset is the same center-to-wall distance
+		const double center = readings[i] + (apart + readings[j] - readings[i]) / 2;
+		std::string summary = "Mounts, along beam from center:\n";
+		char line[64];
+		for (std::size_t k = 0; k < mounts.size(); k++) {
+			if (std::isnan(readings[k])) std::snprintf(line, 64, "%zu: no reading\n", k + 1);
+			else {
+				const double along = center - readings[k];
+				const double rad = mounts[k].facing * std::numbers::pi / 180;
+				if (std::fabs(std::sin(rad)) > 0.7) std::snprintf(line, 64, "%zu: right %.2f in\n", k + 1, along * std::sin(rad));
+				else                                std::snprintf(line, 64, "%zu: forward %.2f in\n", k + 1, along * std::cos(rad));
+			}
+			summary += line;
+		}
+		std::printf("%s", summary.c_str());
+		return summary;
+	}
+
 private:
+	// Average of several readings, since one is noisy; NaN if out of range
+	static double readInches(pros::Distance& sensor, int samples = 10) {
+		pros::delay(100);	// Sensor lags; skip readings taken while turning
+		double sum = 0;
+		for (int n = 0; n < samples; n++) {
+			const std::int32_t mm = sensor.get();
+			if (mm == PROS_ERR || mm >= 9999) return NAN;	// 9999 = nothing in range
+			sum += mm / 25.4;
+			pros::delay(40);
+		}
+		return sum / samples;
+	}
+
 	// Where the tracking center goes so the tool lands on target
 	Point centerFor(Point target, double heading) const {
 		const Point tool = toField(settings.toolRight, settings.toolForward, heading);

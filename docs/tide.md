@@ -394,6 +394,7 @@ Results print to the terminal and come back in `TuneResult::summary` (show it on
 - `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
 - `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`.
 - `tide::trackingOffset(left, right, imu, tracking, wheelDiameter)` spins in place and returns the vertical tracking wheel's offset for `lemlib::TrackingWheel`, so you don't have to find the turning center by eye.
+- `odom.measureMounts(i, j, apart)` finds each distance sensor's offset along its beam: it turns each sensor in turn to face the same wall, spinning in place. Give it two sensors facing opposite ways and the tape-measured distance between their faces.
 - Anything can be tuned by giving a `tide::Plant` with `measure()` (position) and `apply(mV)`.
 
 >The gains are a starting point. The chassis especially (friction, wheel slip) usually needs a little hand-tuning afterward.
