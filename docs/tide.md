@@ -93,7 +93,7 @@ This line assigns the `R1` button to spin our intake forward. But holding `R1` w
 ctl.when(R1).toggle(intakeMotor);
 ```
 
-Now, pressing `R1` turns our intake on, and pressing it again turns it off. However, when actually driving, our driver would probably appreciate being able to use `R1` and `R2` to change directions. We can do this as such:
+Now, pressing `R1` turns our intake on, and pressing it again turns it off. The motor is only set on a press, so a macro using the same motor isn't overridden in between. However, when actually driving, our driver would probably appreciate being able to use `R1` and `R2` to change directions. We can do this as such:
 
 ```cpp
 ctl.when(R).bidir(intakeMotor);
