@@ -1,9 +1,9 @@
 #pragma once
 
 #include "robot.hpp"
+#include "tide/screen.hpp"
 
-constexpr double TOGGLE_BACKOFF = 4;	// [in]
-constexpr int    TOGGLE_HOLD    = 250;	// [ms]
+constexpr int TOGGLE_MV = 8000;	// Slow enough to stop on the face, not past it
 
 // Claw control
 inline void intakeClaw() 	{ claw.move_voltage(12000); }
@@ -13,17 +13,23 @@ inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
 // From scoring height; ends with the winch down
 inline void score() {
 	outtakeClaw();
-	pros::delay(300);
-	winch.moveBy(200);		// Lift off the stack
-	pros::delay(500);			// Time for the driver to back away
-	stopClaw();
 	winch.moveTo(0);
+	pros::delay(750);
+	stopClaw();
 }
 
-// Two hits on the Toggle in front of the robot
-inline void doubleToggle() {
-	for (int i = 0; i < 2; i++) {
-		odom.moveBy(-TOGGLE_BACKOFF);
-		odom.pushUntilStall(6500, 1500, TOGGLE_HOLD);
-	}
+// Whether colorSensor sees our alliance's face; hue windows [deg] tuned with the Info page
+inline bool toggleShowsAlliance() {
+	const double hue = colorSensor.get_hue();
+	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;	// Red wraps past 0
+	return hue > 190 && hue < 250;
+}
+
+// Spins the Toggle until it shows the alliance picked on the brain; false on timeout
+inline bool toggleToAlliance(int timeout = 3000) {
+	const std::uint32_t start = pros::millis();
+	activeToggle.move_voltage(TOGGLE_MV);
+	while (!toggleShowsAlliance() && pros::millis() - start < timeout) pros::delay(10);
+	activeToggle.move_voltage(0);
+	return toggleShowsAlliance();
 }

@@ -4,7 +4,7 @@
 |---|---|
 | `src/main.cpp` | Competition entry points (`initialize`, `autonomous`, `opcontrol`) and driver bindings only |
 | `src/robot.hpp` | Ports, drivetrain, odometry, PID tuning, distance sensor mounts, mechanism PIDs, `initRobot()` startup; each defined once with `inline` |
-| `src/macros.hpp` | Claw/winch macros and `doubleToggle`, `inline` |
+| `src/macros.hpp` | Claw/winch macros and `toggleToAlliance`, `inline` |
 | `src/autons.cpp` | Auton routes, tuners, the **Brain** screen's auton list, tuner list and INFO text, and `initialize()` |
 | `include/tide/` | **Tide** library, see `docs/tide.md` |
 
