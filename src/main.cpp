@@ -18,7 +18,6 @@ using namespace tide::btn;
 
 ////////////////////////////////////////////////////////////////
 
-// initialize() is in autons.cpp, next to the screen lists it sets up
 void disabled() {}
 void competition_initialize() {}
 void autonomous() { tide::screen::runAuton(); }
@@ -27,7 +26,7 @@ void autonomous() { tide::screen::runAuton(); }
 
 void opcontrol() {
 	tide::Control ctlr(controller);
-	ctlr.when(L).bidir(winchPID)
+	ctlr.when(L).bidir(winch)
 		.when(R1).toggle(claw)
 		.when(R2).toggle(activeToggle)
 		.when(X).macro(score)

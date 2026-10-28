@@ -210,7 +210,7 @@ ctl.when(UP).repeat(100).run(liftStepUp)
 #### Conditions
 
 ```cpp
-bool cascadeDown() { return winch.get_position() < 50; }
+bool cascadeDown() { return winchMotors.get_position() < 50; }
 
 ctl.when(R).onlyIf(cascadeDown).bidir(intakeMotor)
    .when(A).onlyIf(cascadeDown).macro(pickupMacro);
@@ -270,21 +270,21 @@ Now how often you need to _run a function when you release a button after it's b
 For arms and lifts with a rotation sensor, `tide::Mechanism` holds the motor at a target using PID instead of the motor's built-in encoder:
 
 ```cpp
-tide::Mechanism winchPID(winch, winchEncoder, {.kP = 30, .kI = 0.5, .kD = 100, .windup = 20}, {.min = 0, .max = 1100});
+tide::Mechanism winch(winchMotors, winchEncoder, {.kP = 30, .kI = 0.5, .kD = 100, .windup = 20}, {.min = 0, .max = 1100});
 ```
 
 The second braces are the hard stops. Targets get clamped into them, so the mechanism is never asked to go somewhere it can't reach. Leave either one out if that side has no stop.
 
-Call `winchPID.start()` in `initialize()`. Then move it with `moveTo()` / `moveBy()`, let it go limp with `release()`, or drive it by hand with `bidir`:
+Call `winch.start()` in `initialize()`. Then move it with `moveTo()` / `moveBy()`, let it go limp with `release()`, or drive it by hand with `bidir`:
 
 ```cpp
-ctl.when(L).bidir(winchPID);
+ctl.when(L).bidir(winch);
 ```
 
 >Unlike `bidir` on a motor, letting go holds the mechanism where it is instead of stopping it.
 
 - `moveBy(200)` moves from where the mechanism is now, not from its last target.
-- Both take an optional voltage cap for slower moves: `winchPID.moveTo(800, 6000)`. The cap applies to the PID's push, and `kG` still gets added on top, so a slow lift can still hold its load.
+- Both take an optional voltage cap for slower moves: `winch.moveTo(800, 6000)`. The cap applies to the PID's push, and `kG` still gets added on top, so a slow lift can still hold its load.
 
 For a lift or arm, set `.kG` to the voltage that just holds the load still. It's added to every PID output, so the integral doesn't have to hold the weight. The auto-tuner below measures it for you. When the target is the stop that gravity pushes it into, `kG` is skipped, because the stop already holds the load.
 
@@ -384,7 +384,7 @@ void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected 
 `tide/autotune.hpp` runs a relay auto-tune: it drives full swing one way and the other around a setpoint, measures the oscillation the system settles into, and turns that into PID gains (Ziegler-Nichols). It also finds the voltage that holds the load (`kG`).
 
 ```cpp
-tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200});
+tide::autotune("winch", tide::mechanismPlant(winch), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200});
 tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
 ```
 
