@@ -18,7 +18,7 @@ using namespace tide::btn;
 
 ////////////////////////////////////////////////////////////////
 
-// Brain screen content: autons.cpp, screen.cpp
+// Brain screen content, in autons.cpp
 extern const std::vector<tide::screen::Auton> autons;
 extern const std::vector<tide::screen::Tuner> tuners;
 std::string robotInfo();
