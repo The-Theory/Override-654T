@@ -3,7 +3,8 @@
 #include "robot.hpp"
 #include "tide/screen.hpp"
 
-constexpr int TOGGLE_MV = 8000;	// Slow enough to stop on the face, not past it
+constexpr int TOGGLE_MV   = 8000;	// Slow enough to stop on the face, not past it
+constexpr int TOGGLE_NEAR = 100;	// colorSensor proximity (0 far - 255 touching) that counts as a Toggle in reach
 
 // Claw control
 inline void intakeClaw() 	{ claw.move_voltage(12000); }
@@ -25,8 +26,9 @@ inline bool toggleShowsAlliance() {
 	return hue > 190 && hue < 250;
 }
 
-// Spins the Toggle until it shows the alliance picked on the brain; false on timeout
+// Spins the Toggle until it shows the alliance picked on the brain; false on timeout or no Toggle in reach
 inline bool toggleToAlliance(int timeout = 3000) {
+	if (colorSensor.get_proximity() < TOGGLE_NEAR) return false;
 	const std::uint32_t start = pros::millis();
 	activeToggle.move_voltage(TOGGLE_MV);
 	while (!toggleShowsAlliance() && pros::millis() - start < timeout) pros::delay(10);
