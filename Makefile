@@ -41,6 +41,12 @@ TEMPLATE_FILES=$(INCDIR)/$(LIBNAME)/*.h $(INCDIR)/$(LIBNAME)/*.hpp
 
 .DEFAULT_GOAL=quick
 
+# PROS 4.2.2's prebuilt kernel hangs before initialize() when linked by GCC 15+; use the PROS extension's toolchain
+GCC_MAJOR:=$(shell arm-none-eabi-gcc -dumpversion 2>/dev/null | cut -d. -f1)
+ifeq ($(shell [ "$(GCC_MAJOR)" -ge 15 ] 2>/dev/null && echo bad),bad)
+$(error arm-none-eabi-gcc $(GCC_MAJOR) builds a program that freezes on the brain; put the PROS toolchain (GCC 14) first on PATH)
+endif
+
 ################################################################################
 ################################################################################
 ########## Nothing below this line should be edited by typical users ###########
