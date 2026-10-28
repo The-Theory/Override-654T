@@ -137,7 +137,6 @@ inline void initRobot() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	activeToggle.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	colorSensor.set_led_pwm(100);	// Own light, so field lighting doesn't shift the hue
 	colorSensor.set_integration_time(20);	// [ms] fresh hue sooner, so a fast Toggle stops on the face
 	chassis.calibrate();
 	winch.start();

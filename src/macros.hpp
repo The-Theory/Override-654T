@@ -37,17 +37,29 @@ inline bool toggleShowsAlliance() {
 	return hue > 190 && hue < 250;  // Blue
 }
 
+// Whether a Toggle is close enough to read and flip
+inline bool toggleInReach() {
+	const std::int32_t near = colorSensor.get_proximity();
+	return near != PROS_ERR && near >= TOGGLE_NEAR;	// Unplugged sensor never spins
+}
+
 // Check if an opp. toggle is within range
 inline bool toggleNeedsFlip() {
-	const std::int32_t near = colorSensor.get_proximity();
-	return near != PROS_ERR && near >= TOGGLE_NEAR && !toggleShowsAlliance();	// Unplugged sensor never spins
+	return toggleInReach() && !toggleShowsAlliance();
 }
 
 // Runs all match from initialize(): flips any Toggle in reach to alliance color
 inline void autoToggle() {
+	bool lit = false;
 	while (true) {
-		if (toggleNeedsFlip()) activeToggle.move_voltage(TOGGLE_MV);
+		const bool inReach = toggleInReach();
+		if (inReach != lit) colorSensor.set_led_pwm(inReach ? 100 : 0);	// Own light, so field lighting doesn't shift the hue
+
+		// Hue from an unlit sample is unreliable, so wait one loop after lighting up
+		if (lit && inReach && !toggleShowsAlliance()) activeToggle.move_voltage(TOGGLE_MV);
 		else activeToggle.brake();	// move_voltage(0) coasts past the face
+
+		lit = inReach;
 		pros::delay(10);
 	}
 }
