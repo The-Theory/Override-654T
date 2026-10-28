@@ -5,8 +5,7 @@
 | `src/main.cpp` | Competition entry points (`initialize`, `autonomous`, `opcontrol`) and driver bindings only |
 | `src/robot.hpp` | Ports, drivetrain, odometry, PID tuning, distance sensor mounts, mechanism PIDs, `initRobot()` startup; each defined once with `inline` |
 | `src/macros.hpp` | Claw/winch macros and `doubleToggle`, `inline` |
-| `src/autons.cpp` | Auton routes, tuners, and the lists shown on the **Brain** screen |
-| `src/screen.cpp` | Text for the **Brain** INFO tab |
+| `src/autons.cpp` | Auton routes, tuners, and the **Brain** screen's auton list, tuner list and INFO text |
 | `include/tide/` | **Tide** library, see `docs/tide.md` |
 
 >The sections below were written when everything lived in `src/main.cpp`; the code now sits in the files above.
