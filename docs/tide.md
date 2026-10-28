@@ -332,11 +332,12 @@ Each distance sensor is listed with where it sits relative to the tracking cente
 
 ## Field
 
-`tide/field.hpp` holds the field geometry the rest of Tide uses, plus named positions of game elements:
+`tide/field.hpp` holds the field geometry the rest of Tide uses, the same every season:
 
 - `tide::dir` holds the LemLib headings (`NORTH = 0`, `EAST = 90`, ...), pulled in with `using namespace tide::dir;`.
 - `tide::TILE` is the tile pitch (23.4"), `tide::Point` a field position in inches, `tide::Wall` the four perimeter walls.
-- `tide::field` names red-side positions: `goal::`, `cuppin::`, `cross::` and `toggle::`. Pull them in with `using namespace tide::field;` and write `odom.reachPoint(goal::MIDFIELD)`. The map of every name is `docs/field-map.svg`.
+
+Each game gets its own header of named positions. `tide/override.hpp` names the red-side Override elements under `tide::override`: `goal::`, `cuppin::`, `cross::` and `toggle::`. Pull them in with `using namespace tide::override;` and write `odom.reachPoint(goal::MIDFIELD)`. The map of every name is `docs/field-map.svg`.
 
 
 

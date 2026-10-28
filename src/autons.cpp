@@ -1,9 +1,10 @@
 #include "macros.hpp"
 #include "tide/autotune.hpp"
+#include "tide/override.hpp"
 #include "tide/screen.hpp"
 
 using namespace tide::dir;
-using namespace tide::field;
+using namespace tide::override;
 using tide::Wall;
 
 ////////////////////////////////////////////////////////////////
