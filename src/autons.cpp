@@ -210,7 +210,7 @@ std::string tuneLateral() {
 ////////////////////////////////////////////////////////////////
 
 // Auton page
-extern const std::vector<tide::screen::Auton> autons = {
+const std::vector<tide::screen::Auton> autons = {
 	{"X",	xAuton},			// Audience wall, centered on the Toggle, facing it
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
@@ -218,7 +218,7 @@ extern const std::vector<tide::screen::Auton> autons = {
 };
 
 // Tune page
-extern const std::vector<tide::screen::Tuner> tuners = {
+const std::vector<tide::screen::Tuner> tuners = {
 	{"Winch",      tuneWinch},
 	{"Angular",    tuneAngular},
 	{"Lateral",    tuneLateral},
@@ -240,6 +240,11 @@ std::string robotInfo() {
 		winchPID.position(),
 		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winch), claw.get_temperature());
 	return text;
+}
+
+// Called from initialize()
+void initScreen() {
+	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 }
 
 #pragma endregion
