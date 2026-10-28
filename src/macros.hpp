@@ -15,9 +15,9 @@ inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
 // From scoring height; ends with the winch down
 inline void score() {
 	outtakeClaw();
-	winch.moveTo(0);
+	// winch.moveTo(0);
 	pros::delay(750);
-	stopClaw();
+	// stopClaw();
 }
 
 #pragma endregion
