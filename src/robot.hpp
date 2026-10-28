@@ -27,7 +27,7 @@ inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
 inline pros::Rotation verticalEncoder(-5);
-inline pros::Rotation winchEncoder(4);
+inline pros::Rotation winchEncoder(-4);	// Counts up while lifting
 inline pros::Imu imu(13);
 inline pros::Distance leftDistance(3);
 inline pros::Distance rightDistance(2);
@@ -36,7 +36,7 @@ inline pros::Distance middleDistance(1);
 // Mechanisms
 inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
 inline pros::Motor claw(18, pros::MotorGearset::green);
-inline pros::MotorGroup winchMotors({-21, 20, 19}, pros::MotorGearset::blue);	// + lifts; flip winchEncoder too if these flip, or the PID runs away
+inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);	// + lifts; flip winchEncoder with these, or the PID runs away
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
