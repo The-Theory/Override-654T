@@ -13,7 +13,7 @@
 
 #pragma once
 
-#include "main.h"
+#include "main.h"			// IWYU pragma: keep (extern "C" competition hooks)
 #include "lemlib/api.hpp"	// IWYU pragma: keep
 #include "tide/mechanism.hpp"
 #include "tide/odom.hpp"
