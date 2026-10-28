@@ -36,7 +36,7 @@ inline pros::Optical colorSensor(15);
 
 // Mechanisms
 inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
-inline pros::Motor claw(18, pros::MotorGearset::green);
+inline pros::Motor claw(-18, pros::MotorGearset::green);
 inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);
 
 #pragma endregion
