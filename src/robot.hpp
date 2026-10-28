@@ -10,18 +10,12 @@
 // under GPL-3.0 license									  //
 ////////////////////////////////////////////////////////////////
 
-
 #pragma once
 
-#include "main.h"			// IWYU pragma: keep (extern "C" competition hooks)
+#include "main.h"			// IWYU pragma: keep
 #include "lemlib/api.hpp"	// IWYU pragma: keep
 #include "tide/mechanism.hpp"
 #include "tide/odom.hpp"
-#include "tide/screen.hpp"
-#include <string>
-#include <vector>
-
-
 
 ////////////////////////////////////////////////////////////////
 #pragma region Ports ///////////////////////////////////////////
@@ -147,10 +141,4 @@ inline void initRobot() {
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
-
-// INFO tab text, defined in screen.cpp
-std::string robotInfo();
-
-// Autons & tuners, defined in autons.cpp
-extern const std::vector<tide::screen::Auton> autons;
-extern const std::vector<tide::screen::Tuner> tuners;
+ 
