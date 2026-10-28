@@ -65,7 +65,7 @@ pros::Distance middleDistance(1);
 // Mechanisms
 pros::Motor clawPivot(19, pros::MotorGearset::green);
 pros::Motor claw(18, pros::MotorGearset::green);
-pros::MotorGroup winch({21, -20}, pros::MotorGearset::blue);
+pros::MotorGroup winchMotors({21, -20}, pros::MotorGearset::blue);
 pros::Motor intakeMotor(16, pros::MotorGearset::blue);
 ```
 
@@ -265,11 +265,11 @@ void clawPivotDown() { clawPivot.move_absolute(CLAW_PIVOT_DOWN, CLAW_PIVOT_RPM);
 void scoringMacro() {
 	claw.move_voltage(-12000);  		// Spit out from claw
 	clawPivot.move_relative(200, 200);  // Move claw up slightly
-	winch.move_relative(200, 200); 		// Lift cascade a tad
+	winchMotors.move_relative(200, 200); 		// Lift cascade a tad
 	pros::delay(1000);  				// Wait for OP drive back
 	clawPivotDown();  					// Put claw into rest mode
 	claw.move_voltage(0);  				// Stop claw
-	winch.move_absolute(0, 600);  		// Move winch down
+	winchMotors.move_absolute(0, 600);  		// Move winch down
 }
 
 /**
@@ -279,7 +279,7 @@ void scoringMacro() {
  */
 void pickupMacro() {
 	claw.move_voltage(12000);
-	winch.move_relative(-200, 200);
+	winchMotors.move_relative(-200, 200);
 	clawPivot.move_relative(-175, CLAW_PIVOT_RPM);
 	pros::delay(850);
 	clawPivotUp();
@@ -301,14 +301,14 @@ As a consequence of this, we can always divide repeated parts of macros into new
 
 ```cpp
 void opcontrol() {
-	winch.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
+	winchMotors.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	clawPivot.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 
 	// Def controls
 	tide::Control ctl(controller);
 	ctl.when(R).bidir(intakeMotor)
-	   .when(L).bidir(winch)
+	   .when(L).bidir(winchMotors)
 	   .when(R).bidir(claw)
 	   .when(A).macro(pickupMacro)
 	   .when(X).altmacro(clawPivotUp, scoringMacro);

@@ -28,7 +28,7 @@ void xAuton(tide::Alliance) {
 
 	// Back off the goal, claw up
 	stopClaw();
-	winchPID.moveBy(50);
+	winch.moveBy(50);
 	chassis.moveToPoint(-5, -47, 1500);
 
 	// To cuppin
@@ -37,9 +37,9 @@ void xAuton(tide::Alliance) {
 	odom.moveBy(2);
 
 	// Pickup cuppin
-	winchPID.moveTo(0);
+	winch.moveTo(0);
 	intakeClaw();
-	winchPID.moveBy(400);
+	winch.moveBy(400);
 	
 	// Turn out
 	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
@@ -53,32 +53,32 @@ void xAuton(tide::Alliance) {
 
 	// Score
 	stopClaw();
-	winchPID.moveTo(100);
+	winch.moveTo(100);
 	pros::delay(500);
 	pros::delay(200);
 	outtakeClaw();
 	pros::delay(500);
-	winchPID.moveTo(800);
+	winch.moveTo(800);
 	pros::delay(500);
 	stopClaw();
 
 	// Reset for next cuppin
 	chassis.moveToPose(0, -36, 0, 2000);
-	winchPID.moveTo(0);
+	winch.moveTo(0);
 	pros::delay(500);
 	pros::delay(500);
 	chassis.moveToPoint(4, -47, 1500, {}, false);
 
 	// To next cuppin
 	odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
-	winchPID.moveTo(200);
+	winch.moveTo(200);
 	odom.pushUntilStall(-6500);
 	odom.moveBy(2);
 
 	// Pickup
-	winchPID.moveTo(0);
+	winch.moveTo(0);
 	intakeClaw();
-	winchPID.moveBy(400);
+	winch.moveBy(400);
 }
 
 void leftBase() {
@@ -89,34 +89,34 @@ void leftBase() {
 
 	// To goal
 	pros::delay(100);
-	winchPID.moveTo(60);
+	winch.moveTo(60);
 	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
 	outtakeClaw();
 	pros::delay(230);
 
 	// To cuppin
-	winchPID.moveTo(400);
+	winch.moveTo(400);
 	chassis.moveToPose(-48, -10, NORTH, 1000, {.minSpeed=50});
 	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 1500, {.forwards = false, .minSpeed = 40});
 
 	// Pickup cuppin
 	intakeClaw();
 	pros::delay(100);
-	winchPID.moveTo(20);
+	winch.moveTo(20);
 	pros::delay(1500);
-	winchPID.moveTo(600);
+	winch.moveTo(600);
 	stopClaw();
 
 	// Score cuppin
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
 	odom.reachPoint(goal::Q1_ALLIANCE, 600, {.minSpeed = 50});
-	winchPID.moveTo(15);
+	winch.moveTo(15);
 	pros::delay(400);
 	outtakeClaw();
 	pros::delay(400);
 	stopClaw();
-	winchPID.moveTo(600);
+	winch.moveTo(600);
 
 	// To next cuppin
 	pros::delay(400);
@@ -127,20 +127,20 @@ void leftBase() {
 	// Pickup
 	pros::delay(800);
 	intakeClaw();
-	winchPID.moveTo(30);
+	winch.moveTo(30);
 	pros::delay(1000);
-	winchPID.moveTo(700);
+	winch.moveTo(700);
 	stopClaw();
 
 	// Score
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
 	odom.reachPoint(goal::Q1_ALLIANCE, 800, {.maxSpeed = 100});
-	winchPID.moveTo(15);
+	winch.moveTo(15);
 	pros::delay(400);
 	outtakeClaw();
 	pros::delay(800);
 	stopClaw();
-	winchPID.moveTo(1000);
+	winch.moveTo(1000);
 	pros::delay(500);
 
 	// Back out
@@ -154,7 +154,7 @@ void leftAuton(tide::Alliance) {
 
 void skillsAuton(tide::Alliance) {
 	leftBase();
-	winchPID.moveTo(200);
+	winch.moveTo(200);
 
 	// Park
 	chassis.turnToPoint(-5, -5, TURN_TIMEOUT, {.forwards=false}, false);
@@ -168,7 +168,7 @@ void skillsAuton(tide::Alliance) {
 	pros::delay(4000);
 
 	// Score
-	winchPID.moveTo(250);
+	winch.moveTo(250);
 	stopClaw();
 	odom.reachPoint(goal::MIDFIELD);
 	outtakeClaw();
@@ -186,8 +186,8 @@ void testAuton(tide::Alliance) {
 ////////////////////////////////////////////////////////////////
 
 std::string tuneWinch() {
-	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winchPID), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
-	winchPID.moveTo(0);
+	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
+	winch.moveTo(0);
 	return result.summary;
 }
 
@@ -237,8 +237,8 @@ std::string robotInfo() {
 		"Temps\tdrive %.0f °C\twinch %.0f °C\tclaw %.0f °C",
 		pose.x, pose.y, pose.theta,
 		inches(leftDistance).c_str(), inches(rightDistance).c_str(), inches(middleDistance).c_str(),
-		winchPID.position(),
-		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winch), claw.get_temperature());
+		winch.position(),
+		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winchMotors), claw.get_temperature());
 	return text;
 }
 

@@ -2,10 +2,6 @@
 
 #include "robot.hpp"
 
-////////////////////////////////////////////////////////////////
-#pragma region Macros //////////////////////////////////////////
-////////////////////////////////////////////////////////////////
-
 constexpr double TOGGLE_BACKOFF = 4;	// [in]
 constexpr int    TOGGLE_HOLD    = 250;	// [ms]
 
@@ -18,10 +14,10 @@ inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
 inline void score() {
 	outtakeClaw();
 	pros::delay(300);
-	winchPID.moveBy(200);		// Lift off the stack
+	winch.moveBy(200);		// Lift off the stack
 	pros::delay(500);			// Time for the driver to back away
 	stopClaw();
-	winchPID.moveTo(0);
+	winch.moveTo(0);
 }
 
 // Two hits on the Toggle in front of the robot
@@ -31,6 +27,3 @@ inline void doubleToggle() {
 		odom.pushUntilStall(6500, 1500, TOGGLE_HOLD);
 	}
 }
-
-#pragma endregion
-////////////////////////////////////////////////////////////////
