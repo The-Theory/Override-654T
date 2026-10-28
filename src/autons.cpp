@@ -186,14 +186,16 @@ void testAuton(tide::Alliance) {
 ////////////////////////////////////////////////////////////////
 
 std::string tuneWinch() {
-	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
+	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch), 
+		{.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
 	winch.moveTo(0);
 	return result.summary;
 }
 
 // Needs ~2 ft clear around the robot
 std::string tuneAngular() {
-	return tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
+	return tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), 
+		{.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
 }
 
 // Needs ~1 ft clear in front and behind
