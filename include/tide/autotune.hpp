@@ -256,8 +256,9 @@ inline std::string trackingOffset(pros::MotorGroup& left, pros::MotorGroup& righ
 
 	// Clockwise spin moves a wheel right of center backward
 	const double offset = -wheel.measure() / (spin.measure() * std::numbers::pi / 180);
-	char line[64];
-	std::snprintf(line, 64, "Tracking offset %.2f in\n", offset);
+	char line[96];
+	// Raw travel too, so a wheel that never turned (no contact, unplugged) doesn't pass as a centered one
+	std::snprintf(line, 96, "Tracking offset %.2f in\nwheel %.2f in over %.0f deg\n", offset, wheel.measure(), spin.measure());
 	std::printf("%s", line);
 	return line;
 }
