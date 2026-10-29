@@ -85,12 +85,18 @@ export function App() {
     <div className="app">
       <header>
         <h1>Tide Sim</h1>
-        <Choice label="Auton" options={autons} value={auton} onPick={setAuton} />
-        <Choice label="Time limit" options={LIMITS} value={limit} onPick={setLimit} show={s => `${s} s`} />
       </header>
 
       {run ? (
         <main>
+          <nav className="card menu">
+            <h2>Autons</h2>
+            <ul>
+              {autons.map(a => <li key={a}><button className={a === auton ? "on" : ""} onClick={() => setAuton(a)}>{a}</button></li>)}
+            </ul>
+            <h2>Time limit</h2>
+            <Choice options={LIMITS} value={limit} onPick={setLimit} show={s => `${s} s`} />
+          </nav>
           <section className="stage">
             <Score run={run} t={t} />
             <Field run={run} t={t} />
@@ -129,11 +135,11 @@ function PixelIcon({ rows }: { rows: string[] }) {
 }
 
 function Choice<T extends string | number>({ label, options, value, onPick, show = String }: {
-  label: string; options: T[]; value: T; onPick: (v: T) => void; show?: (v: T) => string
+  label?: string; options: T[]; value: T; onPick: (v: T) => void; show?: (v: T) => string
 }) {
   return (
     <div className="choice">
-      <span className="muted">{label}</span>
+      {label && <span className="muted">{label}</span>}
       <div className="segmented">
         {options.map(o => <button key={o} className={o === value ? "on" : ""} onClick={() => onPick(o)}>{show(o)}</button>)}
       </div>

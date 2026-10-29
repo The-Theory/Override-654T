@@ -12,7 +12,8 @@
   --warn: #e8775c;
   --odom: #c9ced4;
 
-  --sidebar: 400px;
+  --sidebar: 360px;
+  --menu: 200px;
   --bar: 240px;	/* header, score, readout, transport and padding: what the field leaves for itself */
 
   color-scheme: dark;
@@ -32,15 +33,20 @@
 .app { display: flex; flex-direction: column; height: 100vh; }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; padding: 12px 24px; border-bottom: 1px solid var(--raised); }
 h1 { font-size: 16px; font-weight: 700; margin-right: 4px; }
+/* Menu, field and steps sit together; the field takes whatever room the window leaves */
 main { flex: 1; min-height: 0; display: flex; justify-content: center; gap: 24px; padding: 20px 24px; }
-.stage { display: flex; flex-direction: column; gap: 12px; width: min(calc(100vh - var(--bar)), calc(100vw - var(--sidebar) - 72px)); }
+.stage { display: flex; flex-direction: column; gap: 12px; width: min(calc(100vh - var(--bar)), calc(100vw - var(--menu) - var(--sidebar) - 120px)); }
+.menu { align-self: flex-start; width: var(--menu); }
 aside { width: var(--sidebar); display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+
+.menu ul { list-style: none; display: flex; flex-direction: column; gap: 2px; margin-bottom: 20px; }
+.menu li button { width: 100%; text-align: left; padding: 8px 12px; }
 .status { padding: 24px; color: var(--muted); }
 
-@media (max-width: 900px) {
+@media (max-width: 1000px) {	/* too narrow for both side columns: stack */
   .app { height: auto; }
   main { flex-direction: column; align-items: center; }
-  .stage { width: 100%; }
+  .stage, .menu { width: 100%; }
   aside { width: 100%; }
 }
 
