@@ -8,8 +8,8 @@
 ////////////////////////////////////////////////////////////////
 
 // Claw control
-inline void intakeClaw() 	{ claw.move_voltage(12000); }
-inline void stopClaw() 	{ claw.move_voltage(0); 	}
+inline void intakeClaw() 	{ claw.move_voltage(12000);}
+inline void stopClaw() 		{ claw.move_voltage(0);}
 inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
 
 // From scoring height; ends with the winch down
@@ -27,19 +27,19 @@ inline void score() {
 #pragma region Toggle //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-constexpr int TOGGLE_MV   = 12000; 	// Voltage for toggles
-constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles: 0 far, 255 touching; keep below the lowest Info "near" while one is in reach
+constexpr int TOGGLE_MV   = 12000; 	// max voltage for toggles
+constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles
 
-inline bool spinToggle = false;	// Driver override: autoToggle spins while true, since it owns the motor
+inline bool spinToggle = false;	// Driver override of toggles
 
-// Whether colorSensor sees alliance color
+// Whether color sensor sees alliance color
 inline bool toggleShowsAlliance() {
 	const double hue = colorSensor.get_hue();
 	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;  // Red
 	return hue > 190 && hue < 250;  // Blue
 }
 
-// Whether a Toggle is close enough to read and flip
+// Whether a toggle is close enough
 inline bool toggleInReach() {
 	const std::int32_t near = colorSensor.get_proximity();
 	return near != PROS_ERR && near >= TOGGLE_NEAR;	// Unplugged sensor never spins
@@ -50,7 +50,7 @@ inline bool toggleNeedsFlip() {
 	return toggleInReach() && !toggleShowsAlliance();
 }
 
-// Flips any Toggle in reach to alliance color
+// Flips any toggle in reach to alliance color
 inline void autoToggle() {
 	bool lit = false;
 	while (true) {
@@ -74,4 +74,3 @@ inline bool waitForToggle(int timeout = 3000) {
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
-

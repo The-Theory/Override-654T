@@ -27,7 +27,7 @@ inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
 inline pros::Rotation verticalEncoder(-5);
-inline pros::Rotation winchEncoder(-4);	// Counts up while lifting
+inline pros::Rotation winchEncoder(4);
 inline pros::Imu imu(13);
 inline pros::Distance leftDistance(3);
 inline pros::Distance rightDistance(2);
@@ -144,4 +144,3 @@ inline void initRobot() {
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
- 
