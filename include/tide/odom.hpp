@@ -77,10 +77,8 @@ public:
 			const double beam = pose.theta + mount.facing;
 			if (std::fabs(lemlib::angleError(beam, wallHeading, false)) > settings.maxResetAngle) continue;
 
-			const std::int32_t mm = mount.sensor.get();
-			if (mm == PROS_ERR || mm >= 9999) continue;	// 9999 = nothing in range
-			const double dist = mm / 25.4;
-			if (dist > settings.maxResetRange) continue;
+			const double dist = inches(mount.sensor);
+			if (std::isnan(dist) || dist > settings.maxResetRange) continue;
 
 			const Point sensorAt = toField(mount.right, mount.forward, pose.theta);
 			const Point beamHit  = toField(0, dist, beam);
@@ -139,26 +137,23 @@ public:
 	 * - holdMs: full-voltage push after the stop, since a soft wall bends and stops the robot early
 	 */
 	void pushUntilStall(int mv, int timeout = 1500, int holdMs = 0) {
-		left.move_voltage(mv);
-		right.move_voltage(mv);
+		drive(mv, mv);
 		const std::uint32_t start = pros::millis();
 		pros::delay(settings.stallGrace);
 		while (pros::millis() - start < timeout && std::abs(tracking.get_velocity()) > settings.stallVelocity)
 			pros::delay(10);
 		if (holdMs > 0) {
 			const int full = mv < 0 ? -12000 : 12000;
-			left.move_voltage(full);
-			right.move_voltage(full);
+			drive(full, full);
 			pros::delay(holdMs);
 		}
-		left.move_voltage(0);
-		right.move_voltage(0);
+		drive(0, 0);
 	}
 
 	/**
 	 * Measures where each distance mount sits (right and forward of the tracking center),
 	 * so the center never has to be found by eye. Pushes into a wall to square up, backs off,
-	 * then sweeps each sensor across that wall, spinning in place so the center stays put:
+	 * then sweeps each sensor slowly across that wall both ways, spinning in place so the center stays put:
 	 * - along the beam, every sensor sees the same center-to-wall distance minus its offset
 	 * - sideways, a sensor off the beam's center line reads longer turning one way than the other
 	 * - i, j: two mounts facing opposite ways; apart: tape-measured distance between their faces [in]
@@ -169,16 +164,32 @@ public:
 							  int squareMv = -6000, double backOff = 6, double sweep = 15) {
 		pushUntilStall(squareMv, 1500, 300);
 		const double wall = chassis.getPose().theta + (squareMv < 0 ? 180 : 0);
-		moveBy(squareMv < 0 ? backOff : -backOff);
 
-		// Per mount: beam angle off the wall's normal [rad], and the reading [in]
+		// Straight off the wall by measured distance; a PID move from a stall can overshoot far
+		const int away = squareMv < 0 ? 3000 : -3000;
+		const lemlib::Pose start = chassis.getPose();
+		drive(away, away);
+		const std::uint32_t t0 = pros::millis();
+		while (chassis.getPose().distance(start) < backOff && pros::millis() - t0 < 2000) pros::delay(10);
+		drive(0, 0);
+
+		// Per mount: beam angle off the wall's normal [rad], and the reading [in].
+		// A slow steady spin samples continuously; sweeping both ways cancels the sensor's lag
 		std::vector<std::vector<Point>> sweeps(mounts.size());
 		for (std::size_t k = 0; k < mounts.size(); k++) {
 			const double square = wall - mounts[k].facing;
-			for (double step = -sweep; step <= sweep; step += 5) {
-				chassis.turnToHeading(square + step, 1500, {}, false);
-				const double reading = readInches(mounts[k].sensor);
-				if (!std::isnan(reading)) sweeps[k].push_back({toRad(chassis.getPose().theta - square), reading});
+			chassis.turnToHeading(square - sweep - 5, 1500, {}, false);
+			for (const int dir : {1, -1}) {
+				drive(dir * SWEEP_MV, -dir * SWEEP_MV);
+				const std::uint32_t t1 = pros::millis();
+				while (dir * offSquare(square) < sweep + 5 && pros::millis() - t1 < 4000) {
+					const double reading = inches(mounts[k].sensor);
+					const double off = offSquare(square);
+					if (!std::isnan(reading) && std::fabs(off) <= sweep) sweeps[k].push_back({toRad(off), reading});
+					pros::delay(20);
+				}
+				drive(0, 0);
+				pros::delay(200);
 			}
 		}
 
@@ -201,7 +212,7 @@ public:
 		char line[64];
 		for (std::size_t k = 0; k < n; k++) {
 			const double psi = toRad(mounts[k].facing);
-			if (std::isnan(side[k]) || std::isnan(along[k])) std::snprintf(line, 64, "%zu: no reading\n", k + 1);
+			if (std::isnan(side[k]) || std::isnan(along[k])) std::snprintf(line, 64, "%zu: no reading (%zu samples)\n", k + 1, sweeps[k].size());
 			else std::snprintf(line, 64, "%zu: right %.2f  forward %.2f\n", k + 1,
 							   along[k] * std::sin(psi) + side[k] * std::cos(psi),
 							   along[k] * std::cos(psi) - side[k] * std::sin(psi));
@@ -223,17 +234,20 @@ private:
 		intercept = (sy - slope * sx) / count;
 	}
 
-	// Average of several readings, since one is noisy; NaN if out of range
-	static double readInches(pros::Distance& sensor, int samples = 10) {
-		pros::delay(100);	// Sensor lags; skip readings taken while turning
-		double sum = 0;
-		for (int n = 0; n < samples; n++) {
-			const std::int32_t mm = sensor.get();
-			if (mm == PROS_ERR || mm >= 9999) return NAN;	// 9999 = nothing in range
-			sum += mm / 25.4;
-			pros::delay(40);
-		}
-		return sum / samples;
+	static constexpr int SWEEP_MV = 2500;	// Slow enough for the sensor to keep up, enough to beat friction
+
+	// NaN if unplugged or nothing in range
+	static double inches(pros::Distance& sensor) {
+		const std::int32_t mm = sensor.get();
+		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
+	}
+
+	// Current heading's angle past square [deg], wrapped to ±180
+	double offSquare(double square) const { return std::remainder(chassis.getPose().theta - square, 360.0); }
+
+	void drive(int leftMv, int rightMv) {
+		left.move_voltage(leftMv);
+		right.move_voltage(rightMv);
 	}
 
 	// Where the tracking center goes so the tool lands on target
