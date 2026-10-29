@@ -1,10 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type PointerEvent, type ReactNode } from "react"
+import { useEffect, useMemo, useRef, useState, type PointerEvent } from "react"
 import { Field } from "./Field.tsx"
-import { coord, holding, steps, summarize, type Step } from "./game.ts"
+import { coord, steps, type Step } from "./game.ts"
 import { Sim, frameAt, latest, type Run } from "./sim.ts"
 
-const SPEEDS  = [0.5, 1, 2, 4]
-const LIMITS  = [15, 60]	// [s] auton, skills
+const SPEEDS = [0.5, 1, 2, 4]
+const LIMITS = [15, 60]	// [s] auton, skills
 
 const seconds = (t: number) => `${t.toFixed(2)} s`
 const heading = (h: number) => `${(((h % 360) + 360) % 360).toFixed(0)}°`
@@ -94,18 +94,17 @@ export function App() {
         <main>
           <section className="stage">
             <Field run={run} t={t} />
-            <Legend />
+            <Readout run={run} t={t} />
             <div className="transport">
               <button className="play" onClick={togglePlay}>{playing ? "Pause" : t >= end ? "Replay" : "Play"}</button>
-              <span className="num clock">{t.toFixed(2)} / {seconds(end)}</span>
+              <span className="num clock">{t.toFixed(1)} / {end.toFixed(1)} s</span>
               <Timeline log={log} t={t} end={end} onSeek={seek} />
               <Choice label="Speed" options={SPEEDS} value={speed} onPick={setSpeed} show={s => `${s}×`} />
             </div>
           </section>
           <aside>
-            <RunPanel run={run} />
-            <NowPanel run={run} log={log} t={t} />
-            <LogPanel log={log} t={t} onSeek={seek} />
+            <ScoreCard run={run} log={log} t={t} />
+            <StepList log={log} t={t} onSeek={seek} />
           </aside>
         </main>
       ) : <p className="status">{status}</p>}
@@ -114,61 +113,29 @@ export function App() {
 }
 
 ////////////////////////////////////////////////////////////////
-// Building blocks
+// Pieces
 
 function Choice<T extends string | number>({ label, options, value, onPick, show = String }: {
   label: string; options: T[]; value: T; onPick: (v: T) => void; show?: (v: T) => string
 }) {
   return (
     <div className="choice">
-      <span className="label">{label}</span>
-      <div className="buttons">
+      <span className="muted">{label}</span>
+      <div className="segmented">
         {options.map(o => <button key={o} className={o === value ? "on" : ""} onClick={() => onPick(o)}>{show(o)}</button>)}
       </div>
     </div>
   )
 }
 
-function Panel({ title, className = "", children }: { title: string; className?: string; children: ReactNode }) {
+// Where the robot is under the playhead, with the legend for what's drawn
+function Readout({ run, t }: { run: Run; t: number }) {
+  const f = frameAt(run, t)
+  const off = Math.hypot(f[1] - f[4], f[2] - f[5])
   return (
-    <section className={`panel ${className}`}>
-      <h2>{title}</h2>
-      {children}
-    </section>
-  )
-}
-
-// Key / value rows; a third true marks the row as a problem
-function Rows({ rows }: { rows: [string, ReactNode, boolean?][] }) {
-  return (
-    <dl>
-      {rows.map(([key, value, warn]) => (
-        <div key={key} className={warn ? "warn" : ""}><dt>{key}</dt><dd>{value}</dd></div>
-      ))}
-    </dl>
-  )
-}
-
-// "A ×2, B" from ["A", "A", "B"]
-function countEach(names: string[]): string {
-  const counts = new Map<string, number>()
-  for (const n of names) counts.set(n, (counts.get(n) ?? 0) + 1)
-  return [...counts].map(([n, c]) => c > 1 ? `${n} ×${c}` : n).join(", ")
-}
-
-const Score = ({ red, blue }: { red: number; blue: number }) =>
-  <span className="num"><span className="red">Red {red}</span> · <span className="blue">Blue {blue}</span></span>
-
-////////////////////////////////////////////////////////////////
-// Panels
-
-function Legend() {
-  return (
-    <div className="legend">
-      <span><i className="key robot" />Robot</span>
-      <span><i className="key odom" />Where odom thinks it is</span>
-      <span><i className="key ahead" />Path still to come</span>
-      <span className="dim">Hover anything on the field for details</span>
+    <div className="readout">
+      <span><i className="key robot" />Robot <span className="num">{coord(f[1])}, {coord(f[2])} · {heading(f[3])}</span></span>
+      <span className={off > 1 ? "warn" : ""}><i className="key odom" />Odom off by <span className="num">{off.toFixed(1)} in</span></span>
     </div>
   )
 }
@@ -181,85 +148,56 @@ function Timeline({ log, t, end, onSeek }: { log: Step[]; t: number; end: number
   }
   const x = (time: number) => time / end * 1000
   return (
-    <svg className="timeline" viewBox="0 0 1000 28" preserveAspectRatio="none"
+    <svg className="timeline" viewBox="0 0 1000 24" preserveAspectRatio="none"
       onPointerDown={e => { e.currentTarget.setPointerCapture(e.pointerId); at(e) }}
       onPointerMove={e => { if (e.buttons) at(e) }}>
-      <rect className="track" width={1000} height={28} />
+      <rect className="track" width={1000} height={24} />
       {log.map((s, i) => s.claw
-        ? <rect key={i} className="claw" x={x(s.start) - 1.5} y={18} width={3} height={8} />
-        : <rect key={i} className={s.timeout ? "motion timeout" : "motion"} x={x(s.start)} y={3} width={Math.max(2, x(s.end) - x(s.start) - 2)} height={12} />)}
-      <line className="head" x1={x(t)} x2={x(t)} y1={0} y2={28} />
+        ? <rect key={i} className="claw" x={x(s.start) - 1.5} y={4} width={3} height={16} />
+        : <rect key={i} className={s.timeout ? "motion timeout" : "motion"} x={x(s.start) + 1} y={8} width={Math.max(2, x(s.end) - x(s.start) - 2)} height={8} />)}
+      <line className="head" x1={x(t)} x2={x(t)} y1={0} y2={24} />
     </svg>
   )
 }
 
-// The whole run at a glance
-function RunPanel({ run }: { run: Run }) {
-  const s = useMemo(() => summarize(run), [run])
-  const claw = [`picked up ${s.picked}`, `stacked ${s.stacked.length}`, `dropped ${s.dropped}`].join(", ")
-  return (
-    <Panel title={`Run: ${run.auton}`}>
-      <Rows rows={[
-        ["Result", s.finished ? `Finished at ${seconds(s.end)}` : `Still running at the ${s.limit} s limit`, !s.finished],
-        ["Score", <Score red={s.red} blue={s.blue} />],
-        ["Motions", `${s.motions}, ${s.timeouts} timed out`, s.timeouts > 0],
-        ["Claw", claw],
-        ["Stacked on", s.stacked.length ? countEach(s.stacked) : "Nothing"],
-        ["Toggles", s.flips.length ? s.flips.join(", ") : "None flipped"],
-        ["Odom at end", `${s.odomOff.toFixed(2)} in off`, s.odomOff > 1],
-      ]} />
-    </Panel>
-  )
-}
-
-// The moment under the playhead
-function NowPanel({ run, log, t }: { run: Run; log: Step[]; t: number }) {
-  const f = frameAt(run, t)
-  const off = Math.hypot(f[1] - f[4], f[2] - f[5])
+function ScoreCard({ run, log, t }: { run: Run; log: Step[]; t: number }) {
   const [, red, blue] = latest(run.score, t)
-  const motion = log.find(s => !s.claw && s.start <= t && t < s.end)
+  const timeouts = log.filter(s => s.timeout).length
+  const end = run.frames.at(-1)![0]
   return (
-    <Panel title={`At ${seconds(t)}`}>
-      <table className="num">
-        <thead><tr><th /><th>x</th><th>y</th><th>heading</th></tr></thead>
-        <tbody>
-          <tr><th>Robot</th><td>{coord(f[1])}</td><td>{coord(f[2])}</td><td>{heading(f[3])}</td></tr>
-          <tr><th>Odom</th><td>{coord(f[4])}</td><td>{coord(f[5])}</td><td>{heading(f[6])}</td></tr>
-        </tbody>
-      </table>
-      <Rows rows={[
-        ["Odom off by", `${off.toFixed(2)} in`, off > 1],
-        ["Running", motion ? `${motion.action}, ${(t - motion.start).toFixed(2)} of ${seconds(motion.end - motion.start)}` : "No motion"],
-        ["Claw holds", holding(run, t)],
-        ["Score", <Score red={red} blue={blue} />],
-      ]} />
-    </Panel>
+    <section className="card score">
+      <div className="points">
+        <div><span className="num red">{red}</span><span className="muted">Red</span></div>
+        <div><span className="num blue">{blue}</span><span className="muted">Blue</span></div>
+      </div>
+      <p className={run.finished ? "" : "warn"}>
+        {run.finished ? `Finished in ${seconds(end)}` : `Not done when the ${run.limit} s ran out`}
+      </p>
+      {timeouts > 0 && <p className="warn">{timeouts} {timeouts === 1 ? "motion" : "motions"} timed out</p>}
+    </section>
   )
 }
 
-// Every motion and claw action; the one under the playhead is highlighted, click one to jump to its start
-function LogPanel({ log, t, onSeek }: { log: Step[]; t: number; onSeek: (t: number) => void }) {
+// Each motion and claw action in order; click one to jump to it
+function StepList({ log, t, onSeek }: { log: Step[]; t: number; onSeek: (t: number) => void }) {
   const current = log.findLastIndex(s => s.start <= t)
-  const row = useRef<HTMLTableRowElement>(null)
+  const row = useRef<HTMLLIElement>(null)
   useEffect(() => { row.current?.scrollIntoView({ block: "nearest" }) }, [current])
   return (
-    <Panel title="Log" className="log">
-      <div className="scroll">
-        <table>
-          <thead><tr><th>Start</th><th>Action</th><th>Result</th><th>Took</th></tr></thead>
-          <tbody>
-            {log.map((s, i) => (
-              <tr key={i} ref={i === current ? row : undefined} onClick={() => onSeek(s.start)}
-                className={[i === current ? "current" : "", s.start > t ? "future" : "", s.timeout ? "warn" : ""].join(" ")}>
-                <td className="num">{s.start.toFixed(2)}</td>
-                <td>{s.action}</td>
-                <td>{s.result}</td>
-                <td className="num">{s.claw ? "" : seconds(s.end - s.start)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </Panel>
+    <section className="card steps">
+      <h2>Steps</h2>
+      <ol>
+        {log.map((s, i) => (
+          <li key={i} ref={i === current ? row : undefined} onClick={() => onSeek(s.start)}
+            className={[i === current ? "current" : "", s.start > t ? "future" : "", s.claw ? "claw" : ""].join(" ")}>
+            <span className="num muted">{s.start.toFixed(1)}</span>
+            <span>{s.what}</span>
+            {s.timeout ? <span className="tag warn">Timed out</span>
+              : s.early ? <span className="tag">Handed off</span>
+              : <span className="num muted">{s.claw ? "" : `${(s.end - s.start).toFixed(1)} s`}</span>}
+          </li>
+        ))}
+      </ol>
+    </section>
   )
 }

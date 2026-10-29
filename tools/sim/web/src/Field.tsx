@@ -8,7 +8,8 @@ import { frameAt, latest, type Run } from "./sim.ts"
 const HALF = 70.2
 const TILE = 2 * HALF / 6
 const VIEW = 74
-const GOAL_SIZE = [5.6, 5.6, 4.5, 6.5]	// [in] by kind
+const GOAL = 5.6		// [in] base width, drawn the same for every Goal
+const PIN_LONG = 6.5, PIN_WIDE = 2.9	// [in] a Pin lying down
 
 interface Tip { title: string; detail: string; x: number; y: number }
 
@@ -30,9 +31,8 @@ export function Field({ run, t }: { run: Run; t: number }) {
 
         {run.goals.map(([x, y, kind, name], i) => (
           <g key={name} transform={`translate(${x} ${y})`} {...hover(name, stackText(stacked[i]!.map(pieceName)), x, y)}>
-            <rect className={`goal goal-${GOAL_KINDS[kind]}`} x={-GOAL_SIZE[kind]! / 2} y={-GOAL_SIZE[kind]! / 2}
-              width={GOAL_SIZE[kind]} height={GOAL_SIZE[kind]} />
-            <rect className="goal-hole" x={-1.2} y={-1.2} width={2.4} height={2.4} />
+            <rect className={`goal goal-${GOAL_KINDS[kind]}`} x={-GOAL / 2} y={-GOAL / 2} width={GOAL} height={GOAL} rx={0.8} />
+            <circle className="goal-hole" r={1.2} />
           </g>
         ))}
 
@@ -41,7 +41,7 @@ export function Field({ run, t }: { run: Run; t: number }) {
           const inward = Math.atan2(-tg.x, -tg.y) * 180 / Math.PI
           return (
             <g key={tg.name} transform={`translate(${tg.x} ${tg.y}) rotate(${-inward})`} {...hover(`${tg.name} Toggle`, `Showing ${COLOURS[face]}`, tg.x, tg.y)}>
-              <rect className={`toggle c-${COLOURS[face]}`} x={-13} y={0} width={26} height={2.4} />
+              <rect className={`toggle c-${COLOURS[face]}`} x={-13} y={0} width={26} height={2.4} rx={0.6} />
             </g>
           )
         })}
@@ -55,12 +55,9 @@ export function Field({ run, t }: { run: Run; t: number }) {
           if (p.cup) return <circle key={i} className={`cup${held}`} cx={place.x} cy={place.y} r={1.58} {...h} />
           if (p.lying)
             return (
-              <g key={i} transform={`translate(${place.x} ${place.y}) rotate(${-p.angle})`} {...h}>
-                <rect className={`c-${COLOURS[p.top]}`} x={-1.5} y={0} width={3} height={3.2} />
-                <rect className={`c-${COLOURS[p.bottom]}`} x={-1.5} y={-3.2} width={3} height={3.2} />
-              </g>
+              <LyingPin key={i} x={place.x} y={place.y} angle={p.angle} top={COLOURS[p.top]} bottom={COLOURS[p.bottom]} hover={h} />
             )
-          return <circle key={i} className={`pin c-${COLOURS[p.top]}${held}`} cx={place.x} cy={place.y} r={1.2} {...h} />
+          return <circle key={i} className={`pin c-${COLOURS[p.top]}${held}`} cx={place.x} cy={place.y} r={1.3} {...h} />
         })}
 
         <Robot run={run} x={cur[4]} y={cur[5]} heading={cur[6]} className="robot odom" />
@@ -68,6 +65,20 @@ export function Field({ run, t }: { run: Run; t: number }) {
       </g>
       {tip && <Tooltip {...tip} />}
     </svg>
+  )
+}
+
+// Top-down capsule, each half its own colour; the top half points along angle
+function LyingPin({ x, y, angle, top, bottom, hover }: {
+  x: number; y: number; angle: number; top: string; bottom: string; hover: { onPointerEnter: () => void; onPointerLeave: () => void }
+}) {
+  const w = PIN_WIDE, half = PIN_LONG / 2, r = w / 2
+  return (
+    <g className="lying" transform={`translate(${x} ${y}) rotate(${-angle})`} {...hover}>
+      <rect className={`c-${bottom}`} x={-r} y={-half} width={w} height={PIN_LONG} rx={r} />
+      <path className={`c-${top}`} d={`M ${-r} 0 V ${half - r} A ${r} ${r} 0 0 0 ${r} ${half - r} V 0 Z`} />
+      <rect className="outline" x={-r} y={-half} width={w} height={PIN_LONG} rx={r} />
+    </g>
   )
 }
 
@@ -84,7 +95,7 @@ function Tooltip({ title, detail, x, y }: Tip) {
   const top  = Math.min(VIEW - h, Math.max(-VIEW, -y + 3))
   return (
     <g className="tip" transform={`translate(${left} ${top})`}>
-      <rect width={w} height={h} />
+      <rect width={w} height={h} rx={0.8} />
       <text x={PAD} y={PAD + FONT}>{title}</text>
       <text className="detail" x={PAD} y={PAD + FONT * 2.3}>{detail}</text>
     </g>
