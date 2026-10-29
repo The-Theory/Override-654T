@@ -1,6 +1,7 @@
 #pragma once
 
 #include <algorithm>
+#include <array>
 #include <cmath>
 #include <condition_variable>
 #include <cstdarg>
@@ -13,6 +14,7 @@
 #include <numbers>
 #include <string>
 #include <thread>
+#include <tuple>
 #include <vector>
 
 #ifdef __EMSCRIPTEN__
@@ -305,7 +307,7 @@ public:
 		const double v = (vl + vr) / 2;
 		x += v * std::sin(mid) * DT;
 		y += v * std::cos(mid) * DT;
-		hitWalls();
+		hitWalls((command(left) + command(right)) / 2 / 12000 * inPerSec, DT);
 
 		// Wheels can't outrun a wall, so what it let through sets their speed; that's what makes a stall
 		const double forward = (x - x0) * std::sin(mid) + (y - y0) * std::cos(mid);
@@ -340,11 +342,16 @@ private:
 		return b == COAST ? 0.3 : b == BRAKE ? 0.08 : 0.04;	// Coast rolls on, brake shorts the motor
 	}
 
-	double sideSpeed(const std::vector<std::int8_t>& ports, double v, double maxSpeed, double dt) {
-		if (ports.empty()) return 0;
+	// Mean commanded voltage of a side
+	double command(const std::vector<std::int8_t>& ports) {
 		double mv = 0;
 		for (int p : ports) mv += motor(p).mv;
-		mv /= ports.size();
+		return ports.empty() ? 0 : mv / ports.size();
+	}
+
+	double sideSpeed(const std::vector<std::int8_t>& ports, double v, double maxSpeed, double dt) {
+		if (ports.empty()) return 0;
+		const double mv = command(ports);
 		const double target = mv / 12000 * maxSpeed;
 		return v + (target - v) * dt / tau(motor(ports[0]).brake, mv, driveTau);
 	}
@@ -357,17 +364,49 @@ private:
 		}
 	}
 
-	// ponytail: pushes the center straight out of each wall; no sliding or turning against it
-	void hitWalls() {
+	std::array<std::array<double, 2>, 4> corners() const {
 		const double h = toRad(theta);
-		double minX = INFINITY, maxX = -INFINITY, minY = INFINITY, maxY = -INFINITY;
+		std::array<std::array<double, 2>, 4> out;
+		int i = 0;
 		for (double r : {-width / 2, width / 2})
-			for (double f : {-back, front}) {
-				const double cx = x + r * std::cos(h) + f * std::sin(h);
-				const double cy = y - r * std::sin(h) + f * std::cos(h);
-				minX = std::min(minX, cx); maxX = std::max(maxX, cx);
-				minY = std::min(minY, cy); maxY = std::max(maxY, cy);
-			}
+			for (double f : {-back, front})
+				out[i++] = {x + r * std::cos(h) + f * std::sin(h), y - r * std::sin(h) + f * std::cos(h)};
+		return out;
+	}
+
+	// Footprint as field-axis extents {min x, max x, min y, max y}
+	std::array<double, 4> extent() const {
+		std::array<double, 4> e = {INFINITY, -INFINITY, INFINITY, -INFINITY};
+		for (auto [cx, cy] : corners()) e = {std::min(e[0], cx), std::max(e[1], cx), std::min(e[2], cy), std::max(e[3], cy)};
+		return e;
+	}
+
+	// A bumper driven into a wall pivots flush on the corner touching it, like slamming into the perimeter
+	// to square up. ponytail: then pushes the center straight out; no sliding along the wall
+	// - push: commanded forward speed [in/s], since the wall has already stopped the wheels
+	void hitWalls(double push, double dt) {
+		constexpr double SQUARE_RATE = 3;			// [deg per inch pushed into the wall]
+		constexpr double WALLS[] = {270, 90, 180, 0};	// outward heading of the red, blue, audience, far walls
+		auto [minX, maxX, minY, maxY] = extent();
+		const bool hit[] = {minX < -halfField, maxX > halfField, minY < -halfField, maxY > halfField};
+		for (int i = 0; i < 4; i++) {
+			if (!hit[i]) continue;
+			const double off = std::remainder(theta - WALLS[i], 360.0);	// 0 when the front faces the wall
+			const double err = std::fabs(off) < 90 ? off : std::remainder(off - 180, 360.0);
+			const double into = push * std::cos(toRad(off));
+			if (into <= 0 || std::fabs(err) >= 60) continue;
+
+			const double turn = -std::copysign(std::min(std::fabs(err), SQUARE_RATE * into * dt), err);
+			const double nx = std::sin(toRad(WALLS[i])), ny = std::cos(toRad(WALLS[i]));
+			auto c = corners();
+			const auto pivot = *std::max_element(c.begin(), c.end(), [&](auto a, auto b) { return a[0] * nx + a[1] * ny < b[0] * nx + b[1] * ny; });
+			const double a = toRad(turn), dx = x - pivot[0], dy = y - pivot[1];
+			x = pivot[0] + dx * std::cos(a) + dy * std::sin(a);
+			y = pivot[1] - dx * std::sin(a) + dy * std::cos(a);
+			theta += turn;
+		}
+
+		std::tie(minX, maxX, minY, maxY) = extent();
 		if (maxX > halfField)  x -= maxX - halfField;
 		if (minX < -halfField) x += -halfField - minX;
 		if (maxY > halfField)  y -= maxY - halfField;
