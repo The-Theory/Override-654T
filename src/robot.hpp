@@ -107,10 +107,10 @@ inline lemlib::Chassis chassis(drivetrain, lateralController, angularController,
 // Offsets from the tracking center
 inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
-	{leftDistance,		0,			0,				tide::dir::WEST},
-	{rightDistance,		0,			0,				tide::dir::EAST},
-	{middleDistance,	0,			0,				tide::dir::NORTH},
-}, {.toolForward = -11.5});	// [in] Claw about an inch past the back bumper; estimate, measure to refine
+	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
+	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
+	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
+}, {.toolForward = -9.08});	// [in] Claw scoring point, 21 cm behind the middle sensor
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
