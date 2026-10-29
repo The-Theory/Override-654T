@@ -22,9 +22,9 @@ namespace fs = std::filesystem;
 #pragma region Output //////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-void writeJson(const fs::path& file, const std::string& auton, const sim::World& w) {
+void writeJson(const fs::path& file, const std::string& auton, bool finished, std::uint32_t limit, const sim::World& w) {
 	std::ofstream out(file);
-	out << "{\"auton\": \"" << auton << "\",\n";
+	out << "{\"auton\": \"" << auton << "\", \"finished\": " << (finished ? "true" : "false") << ", \"limit\": " << limit / 1000.0 << ",\n";
 	out << "\"robot\": {\"width\": " << w.width << ", \"front\": " << w.front << ", \"back\": " << w.back << "},\n";
 	sim::game::field.writeJson(out);
 	out << "\"frames\": [\n";
@@ -137,7 +137,7 @@ int main(int argc, char** argv) {
 
 	fs::create_directories(outDir);
 	const fs::path base = fs::path(outDir) / auton;
-	writeJson(base.string() + ".json", auton, w);
+	writeJson(base.string() + ".json", auton, finished, limit, w);
 	writeSvg(base.string() + ".svg", field.empty() ? fs::path() : fs::absolute(field), w);
 	std::printf("Wrote %s.json and %s.svg\n", base.c_str(), base.c_str());
 
