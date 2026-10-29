@@ -210,10 +210,10 @@ std::string tuneOffset() {
 	return tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL);
 }
 
-// Back a few inches from a wall, room to spin; paste the results into odom's mounts
+// Front a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
-	return odom.measureMounts(0, 1, SENSOR_WIDTH);
+	return odom.measureMounts(0, 1, SENSOR_WIDTH, 6000);	// Squares on the front, since the claw sticks out the back
 }
 
 #pragma endregion
