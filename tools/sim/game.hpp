@@ -42,11 +42,13 @@ struct Piece {
 struct Goal {
 	double   x, y;
 	GoalKind kind;
+	const char* name;
 	int      toggle;	// whose Toggle owns its yellow halves; -1 for Midfield
 	std::vector<int> stack;	// piece indices, bottom first
 };
 
 struct Toggle {
+	const char* name;
 	double x, y;
 	double inward;		// [deg] heading from the wall into the field
 	int    face = 0;	// Color showing, starts yellow
@@ -108,18 +110,19 @@ public:
 		using namespace tide::override;
 		auto flip = [](tide::Point p) { return tide::Point{-p.x, -p.y}; };
 
-		for (tide::Point t : {toggle::Q1, toggle::Q2, flip(toggle::Q1), flip(toggle::Q2)})
-			toggles.push_back({t.x, t.y, tide::bearing(t, {0, 0})});
+		const std::pair<const char*, tide::Point> spots[] = {
+			{"Red Q1", toggle::Q1}, {"Red Q2", toggle::Q2}, {"Blue Q1", flip(toggle::Q1)}, {"Blue Q2", flip(toggle::Q2)}};
+		for (auto [name, t] : spots) toggles.push_back({name, t.x, t.y, tide::bearing(t, {0, 0})});
 
-		addGoal(goal::Q1_ALLIANCE, RED_GOAL, 0);
-		addGoal(goal::Q1_NEUTRAL, NEUTRAL, 0);
-		addGoal(goal::Q2_ALLIANCE, RED_GOAL, 1);
-		addGoal(goal::Q2_NEUTRAL, NEUTRAL, 1);
-		addGoal(flip(goal::Q1_ALLIANCE), BLUE_GOAL, 2);
-		addGoal(flip(goal::Q1_NEUTRAL), NEUTRAL, 2);
-		addGoal(flip(goal::Q2_ALLIANCE), BLUE_GOAL, 3);
-		addGoal(flip(goal::Q2_NEUTRAL), NEUTRAL, 3);
-		addGoal(goal::MIDFIELD, MIDFIELD, -1);
+		addGoal(goal::Q1_ALLIANCE, RED_GOAL, 0, "Red Q1 alliance");
+		addGoal(goal::Q1_NEUTRAL, NEUTRAL, 0, "Red Q1 neutral");
+		addGoal(goal::Q2_ALLIANCE, RED_GOAL, 1, "Red Q2 alliance");
+		addGoal(goal::Q2_NEUTRAL, NEUTRAL, 1, "Red Q2 neutral");
+		addGoal(flip(goal::Q1_ALLIANCE), BLUE_GOAL, 2, "Blue Q1 alliance");
+		addGoal(flip(goal::Q1_NEUTRAL), NEUTRAL, 2, "Blue Q1 neutral");
+		addGoal(flip(goal::Q2_ALLIANCE), BLUE_GOAL, 3, "Blue Q2 alliance");
+		addGoal(flip(goal::Q2_NEUTRAL), NEUTRAL, 3, "Blue Q2 neutral");
+		addGoal(goal::MIDFIELD, MIDFIELD, -1, "Midfield");
 		for (Goal& g : goals)
 			if (g.kind == NEUTRAL || g.kind == MIDFIELD) stackOn(g, add({.x = g.x, .y = g.y}));
 
@@ -204,10 +207,10 @@ public:
 	void writeJson(std::ostream& out) const {
 		out << "\"goals\": [";
 		for (std::size_t i = 0; i < goals.size(); i++)
-			out << (i ? "," : "") << "[" << goals[i].x << "," << goals[i].y << "," << goals[i].kind << "]";
+			out << (i ? "," : "") << "[" << goals[i].x << "," << goals[i].y << "," << goals[i].kind << ",\"" << goals[i].name << "\"]";
 		out << "],\n\"toggles\": [\n";
 		for (std::size_t i = 0; i < toggles.size(); i++) {
-			out << (i ? ",\n" : "") << "{\"x\": " << toggles[i].x << ", \"y\": " << toggles[i].y << ", \"faces\": [";
+			out << (i ? ",\n" : "") << "{\"name\": \"" << toggles[i].name << "\", \"x\": " << toggles[i].x << ", \"y\": " << toggles[i].y << ", \"faces\": [";
 			for (std::size_t k = 0; k < faces[i].size(); k++) out << (k ? "," : "") << "[" << faces[i][k].first << "," << faces[i][k].second << "]";
 			out << "]}";
 		}
@@ -244,7 +247,7 @@ private:
 		return pieces.size() - 1;
 	}
 
-	void addGoal(tide::Point p, GoalKind kind, int toggle) { goals.push_back({p.x, p.y, kind, toggle, {}}); }
+	void addGoal(tide::Point p, GoalKind kind, int toggle, const char* name) { goals.push_back({p.x, p.y, kind, name, toggle, {}}); }
 
 	void stackOn(Goal& g, int i) {
 		Piece& p = pieces[i];
@@ -287,7 +290,7 @@ private:
 				else pieces[i].held = false;
 			}
 			held.clear();
-			if (onto) w.event("claw stacked on goal %d", int(onto - goals.data()));
+			if (onto) w.event("claw stacked on %s", onto->name);
 			else w.event("claw dropped on the tiles");
 		}
 	}

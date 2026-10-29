@@ -16,11 +16,19 @@ make -C tools/sim check              # tuners must find known offsets on a test 
 Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (skills length).
 
 ## In the browser
-`make -C tools/sim web` builds the same sim for the browser with Emscripten (`brew install emscripten`)
-into `tools/sim/out/web/sim.js`: one file with the WebAssembly inlined. The tide-sim viewer
-(`~/Developer/Web/Tail/tide-sim`, TailEngine) loads it, lists the autons, runs one, and replays it
-on the field with a timeline and the motion log. `bun run sim` there rebuilds 654T's copy into its
-`public/sims/`. A 15 s auton takes about 40 ms.
+```bash
+make -C tools/sim view               # builds the browser sim, serves the viewer on localhost:5195
+```
+Needs Emscripten and Bun (`brew install emscripten oven-sh/bun/bun`). `make -C tools/sim web` alone
+rebuilds `tools/sim/web/public/sim.js`: the same sim as one file with the WebAssembly inlined; a 15 s
+auton runs in about 40 ms. The viewer (`tools/sim/web`, React + Vite) lists the autons, runs one, and
+replays it:
+- the field with the robot (blue), where odom thought it was (pink), every piece, Goal and Toggle
+- hover any of them for what and where it is, and what's stacked on a Goal
+- a timeline with motions, claw actions (yellow) and timeouts (red); drag to scrub
+- pose and odom error, the score and each Goal's stack, and the motion log, which follows playback
+  and jumps there on click
+- Space plays and pauses, arrows step 0.1 s (1 s with shift)
 
 ## Pieces
 | Where | What |
@@ -29,6 +37,7 @@ on the field with a timeline and the motion log. `bun run sim` there rebuilds 65
 | `tools/sim/world.hpp` | Task scheduler on sim time (threads on the desktop, Asyncify fibers in the browser), drive and joint physics, wall collisions, distance-sensor ray casts |
 | `tools/sim/game.hpp` | This season's game (Override): starting Pins, Cups, Goals and Toggles, claw pickups, Toggle spinning, scoring. Swap it out next season |
 | `tools/sim/main.cpp` | Runs `initialize()` then the picked auton through `autonomous()` |
+| `tools/sim/web/` | Browser viewer |
 | `tools/sim/check.cpp` | `tide::trackingOffset` and `Odom::measureMounts` on a test robot with known offsets |
 | `src/sim.hpp` | 654T's physical truth: footprint, real sensor mounts, winch gearing, what the claw and Toggle wheel do, the preload. The brain build never sees it |
 
