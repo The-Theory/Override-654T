@@ -21,8 +21,11 @@ void q2Opening() {
 	waitForToggle();
 	odom.wallReset(Wall::AUDIENCE);
 
-	// To goal
-	odom.reachPose(goal::Q2_ALLIANCE, EAST, 2000, {.forwards = false, .minSpeed = 50});
+	// To goal: off the wall, then turn and back the claw onto it. A moveToPose from here backs
+	// straight out (its carrot sits right behind the robot) and only curves at the end
+	odom.moveBy(-6);
+	odom.aim(goal::Q2_ALLIANCE, TURN_TIMEOUT);
+	odom.reachPoint(goal::Q2_ALLIANCE);
 	pros::delay(150);
 	outtakeClaw();
 	pros::delay(230);
