@@ -110,7 +110,8 @@ h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 .c-blue { fill: var(--blue); }
 .pin { stroke: #15171a; stroke-width: 0.35; }
 .cup { fill: #ffffff; fill-opacity: 0.12; stroke: #e8eaed; stroke-opacity: 0.7; stroke-width: 0.45; }
-.lying .outline { fill: none; stroke: #15171a; stroke-width: 0.35; }
+.pin-top { fill: none; stroke: #15171a; stroke-opacity: 0.5; stroke-width: 0.25; }
+.lying polygon { stroke: #15171a; stroke-width: 0.3; stroke-linejoin: round; }
 .held { stroke: var(--accent); stroke-width: 0.7; stroke-opacity: 1; }
 .toggle { stroke: #15171a; stroke-width: 0.35; }
 
