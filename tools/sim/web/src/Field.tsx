@@ -1,4 +1,4 @@
-import { memo } from "react"
+import { memo, useState } from "react"
 import { COLOURS, GOAL_KINDS, pieceName, placeAt, placeName, stacks } from "./game.ts"
 import { frameAt, latest, type Run } from "./sim.ts"
 
@@ -7,34 +7,29 @@ import { frameAt, latest, type Run } from "./sim.ts"
 
 const HALF = 70.2
 const TILE = 2 * HALF / 6
+const VIEW = 74
 const GOAL_SIZE = [5.6, 5.6, 4.5, 6.5]	// [in] by kind
 
-export interface Inspect { title: string; detail: string }
-
-interface Props {
-  run: Run
-  t: number
-  onInspect: (what: Inspect | null) => void
-}
+interface Tip { title: string; detail: string; x: number; y: number }
 
 const pts = (xy: [number, number][]) => xy.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ")
 
-export function Field({ run, t, onInspect }: Props) {
-  const now  = Math.round(t * 100)
-  const cur  = frameAt(run, t)
-  const hover = (title: string, detail: string) => ({
-    onPointerEnter: () => onInspect({ title, detail }),
-    onPointerLeave: () => onInspect(null),
-  })
+export function Field({ run, t }: { run: Run; t: number }) {
+  const [tip, setTip] = useState<Tip | null>(null)
+  const cur = frameAt(run, t)
   const stacked = stacks(run, t)
+  const hover = (title: string, detail: string, x: number, y: number) => ({
+    onPointerEnter: () => setTip({ title, detail, x, y }),
+    onPointerLeave: () => setTip(null),
+  })
 
   return (
-    <svg className="field" viewBox="-74 -74 148 148">
+    <svg className="field" viewBox={`${-VIEW} ${-VIEW} ${2 * VIEW} ${2 * VIEW}`}>
       <g transform="scale(1 -1)">
         <Floor />
 
         {run.goals.map(([x, y, kind, name], i) => (
-          <g key={name} transform={`translate(${x} ${y})`} {...hover(name, stackText(stacked[i]!.map(pieceName)))}>
+          <g key={name} transform={`translate(${x} ${y})`} {...hover(name, stackText(stacked[i]!.map(pieceName)), x, y)}>
             <rect className={`goal goal-${GOAL_KINDS[kind]}`} x={-GOAL_SIZE[kind]! / 2} y={-GOAL_SIZE[kind]! / 2}
               width={GOAL_SIZE[kind]} height={GOAL_SIZE[kind]} />
             <rect className="goal-hole" x={-1.2} y={-1.2} width={2.4} height={2.4} />
@@ -45,16 +40,18 @@ export function Field({ run, t, onInspect }: Props) {
           const face = latest(tg.faces, t)[1]
           const inward = Math.atan2(-tg.x, -tg.y) * 180 / Math.PI
           return (
-            <g key={tg.name} transform={`translate(${tg.x} ${tg.y}) rotate(${-inward})`} {...hover(`${tg.name} Toggle`, `showing ${COLOURS[face]}`)}>
+            <g key={tg.name} transform={`translate(${tg.x} ${tg.y}) rotate(${-inward})`} {...hover(`${tg.name} Toggle`, `Showing ${COLOURS[face]}`, tg.x, tg.y)}>
               <rect className={`toggle c-${COLOURS[face]}`} x={-13} y={0} width={26} height={2.4} />
             </g>
           )
         })}
 
+        <Trail run={run} now={Math.round(t * 100)} />
+
         {run.pieces.map((p, i) => {
           const place = placeAt(p, t)
           const held  = place.where === 1 ? " held" : ""
-          const h     = hover(pieceName(p), placeName(run, place))
+          const h     = hover(pieceName(p), placeName(run, place), place.x, place.y)
           if (p.cup) return <circle key={i} className={`cup${held}`} cx={place.x} cy={place.y} r={1.58} {...h} />
           if (p.lying)
             return (
@@ -66,24 +63,32 @@ export function Field({ run, t, onInspect }: Props) {
           return <circle key={i} className={`pin c-${COLOURS[p.top]}${held}`} cx={place.x} cy={place.y} r={1.2} {...h} />
         })}
 
-        <Trail run={run} now={now} />
-
-        {run.events.map(([time, text]) => {
-          const f = frameAt(run, time)
-          const kind = text.includes("TIMEOUT") ? "timeout" : text.startsWith("claw") ? "claw" : "motion"
-          return <circle key={`${time}${text}`} className={`marker ${kind} ${time <= t ? "" : "future"}`} cx={f[1]} cy={f[2]} r={0.9}
-            {...hover(text.split(" after ")[0]!, `${time.toFixed(2)} s`)} />
-        })}
-
         <Robot run={run} x={cur[4]} y={cur[5]} heading={cur[6]} className="robot odom" />
         <Robot run={run} x={cur[1]} y={cur[2]} heading={cur[3]} className="robot" />
       </g>
+      {tip && <Tooltip {...tip} />}
     </svg>
   )
 }
 
 function stackText(names: string[]): string {
-  return names.length ? `stack, bottom first: ${names.join(", ")}` : "empty"
+  return names.length ? `Bottom to top: ${names.join(", ")}` : "Empty"
+}
+
+// Drawn unflipped, beside the thing hovered, kept inside the field
+function Tooltip({ title, detail, x, y }: Tip) {
+  const FONT = 3.4, PAD = 1.6
+  const w = Math.max(title.length, detail.length) * FONT * 0.56 + 2 * PAD
+  const h = 2 * FONT * 1.3 + 2 * PAD
+  const left = Math.min(VIEW - w, Math.max(-VIEW, x + 3))
+  const top  = Math.min(VIEW - h, Math.max(-VIEW, -y + 3))
+  return (
+    <g className="tip" transform={`translate(${left} ${top})`}>
+      <rect width={w} height={h} />
+      <text x={PAD} y={PAD + FONT}>{title}</text>
+      <text className="detail" x={PAD} y={PAD + FONT * 2.3}>{detail}</text>
+    </g>
+  )
 }
 
 // Static, so it never re-renders
