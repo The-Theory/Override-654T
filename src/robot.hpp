@@ -94,7 +94,7 @@ inline lemlib::ControllerSettings angularController(
 	1.276,		// kP
 	0.05128,	// kI
 	21.15,		// kD
-	3,			// anti windup
+	20,			// anti windup		[deg] integral pushes through turn friction once this close
 	1,			// small error		[deg]
 	100,		// small timeout	[ms]
 	3,			// large error		[deg]
