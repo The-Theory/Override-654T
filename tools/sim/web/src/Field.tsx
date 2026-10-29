@@ -9,11 +9,29 @@ const HALF = 70.2
 const TILE = 2 * HALF / 6
 const VIEW = 74
 const GOAL = 5.6		// [in] base width, drawn the same for every Goal
-const PIN_LONG = 6.5, PIN_WIDE = 2.9	// [in] a Pin lying down
+
+// Pin side profile, bottom end to top end, as [height, half width] [in]: octagonal, a short neck at the
+// bottom flaring out to the flange 2.93" up, then tapering to the top. The flange belongs to the top half.
+const PIN_LONG = 6.5
+const PIN_SPLIT = 2.93
+const PIN_PROFILE: [number, number][] = [[0, 0.65], [0.6, 0.65], [2.8, 1.42], [PIN_SPLIT, 1.55], [3.25, 1.55], [3.4, 1.32], [PIN_LONG, 0.72]]
+const PIN_FLANGE = 1.45, PIN_TOP = 0.65	// [in] standing Pin seen from above: flange and top face
 
 interface Tip { title: string; detail: string; x: number; y: number }
 
 const pts = (xy: [number, number][]) => xy.map(([x, y]) => `${x.toFixed(2)},${y.toFixed(2)}`).join(" ")
+
+// Flat-sided, like the Pins' octagonal cross-section
+const octagon = (r: number) => pts(Array.from({ length: 8 }, (_, k) => {
+  const a = (22.5 + 45 * k) * Math.PI / 180
+  return [r * Math.cos(a), r * Math.sin(a)]
+}))
+
+// Outline of the part of a lying Pin between two heights, centred on its middle, top end toward +y
+function pinPart(lo: number, hi: number): string {
+  const side = PIN_PROFILE.filter(([u]) => u >= lo && u <= hi).map(([u, w]): [number, number] => [w, u - PIN_LONG / 2])
+  return pts([...side, ...[...side].reverse().map(([w, v]): [number, number] => [-w, v])])
+}
 
 export function Field({ run, t }: { run: Run; t: number }) {
   const [tip, setTip] = useState<Tip | null>(null)
@@ -57,7 +75,12 @@ export function Field({ run, t }: { run: Run; t: number }) {
             return (
               <LyingPin key={i} x={place.x} y={place.y} angle={p.angle} top={COLOURS[p.top]} bottom={COLOURS[p.bottom]} hover={h} />
             )
-          return <circle key={i} className={`pin c-${COLOURS[p.top]}${held}`} cx={place.x} cy={place.y} r={1.3} {...h} />
+          return (
+            <g key={i} transform={`translate(${place.x} ${place.y})`} {...h}>
+              <polygon className={`pin c-${COLOURS[p.top]}${held}`} points={octagon(PIN_FLANGE)} />
+              <polygon className="pin-top" points={octagon(PIN_TOP)} />
+            </g>
+          )
         })}
 
         <Robot run={run} x={cur[4]} y={cur[5]} heading={cur[6]} className="robot odom" />
@@ -68,16 +91,14 @@ export function Field({ run, t }: { run: Run; t: number }) {
   )
 }
 
-// Top-down capsule, each half its own colour; the top half points along angle
+// A Pin on its side, each half its own colour; the top end points along angle
 function LyingPin({ x, y, angle, top, bottom, hover }: {
   x: number; y: number; angle: number; top: string; bottom: string; hover: { onPointerEnter: () => void; onPointerLeave: () => void }
 }) {
-  const w = PIN_WIDE, half = PIN_LONG / 2, r = w / 2
   return (
     <g className="lying" transform={`translate(${x} ${y}) rotate(${-angle})`} {...hover}>
-      <rect className={`c-${bottom}`} x={-r} y={-half} width={w} height={PIN_LONG} rx={r} />
-      <path className={`c-${top}`} d={`M ${-r} 0 V ${half - r} A ${r} ${r} 0 0 0 ${r} ${half - r} V 0 Z`} />
-      <rect className="outline" x={-r} y={-half} width={w} height={PIN_LONG} rx={r} />
+      <polygon className={`c-${bottom}`} points={pinPart(0, PIN_SPLIT)} />
+      <polygon className={`c-${top}`} points={pinPart(PIN_SPLIT, PIN_LONG)} />
     </g>
   )
 }
