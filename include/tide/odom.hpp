@@ -178,7 +178,7 @@ public:
 		std::vector<std::vector<Point>> sweeps(mounts.size());
 		for (std::size_t k = 0; k < mounts.size(); k++) {
 			const double square = wall - mounts[k].facing;
-			chassis.turnToHeading(square - sweep - 5, 1500, {}, false);
+			chassis.turnToHeading(square - sweep - 5, 3000, {}, false);	// Up to 180° between opposite sensors
 			for (const int dir : {1, -1}) {
 				drive(dir * SWEEP_MV, -dir * SWEEP_MV);
 				const std::uint32_t t1 = pros::millis();
