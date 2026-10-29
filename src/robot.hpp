@@ -27,7 +27,7 @@ inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
 inline pros::Rotation verticalEncoder(-5);
-inline pros::Rotation winchEncoder(4);
+inline pros::Rotation winchEncoder(-4);
 inline pros::Imu imu(13);
 inline pros::Distance leftDistance(3);
 inline pros::Distance rightDistance(2);
@@ -80,9 +80,9 @@ inline lemlib::OdomSensors sensors(
 
 // Chassis PID
 inline lemlib::ControllerSettings lateralController(
-	7.339,		// kP
-	0.22324,	// kI
-	160.85,			// kD
+	7.277,		// kP
+	0.21324,	// kI
+	165.55,		// kD
 	3,			// anti windup
 	1,			// small error		[in]
 	100,		// small timeout	[ms]
@@ -91,9 +91,9 @@ inline lemlib::ControllerSettings lateralController(
 	0			// slew
 );
 inline lemlib::ControllerSettings angularController(
-	1.373,		// kP
-	0.05783,	// kI
-	21.75,		// kD
+	1.276,		// kP
+	0.05128,	// kI
+	21.15,		// kD
 	3,			// anti windup
 	1,			// small error		[deg]
 	100,		// small timeout	[ms]
@@ -120,10 +120,10 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 ////////////////////////////////////////////////////////////////
 
 inline tide::Mechanism winch(winchMotors, winchEncoder, {
-	.kP		= 26.18,
-	.kI		= 2.3804,
-	.kD		= 192.0,
-	.kG		= 1068,	// [mV]
+	.kP		= 24.59,
+	.kI		= 2.0930,
+	.kD		= 192.6,
+	.kG		= 1062,	// [mV]
 }, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion

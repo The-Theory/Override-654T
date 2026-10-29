@@ -34,7 +34,6 @@ void opcontrol() {
 		.on([&] { spinToggle = ctlr.held(R2); });
 
 	while (true) {
-		winch.release();
 		ctlr.update();
 		chassis.curvature(ctlr.axis(LY), ctlr.axis(RX));
 	}

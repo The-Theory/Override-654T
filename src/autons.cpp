@@ -188,7 +188,7 @@ void testAuton(tide::Alliance) {
 
 std::string tuneWinch() {
 	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch), 
-		{.setpoint = 400, .amplitude = 4000, .maxDeviation = 200, .hysteresis = 1});
+		{.setpoint = 400, .amplitude = 4'000, .maxDeviation = 200, .hysteresis = 1});
 	winch.moveTo(0);
 	return result.summary;
 }
