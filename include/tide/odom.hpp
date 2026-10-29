@@ -222,6 +222,9 @@ public:
 		return summary;
 	}
 
+	const std::vector<DistanceMount>& getMounts() const { return mounts; }
+	const OdomSettings& getSettings() const { return settings; }
+
 private:
 	static double toRad(double degrees) { return degrees * std::numbers::pi / 180; }
 

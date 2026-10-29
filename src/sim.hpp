@@ -16,10 +16,7 @@ inline void simRobot(sim::World& w) {
 	w.front = 5.2;			// Autons set the center 65" out when flush on a wall
 	w.back  = 15.718 - w.front;	// 15.718" long overall
 
-	// Same as odom's mounts until they're remeasured
-	w.mounts[leftDistance.get_port()]   = {0, 0, tide::dir::WEST};
-	w.mounts[rightDistance.get_port()]  = {0, 0, tide::dir::EAST};
-	w.mounts[middleDistance.get_port()] = {0, 0, tide::dir::NORTH};
+	for (const tide::DistanceMount& m : odom.getMounts()) w.mounts[m.sensor.get_port()] = {m.right, m.forward, m.facing};
 
 	w.joints.push_back({
 		.ports          = winchMotors.get_port_all(),
@@ -32,7 +29,8 @@ inline void simRobot(sim::World& w) {
 
 	// Claw on the back, under the winch
 	auto& game = sim::game::robot;
-	game.claw.forward = -(w.back + 1);	// About an inch past the back of the drivetrain (estimate)
+	game.claw.right   = odom.getSettings().toolRight;
+	game.claw.forward = odom.getSettings().toolForward;
 	game.claw.grab    = [] { return claw.get_voltage() > 0; };
 	game.claw.release = [] { return claw.get_voltage() < 0; };
 	game.claw.lowered = [] { return winch.position() < 60; };	// Guess
