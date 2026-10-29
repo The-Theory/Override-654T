@@ -11,15 +11,22 @@ make -C tools/sim check              # tuners must find known offsets on a test 
 
 `run` prints each LemLib motion as it ends ("TIMEOUT" stands out), the final true and odom pose, and writes:
 - `tools/sim/out/<auton>.svg`: the path over `docs/field-map.svg` (blue = robot, pink = odom)
-- `tools/sim/out/<auton>.json`: the pose every 10 ms plus the motion log, for the browser viewer to come
+- `tools/sim/out/<auton>.json`: the pose every 10 ms plus the motion log; the browser viewer reads the same file
 
 Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (skills length).
+
+## In the browser
+`make -C tools/sim web` builds the same sim for the browser with Emscripten (`brew install emscripten`)
+into `tools/sim/out/web/sim.js`: one file with the WebAssembly inlined. The tide-sim viewer
+(`~/Developer/Web/Tail/tide-sim`, TailEngine) loads it, lists the autons, runs one, and replays it
+on the field with a timeline and the motion log. `bun run sim` there rebuilds 654T's copy into its
+`public/sims/`. A 15 s auton takes about 40 ms.
 
 ## Pieces
 | Where | What |
 |---|---|
 | `tools/sim/fake/` | PROS, LemLib and `tide/screen_ui.hpp` stand-ins, found ahead of `include/` |
-| `tools/sim/world.hpp` | Task scheduler on sim time, drive and joint physics, wall collisions, distance-sensor ray casts |
+| `tools/sim/world.hpp` | Task scheduler on sim time (threads on the desktop, Asyncify fibers in the browser), drive and joint physics, wall collisions, distance-sensor ray casts |
 | `tools/sim/main.cpp` | Runs `initialize()` then the picked auton through `autonomous()` |
 | `tools/sim/check.cpp` | `tide::trackingOffset` and `Odom::measureMounts` on a test robot with known offsets |
 | `src/sim.hpp` | 654T's physical truth: footprint, real sensor mounts, winch gearing. The brain build never sees it |
