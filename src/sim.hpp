@@ -12,9 +12,9 @@
 
 // What the robot physically is; drivetrain and tracking wheel come from robot.hpp unless set here
 inline void simRobot(sim::World& w) {
-	w.width = 15;	// [in] TODO: measure
-	w.front = 5.2;	// Autons set the center 65" out when flush on a wall
-	w.back  = 10;
+	w.width = 13.6;			// [in]
+	w.front = 5.2;			// Autons set the center 65" out when flush on a wall
+	w.back  = 15.718 - w.front;	// 15.718" long overall
 
 	// Same as odom's mounts until they're remeasured
 	w.mounts[leftDistance.get_port()]   = {0, 0, tide::dir::WEST};
