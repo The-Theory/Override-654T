@@ -66,11 +66,11 @@ inline lemlib::Drivetrain drivetrain(
 	11.4173,					// track width [in]
 	lemlib::Omniwheel::NEW_275,
 	450,						// [rpm]
-	1							// horizontal drift; LemLib suggests 2 for all-omni
+	1							// horizontal drift
 );
 
 // Odometry
-constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter, also used by tuneLateral
+constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
 inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0);
 inline lemlib::OdomSensors sensors(
 	&verticalWheel,
@@ -137,7 +137,7 @@ inline void initRobot() {
 	claw.set_brake_mode(pros::E_MOTOR_BRAKE_HOLD);
 	chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 	activeToggle.set_brake_mode(pros::E_MOTOR_BRAKE_BRAKE);
-	colorSensor.set_integration_time(20);	// [ms] fresh hue sooner, so a fast Toggle stops on the face
+	colorSensor.set_integration_time(20);  // Refresh rate on color sensor
 	chassis.calibrate();
 	winch.start();
 }
