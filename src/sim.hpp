@@ -32,7 +32,7 @@ inline void simRobot(sim::World& w) {
 
 	// Claw on the back, under the winch
 	auto& game = sim::game::robot;
-	game.claw.forward = -3;	// Same as odom's toolForward
+	game.claw.forward = -(w.back + 1);	// About an inch past the back of the drivetrain (estimate)
 	game.claw.grab    = [] { return claw.get_voltage() > 0; };
 	game.claw.release = [] { return claw.get_voltage() < 0; };
 	game.claw.lowered = [] { return winch.position() < 60; };	// Guess
