@@ -149,6 +149,13 @@ function Rows({ rows }: { rows: [string, ReactNode, boolean?][] }) {
   )
 }
 
+// "A ×2, B" from ["A", "A", "B"]
+function countEach(names: string[]): string {
+  const counts = new Map<string, number>()
+  for (const n of names) counts.set(n, (counts.get(n) ?? 0) + 1)
+  return [...counts].map(([n, c]) => c > 1 ? `${n} ×${c}` : n).join(", ")
+}
+
 const Score = ({ red, blue }: { red: number; blue: number }) =>
   <span className="num"><span className="red">Red {red}</span> · <span className="blue">Blue {blue}</span></span>
 
@@ -197,7 +204,7 @@ function RunPanel({ run }: { run: Run }) {
         ["Score", <Score red={s.red} blue={s.blue} />],
         ["Motions", `${s.motions}, ${s.timeouts} timed out`, s.timeouts > 0],
         ["Claw", claw],
-        ["Stacked on", s.stacked.length ? s.stacked.join(", ") : "Nothing"],
+        ["Stacked on", s.stacked.length ? countEach(s.stacked) : "Nothing"],
         ["Toggles", s.flips.length ? s.flips.join(", ") : "None flipped"],
         ["Odom at end", `${s.odomOff.toFixed(2)} in off`, s.odomOff > 1],
       ]} />
