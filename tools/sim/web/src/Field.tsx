@@ -110,7 +110,7 @@ function stackText(names: string[]): string {
 // Drawn unflipped, beside the thing hovered, kept inside the field
 function Tooltip({ title, detail, x, y }: Tip) {
   const FONT = 3.4, PAD = 1.6
-  const w = Math.max(title.length, detail.length) * FONT * 0.56 + 2 * PAD
+  const w = Math.max(title.length, detail.length) * FONT * 0.72 + 2 * PAD	// Silkscreen runs wide
   const h = 2 * FONT * 1.3 + 2 * PAD
   const left = Math.min(VIEW - w, Math.max(-VIEW, x + 3))
   const top  = Math.min(VIEW - h, Math.max(-VIEW, -y + 3))

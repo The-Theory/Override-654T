@@ -12,17 +12,17 @@
   --warn: #e8775c;
   --odom: #c9ced4;
 
-  --sidebar: 340px;
+  --sidebar: 400px;
   --bar: 240px;	/* header, score, readout, transport and padding: what the field leaves for itself */
 
   color-scheme: dark;
-  font: 14px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+  font: 13px/1.6 "Silkscreen", ui-monospace, monospace;
   color: var(--ink);
   background: var(--bg);
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-.num { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-variant-numeric: tabular-nums; font-size: 13px; }
+.num { font-variant-numeric: tabular-nums; }
 .muted { color: var(--muted); }
 .warn { color: var(--warn); }
 .red { color: var(--red); }
@@ -31,7 +31,7 @@
 /* Layout: the field takes the height it can get, the sidebar sits right beside it */
 .app { display: flex; flex-direction: column; height: 100vh; }
 header { display: flex; flex-wrap: wrap; align-items: center; gap: 28px; padding: 12px 24px; border-bottom: 1px solid var(--raised); }
-h1 { font-size: 16px; font-weight: 600; margin-right: 4px; }
+h1 { font-size: 16px; font-weight: 700; margin-right: 4px; }
 main { flex: 1; min-height: 0; display: flex; justify-content: center; gap: 24px; padding: 20px 24px; }
 .stage { display: flex; flex-direction: column; gap: 12px; width: min(calc(100vh - var(--bar)), calc(100vw - var(--sidebar) - 72px)); }
 aside { width: var(--sidebar); display: flex; flex-direction: column; gap: 16px; min-height: 0; }
@@ -66,9 +66,9 @@ button.on { background: var(--accent); color: #0d1a26; }
 
 /* Sidebar */
 .card { background: var(--card); padding: 16px 18px; }
-h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+h2 { font-size: 13px; font-weight: 400; color: var(--muted); margin-bottom: 8px; }
 
-.score { text-align: center; font-size: 28px; font-weight: 600; line-height: 1; color: var(--muted); }
+.score { text-align: center; font-size: 32px; font-weight: 700; line-height: 1; color: var(--muted); }
 
 .steps { flex: 1; min-height: 160px; display: flex; flex-direction: column; }
 .steps ol { list-style: none; overflow-y: auto; margin: 0 -10px; }
@@ -121,5 +121,5 @@ h2 { font-size: 13px; font-weight: 600; color: var(--muted); margin-bottom: 8px;
 
 .tip { pointer-events: none; }
 .tip rect { fill: var(--raised); }
-.tip text { fill: var(--ink); font-size: 3.4px; font-family: system-ui, sans-serif; }
+.tip text { fill: var(--ink); font-size: 3.4px; font-family: "Silkscreen", monospace; }
 .tip .detail { fill: var(--muted); }
