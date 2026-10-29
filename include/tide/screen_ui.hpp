@@ -124,6 +124,13 @@ inline lv_obj_t* column(lv_obj_t* parent, int x, int w) {
 	return obj;
 }
 
+// Fills rows left to right, wrapping to the next row
+inline lv_obj_t* grid(lv_obj_t* parent, int x, int w) {
+	lv_obj_t* obj = column(parent, x, w);
+	lv_obj_set_flex_flow(obj, LV_FLEX_FLOW_ROW_WRAP);
+	return obj;
+}
+
 // Slightly lighter block behind text output
 inline lv_obj_t* panel(lv_obj_t* parent, int x, int w) {
 	lv_obj_t* obj = plain(parent);
@@ -200,30 +207,29 @@ inline void buildAutonPage(lv_obj_t* scr) {
 	const int gridX = LEFT_W + 2 * GAP + 2;
 	const int gridW = PAGE_W - gridX;
 	const int cols  = autons.size() > 6 ? 3 : 2;
-	lv_obj_t* grid = plain(p);
-	lv_obj_set_pos(grid, gridX, 0);
-	lv_obj_set_size(grid, gridW, PAGE_H);
-	lv_obj_set_flex_flow(grid, LV_FLEX_FLOW_ROW_WRAP);
-	lv_obj_set_style_pad_gap(grid, GAP, 0);
+	lv_obj_t* autonGrid = grid(p, gridX, gridW);
 	for (int i = 0; i < (int)autons.size(); i++) {
-		autonBtns.push_back(button(grid, autons[i].name, (gridW - GAP * (cols - 1)) / cols, color::SELECTED, [](lv_event_t* e) {
+		autonBtns.push_back(button(autonGrid, autons[i].name, (gridW - GAP * (cols - 1)) / cols, color::SELECTED, [](lv_event_t* e) {
 			autonIdx = clickedIndex(e);
 			check(autonBtns, autonIdx);
 		}, i));
 	}
 }
 
+// Tuners in one column, or two past 3 (a column holds 3 rows), result panel on the right
 inline void buildTunePage(lv_obj_t* scr) {
 	lv_obj_t* p = page(scr);
-	constexpr int LEFT_W = 152;
-	lv_obj_t* left = column(p, 0, LEFT_W);
+	const bool wide   = tuners.size() > 3;
+	const int  btnW   = wide ? 96 : 152;
+	const int  leftW  = wide ? 2 * btnW + GAP : btnW;
+	lv_obj_t* left = grid(p, 0, leftW);
 	for (int i = 0; i < (int)tuners.size(); i++) {
-		tunerBtns.push_back(button(left, tuners[i].name, LEFT_W, color::SELECTED, [](lv_event_t* e) {
+		tunerBtns.push_back(button(left, tuners[i].name, btnW, color::SELECTED, [](lv_event_t* e) {
 			tunerIdx = clickedIndex(e);
 			check(tunerBtns, tunerIdx);
 		}, i));
 	}
-	reportLabel = text(panel(p, LEFT_W + GAP, PAGE_W - LEFT_W - GAP), "");
+	reportLabel = text(panel(p, leftW + GAP, PAGE_W - leftW - GAP), "");
 	lv_obj_set_width(reportLabel, LV_PCT(100));
 }
 
