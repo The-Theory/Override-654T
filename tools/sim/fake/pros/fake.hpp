@@ -172,14 +172,22 @@ private:
 	std::uint8_t port;
 };
 
-// ponytail: sees nothing until game elements and Toggles exist
+// What the game layer says it sees; nothing without one
 class Optical {
 public:
-	Optical(std::uint8_t) {}
-	double get_hue() const { return 0; }
-	std::int32_t get_proximity() const { return 0; }
+	Optical(std::uint8_t port) : port(port) {}
+	double get_hue() const { return read().first; }
+	std::int32_t get_proximity() const { return read().second; }
 	std::int32_t set_led_pwm(std::uint8_t) { return 1; }
 	std::int32_t set_integration_time(double) { return 1; }
+	std::uint8_t get_port() const { return port; }
+
+private:
+	std::uint8_t port;
+	std::pair<double, std::int32_t> read() const {
+		const auto& optical = sim::world().optical;
+		return optical ? optical(port) : std::pair<double, std::int32_t>{0, 0};
+	}
 };
 
 #pragma endregion

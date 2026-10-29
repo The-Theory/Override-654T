@@ -2,6 +2,7 @@
 // writes the pose log (JSON) and the path over the field map (SVG)
 
 #include "main.h"
+#include "game.hpp"
 #include "tide/screen.hpp"
 #include "world.hpp"
 #include <cstring>
@@ -25,6 +26,7 @@ void writeJson(const fs::path& file, const std::string& auton, const sim::World&
 	std::ofstream out(file);
 	out << "{\"auton\": \"" << auton << "\",\n";
 	out << "\"robot\": {\"width\": " << w.width << ", \"front\": " << w.front << ", \"back\": " << w.back << "},\n";
+	sim::game::field.writeJson(out);
 	out << "\"frames\": [\n";
 	for (std::size_t i = 0; i < w.frames.size(); i++) {
 		const sim::Frame& f = w.frames[i];
@@ -90,6 +92,7 @@ int main(int argc, char** argv) {
 
 	sim::World& w = sim::world();
 	simRobot(w);
+	sim::game::start(w);
 
 	bool started = false, finished = false, found = true;
 	pros::Task([&] {
@@ -105,6 +108,7 @@ int main(int argc, char** argv) {
 		tide::screen::detail::side = blue ? tide::Alliance::BLUE : tide::Alliance::RED;
 		w.frames.clear();
 		w.logStart = w.sched.now;
+		sim::game::field.restartLog();
 		started = true;
 		autonomous();
 		finished = true;
@@ -128,6 +132,8 @@ int main(int argc, char** argv) {
 	if (!finished) std::printf("%6.2f  auton still running when time ran out\n", t);
 	std::printf("\nFinal pose  x %.2f  y %.2f  heading %.1f\n", w.x, w.y, w.theta);
 	std::printf("Odom        x %.2f  y %.2f  heading %.1f\n", w.odomX, w.odomY, w.odomTheta);
+	const auto [red, blueScore] = sim::game::field.score(w);
+	std::printf("Score       red %d  blue %d\n", red, blueScore);
 
 	fs::create_directories(outDir);
 	const fs::path base = fs::path(outDir) / auton;
