@@ -6,7 +6,6 @@ import { Sim, frameAt, latest, type Run } from "./sim.ts"
 const SPEEDS = [0.5, 1, 2, 4]
 const LIMITS = [15, 60]	// [s] auton, skills
 
-const seconds = (t: number) => `${t.toFixed(2)} s`
 const heading = (h: number) => `${(((h % 360) + 360) % 360).toFixed(0)}°`
 
 export function App() {
@@ -93,6 +92,7 @@ export function App() {
       {run ? (
         <main>
           <section className="stage">
+            <Score run={run} t={t} />
             <Field run={run} t={t} />
             <Readout run={run} t={t} />
             <div className="transport">
@@ -103,7 +103,6 @@ export function App() {
             </div>
           </section>
           <aside>
-            <ScoreCard run={run} log={log} t={t} />
             <StepList log={log} t={t} onSeek={seek} />
           </aside>
         </main>
@@ -160,22 +159,10 @@ function Timeline({ log, t, end, onSeek }: { log: Step[]; t: number; end: number
   )
 }
 
-function ScoreCard({ run, log, t }: { run: Run; log: Step[]; t: number }) {
+// Score at the playhead
+function Score({ run, t }: { run: Run; t: number }) {
   const [, red, blue] = latest(run.score, t)
-  const timeouts = log.filter(s => s.timeout).length
-  const end = run.frames.at(-1)![0]
-  return (
-    <section className="card score">
-      <div className="points">
-        <div><span className="num red">{red}</span><span className="muted">Red</span></div>
-        <div><span className="num blue">{blue}</span><span className="muted">Blue</span></div>
-      </div>
-      <p className={run.finished ? "" : "warn"}>
-        {run.finished ? `Finished in ${seconds(end)}` : `Not done when the ${run.limit} s ran out`}
-      </p>
-      {timeouts > 0 && <p className="warn">{timeouts} {timeouts === 1 ? "motion" : "motions"} timed out</p>}
-    </section>
-  )
+  return <p className="score num"><span className="red">{red}</span> · <span className="blue">{blue}</span></p>
 }
 
 // Each motion and claw action in order; click one to jump to it
@@ -192,8 +179,8 @@ function StepList({ log, t, onSeek }: { log: Step[]; t: number; onSeek: (t: numb
             className={[i === current ? "current" : "", s.start > t ? "future" : "", s.claw ? "claw" : ""].join(" ")}>
             <span className="num muted">{s.start.toFixed(1)}</span>
             <span>{s.what}</span>
-            {s.timeout ? <span className="tag warn">Timed out</span>
-              : s.early ? <span className="tag">Handed off</span>
+            {s.timeout ? <span className="warn">Timed out</span>
+              : s.early ? <span className="muted">Handed off</span>
               : <span className="num muted">{s.claw ? "" : `${(s.end - s.start).toFixed(1)} s`}</span>}
           </li>
         ))}
