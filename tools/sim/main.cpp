@@ -23,7 +23,9 @@ namespace fs = std::filesystem;
 
 void writeJson(const fs::path& file, const std::string& auton, const sim::World& w) {
 	std::ofstream out(file);
-	out << "{\"auton\": \"" << auton << "\",\n\"frames\": [\n";
+	out << "{\"auton\": \"" << auton << "\",\n";
+	out << "\"robot\": {\"width\": " << w.width << ", \"front\": " << w.front << ", \"back\": " << w.back << "},\n";
+	out << "\"frames\": [\n";
 	for (std::size_t i = 0; i < w.frames.size(); i++) {
 		const sim::Frame& f = w.frames[i];
 		char line[160];
@@ -71,14 +73,15 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 #pragma region Main ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg]
+// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg], or sim --list for auton names
 int main(int argc, char** argv) {
 	std::string auton, outDir = "out", field;
-	bool blue = false;
+	bool blue = false, list = false;
 	std::uint32_t limit = 15000;	// [ms] auton period
 	for (int i = 1; i < argc; i++) {
 		const std::string arg = argv[i];
 		if (arg == "--blue") blue = true;
+		else if (arg == "--list") list = true;
 		else if (arg == "--time" && i + 1 < argc) limit = std::stoul(argv[++i]);
 		else if (arg == "--out" && i + 1 < argc) outDir = argv[++i];
 		else if (arg == "--field" && i + 1 < argc) field = argv[++i];
@@ -108,6 +111,11 @@ int main(int argc, char** argv) {
 	});
 	w.sched.run([&] { return finished || (started && w.sched.now - w.logStart >= limit); }, [&] { w.step(); });
 
+	if (list) {
+		for (const auto& a : tide::screen::detail::autons) std::printf("%s\n", a.name);
+		std::fflush(stdout);
+		std::_Exit(0);
+	}
 	if (!found) {
 		std::printf("Pick an auton:");
 		for (const auto& a : tide::screen::detail::autons) std::printf(" \"%s\"", a.name);

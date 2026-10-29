@@ -15,6 +15,10 @@
 #include <thread>
 #include <vector>
 
+#ifdef __EMSCRIPTEN__
+#include <emscripten/fiber.h>
+#endif
+
 // Off-brain stand-in for the robot and field: fake PROS devices read and write this, physics moves it
 namespace sim {
 
@@ -23,9 +27,9 @@ namespace sim {
 ////////////////////////////////////////////////////////////////
 
 /**
- * PROS tasks on sim time. Every task gets a thread, but only the one holding the baton runs,
- * and time only moves once every task is waiting in delay(), so runs are deterministic.
- * ponytail: threads; the wasm build swaps in Emscripten fibers
+ * PROS tasks on sim time. Only one task runs at a time, and time only moves once every task
+ * is waiting in delay(), so runs are deterministic. Tasks are threads passing a baton on the
+ * desktop and Asyncify fibers in the browser; everything else is shared.
  */
 class Scheduler {
 public:
@@ -33,35 +37,20 @@ public:
 
 	void spawn(std::function<void()> fn) {
 		auto task = std::make_unique<Task>();
-		Task* t = task.get();
-		t->wake = now;
+		task->wake = now;
+		task->fn = std::move(fn);
+		start(task.get());
 		tasks.push_back(std::move(task));
-		std::thread([this, t, fn] {
-			{
-				std::unique_lock lock(m);
-				t->cv.wait(lock, [&] { return current == t; });
-			}
-			fn();
-			std::lock_guard lock(m);
-			t->finished = true;
-			current = nullptr;
-			mainCv.notify_one();
-		}).detach();	// Background loops never end; the process exits around them
 	}
 
 	// From inside a task
 	void delay(std::uint32_t ms) {
-		std::unique_lock lock(m);
-		Task* self = current;
-		self->wake = now + ms;
-		current = nullptr;
-		mainCv.notify_one();
-		self->cv.wait(lock, [&] { return current == self; });
+		current->wake = now + ms;
+		suspend();
 	}
 
 	// Runs tasks until done(), stepping the world 1 ms at a time between them
 	void run(const std::function<bool()>& done, const std::function<void()>& step) {
-		std::unique_lock lock(m);
 		while (!done()) {
 			Task* next = nullptr;
 			for (auto& t : tasks)
@@ -72,23 +61,101 @@ public:
 				now++;
 			}
 			if (done()) return;
-			current = next;
-			next->cv.notify_one();
-			mainCv.wait(lock, [&] { return current == nullptr; });
+			resume(next);
 		}
 	}
 
 private:
+	struct Task;
+	std::vector<std::unique_ptr<Task>> tasks;
+	Task* current = nullptr;
+
+	static void body(Task* t) {
+		t->fn();
+		t->finished = true;
+	}
+
+#ifdef __EMSCRIPTEN__
+	static constexpr std::size_t C_STACK = 256 * 1024, ASYNC_STACK = 128 * 1024;
+
 	struct Task {
 		std::uint32_t wake = 0;
 		bool finished = false;
+		std::function<void()> fn;
+		emscripten_fiber_t fiber;
+		std::vector<char> cStack = std::vector<char>(C_STACK), asyncStack = std::vector<char>(ASYNC_STACK);
+		Scheduler* owner;
+	};
+
+	emscripten_fiber_t mainFiber;
+	std::vector<char> mainStack = std::vector<char>(ASYNC_STACK);
+	bool mainReady = false;
+
+	// A fiber's entry must never return, so a finished task parks itself on main for good
+	static void entry(void* arg) {
+		Task* t = static_cast<Task*>(arg);
+		body(t);
+		t->owner->suspend();
+	}
+
+	void start(Task* t) {
+		t->owner = this;
+		emscripten_fiber_init(&t->fiber, entry, t, t->cStack.data(), C_STACK, t->asyncStack.data(), ASYNC_STACK);
+	}
+
+	void resume(Task* t) {
+		if (!mainReady) {
+			emscripten_fiber_init_from_current_context(&mainFiber, mainStack.data(), ASYNC_STACK);
+			mainReady = true;
+		}
+		current = t;
+		emscripten_fiber_swap(&mainFiber, &t->fiber);
+	}
+
+	void suspend() {
+		Task* self = current;
+		current = nullptr;
+		emscripten_fiber_swap(&self->fiber, &mainFiber);
+	}
+#else
+	struct Task {
+		std::uint32_t wake = 0;
+		bool finished = false;
+		std::function<void()> fn;
 		std::condition_variable cv;
 	};
 
 	std::mutex m;
 	std::condition_variable mainCv;
-	std::vector<std::unique_ptr<Task>> tasks;
-	Task* current = nullptr;
+
+	void start(Task* t) {
+		std::thread([this, t] {
+			{
+				std::unique_lock lock(m);
+				t->cv.wait(lock, [&] { return current == t; });
+			}
+			body(t);
+			std::lock_guard lock(m);
+			current = nullptr;
+			mainCv.notify_one();
+		}).detach();	// Background loops never end; the process exits around them
+	}
+
+	void resume(Task* t) {
+		std::unique_lock lock(m);
+		current = t;
+		t->cv.notify_one();
+		mainCv.wait(lock, [&] { return current == nullptr; });
+	}
+
+	void suspend() {
+		std::unique_lock lock(m);
+		Task* self = current;
+		current = nullptr;
+		mainCv.notify_one();
+		self->cv.wait(lock, [&] { return current == self; });
+	}
+#endif
 };
 
 #pragma endregion
