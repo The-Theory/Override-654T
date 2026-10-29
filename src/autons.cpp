@@ -212,7 +212,7 @@ std::string tuneOffset() {
 
 // Back a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
-	constexpr double SENSOR_WIDTH = 0;	// [in] TODO: tape-measure left sensor face to right sensor face
+	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
 	return odom.measureMounts(0, 1, SENSOR_WIDTH);
 }
 
