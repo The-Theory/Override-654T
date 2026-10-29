@@ -18,12 +18,12 @@
   <circle id="cup" r="1.6" fill="#8a919c" stroke="#2f3540" stroke-width="0.3"/>
   <g id="cuppin">
     <use xlink:href="#cup"/>
-    <circle r="1.0" stroke="#000" stroke-width="0.2"/>
+    <polygon points="1.06,0.44 0.44,1.06 -0.44,1.06 -1.06,0.44 -1.06,-0.44 -0.44,-1.06 0.44,-1.06 1.06,-0.44" stroke="#000" stroke-width="0.2"/>
   </g>
   <g id="pin">
-    <path d="M5.25 -0.9H2.9A0.9 0.9 0 0 0 2.9 0.9H5.25Z" fill="#f5b400"/>
-    <path d="M5.25 -0.9H7.6A0.9 0.9 0 0 1 7.6 0.9H5.25Z"/>
-    <path d="M2.9 -0.9H7.6A0.9 0.9 0 0 1 7.6 0.9H2.9A0.9 0.9 0 0 1 2.9 -0.9Z" fill="none" stroke="#000" stroke-width="0.25"/>
+    <path d="M2 -0.65H2.6L4.8 -1.42L4.93 -1.55V1.55L4.8 1.42L2.6 0.65H2Z" fill="#f5b400"/>
+    <path d="M4.93 -1.55H5.25L5.4 -1.32L8.5 -0.72V0.72L5.4 1.32L5.25 1.55H4.93Z"/>
+    <path d="M2 -0.65H2.6L4.8 -1.42L4.93 -1.55H5.25L5.4 -1.32L8.5 -0.72V0.72L5.4 1.32L5.25 1.55H4.93L4.8 1.42L2.6 0.65H2Z" fill="none" stroke="#000" stroke-width="0.25" stroke-linejoin="round"/>
   </g>
   <g id="cross">
     <use xlink:href="#pin" fill="#1846c4"/>
