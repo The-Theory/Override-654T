@@ -213,7 +213,7 @@ std::string tuneOffset() {
 // Front a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
-	return odom.measureMounts(0, 1, SENSOR_WIDTH, 6000);	// Squares on the front, since the claw sticks out the back
+	return odom.measureMounts(0, 1, SENSOR_WIDTH, 6000);
 }
 
 #pragma endregion
