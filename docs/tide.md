@@ -352,7 +352,7 @@ Each game gets its own header of named positions. `tide/override.hpp` names the 
 `tide/screen.hpp` replaces the default **Brain** screen with three pages, picked with the buttons along the top:
 
 - **Auton**: on the left, the alliance (tap to flip Red / Blue) and up to 2 on/off options; past a divider, one button per auton (2 columns, 3 past 6 autons, 9 max).
-- **Tune**: one button per tuner on the left, the last result in a panel on the right.
+- **Tune**: one button per tuner on the left (two columns past 3, so up to 6 fit), the last result in a panel on the right.
 - **Info**: live `"Key\tvalue\tvalue"` lines you supply, refreshed 10 times a second; keys sit in a dim column and each tab starts a fixed column (up to 3), so changing digits don't shift the line.
 
 Flat navy theme, 6 px gaps, 56 px rows; the selected button is light blue.
