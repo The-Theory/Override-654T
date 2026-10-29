@@ -18,14 +18,16 @@ export interface Piece {
 }
 
 export interface Run {
-  auton:   string
-  robot:   { width: number; front: number; back: number }
-  goals:   [number, number, number, string][]                                       // [x, y, kind, name]; kind 0 red, 1 blue, 2 neutral, 3 midfield
-  toggles: { name: string; x: number; y: number; faces: [number, number][] }[]      // faces: [t, colour]
-  pieces:  Piece[]
-  score:   [number, number, number][]                                               // [t, red, blue]
-  frames:  Frame[]
-  events:  [number, string][]
+  auton:    string
+  finished: boolean                                                    // false if cut off at the time limit
+  limit:    number                                                     // [s]
+  robot:    { width: number; front: number; back: number }
+  goals:    [number, number, number, string][]                         // [x, y, kind, name]; kind 0 red, 1 blue, 2 neutral, 3 midfield
+  toggles:  { name: string; x: number; y: number; faces: [number, number][] }[]   // faces: [t, colour]
+  pieces:   Piece[]
+  score:    [number, number, number][]                                 // [t, red, blue]
+  frames:   Frame[]
+  events:   [number, string][]
 }
 
 // The last row at or before t, for logs that only note changes
