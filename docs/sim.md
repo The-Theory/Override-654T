@@ -51,8 +51,9 @@ away from the robot (blue).
   time. A 15 s auton finishes in well under a second.
 - Each drive side reaches its voltage's share of top speed with a 0.25 s time constant
   (`World::driveTau`). Coast, brake and hold slow it down at different rates.
-- The robot is a rectangle that stops at the perimeter. Its wheels stall there, so `pushUntilStall`
-  and `wallReset` work.
+- The robot is a rectangle that stops at the perimeter. Driven into a wall at an angle, it pivots on the
+  corner touching it until the bumper sits flush, like slamming into the wall to square up. Once flush
+  its wheels stall, so `pushUntilStall` and `wallReset` work. It doesn't slide along the wall.
 - Motions use the robot's own `ControllerSettings` gains and exit conditions, with simplified
   LemLib logic (boomerang `moveToPose`, motion queueing, `minSpeed` early exits). Path shapes are
   close to LemLib's, not exact.
