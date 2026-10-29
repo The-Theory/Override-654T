@@ -110,7 +110,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		0,			0,				tide::dir::WEST},
 	{rightDistance,		0,			0,				tide::dir::EAST},
 	{middleDistance,	0,			0,				tide::dir::NORTH},
-}, {.toolForward = -3});	// TODO: Remeasure
+}, {.toolForward = -11.5});	// [in] Claw about an inch past the back bumper; estimate, measure to refine
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
