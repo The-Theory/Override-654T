@@ -23,11 +23,11 @@ Needs Emscripten and Bun (`brew install emscripten oven-sh/bun/bun`). `make -C t
 rebuilds `tools/sim/web/public/sim.js`: the same sim as one file with the WebAssembly inlined; a 15 s
 auton runs in about 40 ms. The viewer (`tools/sim/web`, React + Vite) lists the autons, runs one, and
 replays it:
-- the field with the robot (blue), where odom thought it was (pink), every piece, Goal and Toggle
-- hover any of them for what and where it is, and what's stacked on a Goal
-- a timeline with motions, claw actions (yellow) and timeouts (red); drag to scrub
-- pose and odom error, the score and each Goal's stack, and the motion log, which follows playback
-  and jumps there on click
+- the field with the robot, where odom thinks it is, and every piece, Goal and Toggle; hover any of them
+  for what it is and where
+- the robot's position and odom error under the field, and a timeline of motions (red if they timed
+  out) and claw actions (yellow); drag to scrub
+- the score, whether the auton finished in time, and every step in order; click a step to jump to it
 - Space plays and pauses, arrows step 0.1 s (1 s with shift)
 
 ## Pieces
