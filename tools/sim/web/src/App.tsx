@@ -96,7 +96,9 @@ export function App() {
             <Field run={run} t={t} />
             <Readout run={run} t={t} />
             <div className="transport">
-              <button className="play" onClick={togglePlay}>{playing ? "Pause" : t >= end ? "Replay" : "Play"}</button>
+              <button className="play" onClick={togglePlay} aria-label={playing ? "Pause" : t >= end ? "Replay" : "Play"}>
+                <PixelIcon rows={playing ? PAUSE : PLAY} />
+              </button>
               <span className="num clock">{t.toFixed(1)} / {end.toFixed(1)} s</span>
               <Timeline log={log} t={t} end={end} onSeek={seek} />
               <Choice label="Speed" options={SPEEDS} value={speed} onPick={setSpeed} show={s => `${s}×`} />
@@ -113,6 +115,18 @@ export function App() {
 
 ////////////////////////////////////////////////////////////////
 // Pieces
+
+// Icons drawn on a pixel grid to sit with Silkscreen; # is a filled pixel
+const PLAY  = ["#......", "###....", "#####..", "#######", "#####..", "###....", "#......"]
+const PAUSE = ["##...##", "##...##", "##...##", "##...##", "##...##", "##...##", "##...##"]
+
+function PixelIcon({ rows }: { rows: string[] }) {
+  return (
+    <svg className="icon" viewBox={`0 0 ${rows[0]!.length} ${rows.length}`} shapeRendering="crispEdges">
+      {rows.flatMap((row, y) => [...row].map((c, x) => c === "#" && <rect key={`${x},${y}`} x={x} y={y} width={1} height={1} />))}
+    </svg>
+  )
+}
 
 function Choice<T extends string | number>({ label, options, value, onPick, show = String }: {
   label: string; options: T[]; value: T; onPick: (v: T) => void; show?: (v: T) => string
