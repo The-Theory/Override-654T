@@ -15,8 +15,9 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
-void xAuton(tide::Alliance) {
-	chassis.setPose(0, -65, SOUTH);	// Flush on the audience wall facing toggle
+// Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
+void q2Opening() {
+	chassis.setPose(0, -65, SOUTH);
 	waitForToggle();
 	odom.wallReset(Wall::AUDIENCE);
 
@@ -25,6 +26,10 @@ void xAuton(tide::Alliance) {
 	pros::delay(150);
 	outtakeClaw();
 	pros::delay(230);
+}
+
+void xAuton(tide::Alliance) {
+	q2Opening();
 
 	// Back off the goal, claw up
 	stopClaw();
@@ -175,8 +180,8 @@ void skillsAuton(tide::Alliance) {
 }
 
 void testAuton(tide::Alliance) {
-	chassis.setPose(toggle::Q1.x, toggle::Q1.y, 180);
-	odom.moveBy(-24);
+	q2Opening();
+	stopClaw();
 }
 
 #pragma endregion
