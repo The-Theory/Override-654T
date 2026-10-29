@@ -237,6 +237,10 @@ public:
 	double imuOffset = 0;
 	bool   placed = false;
 
+	// Set by the game layer (game.hpp); empty without one, like in check.cpp
+	std::function<void()> game;	// after each physics ms
+	std::function<std::pair<double, std::int32_t>(int port)> optical;	// hue [deg], proximity 0-255
+
 	std::vector<Frame> frames;
 	std::vector<std::pair<double, std::string>> events;
 	std::uint32_t logStart = 0;
@@ -322,6 +326,7 @@ public:
 		for (Joint& j : joints) stepJoint(j, DT);
 		for (auto& [port, m] : motors)
 			if (!driven(port)) freeSpin(m, DT);
+		if (game) game();
 
 		if ((sched.now - logStart) % 10 == 0)
 			frames.push_back({(sched.now - logStart) / 1000.0, x, y, theta, odomX, odomY, odomTheta});

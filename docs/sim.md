@@ -11,7 +11,7 @@ make -C tools/sim check              # tuners must find known offsets on a test 
 
 `run` prints each LemLib motion as it ends ("TIMEOUT" stands out), the final true and odom pose, and writes:
 - `tools/sim/out/<auton>.svg`: the path over `docs/field-map.svg` (blue = robot, pink = odom)
-- `tools/sim/out/<auton>.json`: the pose every 10 ms plus the motion log; the browser viewer reads the same file
+- `tools/sim/out/<auton>.json`: the pose every 10 ms, the motion and claw log, every piece's moves, Toggle faces and the score; the browser viewer reads the same file
 
 Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (skills length).
 
@@ -27,9 +27,10 @@ on the field with a timeline and the motion log. `bun run sim` there rebuilds 65
 |---|---|
 | `tools/sim/fake/` | PROS, LemLib and `tide/screen_ui.hpp` stand-ins, found ahead of `include/` |
 | `tools/sim/world.hpp` | Task scheduler on sim time (threads on the desktop, Asyncify fibers in the browser), drive and joint physics, wall collisions, distance-sensor ray casts |
+| `tools/sim/game.hpp` | This season's game (Override): starting Pins, Cups, Goals and Toggles, claw pickups, Toggle spinning, scoring. Swap it out next season |
 | `tools/sim/main.cpp` | Runs `initialize()` then the picked auton through `autonomous()` |
 | `tools/sim/check.cpp` | `tide::trackingOffset` and `Odom::measureMounts` on a test robot with known offsets |
-| `src/sim.hpp` | 654T's physical truth: footprint, real sensor mounts, winch gearing. The brain build never sees it |
+| `src/sim.hpp` | 654T's physical truth: footprint, real sensor mounts, winch gearing, what the claw and Toggle wheel do, the preload. The brain build never sees it |
 
 Drivetrain size, wheels, rpm and tracking wheel come from `robot.hpp`. `src/sim.hpp` only sets what
 the code doesn't know, or what it has wrong, such as a mount that hasn't been measured yet. The sim
@@ -47,8 +48,18 @@ away from the robot (blue).
   LemLib logic (boomerang `moveToPose`, motion queueing, `minSpeed` early exits). Path shapes are
   close to LemLib's, not exact.
 - Odom uses LemLib's tracking-wheel and IMU math.
+- Game pieces are circles. The robot shoves loose ones out of its footprint, except in the channel
+  between its claw and the nearest edge. The claw picks up one Pin and one Cup within reach of its
+  tool point when `src/sim.hpp` says it's gripping and low enough. It drops them when it opens,
+  stacking them on a Goal if the tool point is within 2.5" of one.
+- A Toggle turns to its next face while the spinner motor runs with the robot's front against it.
+  The color sensor reads the hue of the face it's touching.
+- Score: 5 per alliance-coloured top half stacked on a Goal, 10 per owned yellow one. A Quadrant's
+  Toggle owns its yellow halves; the Midfield Goal's go to red while our robot is in Midfield.
 
 ## Doesn't model
 Wheel slip, battery sag, motor heat, how the real drive responds (`driveTau` is a guess), sensor
-noise, game objects, Toggles (the color sensor sees nothing), opponents, or the brain screen.
-The winch gearing and gravity in `src/sim.hpp` are guesses.
+noise, opponents, or the brain screen. For game pieces it doesn't model collisions with Goals,
+pieces tipping over, distance sensors seeing pieces, a Cup's orientation (every stacked Pin shows its
+top half), match loads or the auton bonus. The winch gearing and gravity, the footprint, and the
+claw's reach, height and preload in `src/sim.hpp` are guesses.
