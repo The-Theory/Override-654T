@@ -17,3 +17,4 @@ compile_commands.json
 
 # Uploaded template archives
 *.zip
+tools/sim/out/
