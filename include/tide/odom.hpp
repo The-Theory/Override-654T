@@ -100,6 +100,8 @@ public:
 		const lemlib::Pose pose = chassis.getPose();
 		const Point offset = toField(right, forward, pose.theta);
 		params.forwards = forward >= 0;
+		// Straight, the boomerang carrot only shrinks the error the PID sees, so it crawls in
+		if (right == 0 && turn == 0) params.lead = 0;
 		chassis.moveToPose(pose.x + offset.x, pose.y + offset.y, pose.theta + turn, timeout, params, async);
 	}
 
