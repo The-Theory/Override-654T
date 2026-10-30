@@ -227,6 +227,7 @@ public:
 	double width = 18;				// footprint [in]
 	double front = 9, back = 9;		// [in] from the tracking center
 	double driveTau = 0.25;			// [s] drive speed time constant; lower is snappier
+	double driveStiction = 1200;	// [mV] friction eats this much of a side's voltage, so less doesn't move it
 	double trackWidth = 12, wheelDiameter = 3.25, wheelRpm = 450;
 	std::vector<std::int8_t> left, right;
 	int    trackingPort = 0;
@@ -352,7 +353,7 @@ private:
 	double sideSpeed(const std::vector<std::int8_t>& ports, double v, double maxSpeed, double dt) {
 		if (ports.empty()) return 0;
 		const double mv = command(ports);
-		const double target = mv / 12000 * maxSpeed;
+		const double target = std::copysign(std::max(std::fabs(mv) - driveStiction, 0.0), mv) / (12000 - driveStiction) * maxSpeed;
 		return v + (target - v) * dt / tau(motor(ports[0]).brake, mv, driveTau);
 	}
 
