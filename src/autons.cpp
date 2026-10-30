@@ -26,18 +26,25 @@ void resetEndSegment() {
 // Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
 void q2Opening() {
 	// Init
-	stopClaw();
+	spinClaw();
 	chassis.setPose(0, -65, SOUTH);	// Start pos
 	
 	// Toggle
 	waitForToggle();				// Toggle to alliance
 	odom.wallReset(Wall::AUDIENCE);	// Wall reset
-	winch.moveTo(550);				// Lift winch							
+	pros::delay(500);
+	winch.moveTo(1000);				// Lift winch							
 
 	// To goal and score
 	odom.reachPose(goal::Q2_ALLIANCE, 		// Turn to goal
 		EAST, 2000, {.forwards = false});	
+	odom.moveBy(1, 0, 0, 300);
+	winch.moveBy(-500);
+	pros::delay(300);						// Wait to settle at goal
+	odom.wallReset(Wall::AUDIENCE);			// Reset
 	openClaw();								// Release pin
+	pros::delay(800);						// Wait for pun to drop
+	stopClaw();								// Close claw again
 }
 
 void leftBase() {
@@ -115,61 +122,63 @@ void leftBase() {
 // Full autons, picked on the selector
 
 void xAuton(tide::Alliance) {
+	// Score Q2 Alliance Goal
 	q2Opening();
 
-	// Back off the goal, claw up
-	stopClaw();
-	winch.moveBy(50);
-	chassis.moveToPoint(-5, -47, 1500);
+	// Back off goal, ready to pick up
+	odom.moveBy(10);	// Back off
+	odom.wallReset(Wall::AUDIENCE);	// Reset
+	winch.moveTo(0); 	// Put winch down
+	spinClaw();			// Ready to pick up
 
-	// To cuppin
-	odom.aim(cuppin::AUDIENCE_WALL_W, TURN_TIMEOUT);
-	odom.pushUntilStall(-6500);
-	odom.moveBy(2);
+	// Get West Audience Wall Cuppin
+	odom.aim(cuppin::AUDIENCE_WALL_W);	// Aim to cuppin
+	odom.turnBy(10);					// Add turn offset
+	odom.moveBy(-tide::TILE * 1, 0, 0, 1500);  // Fuckin book it
+	pros::delay(500);
+	winch.moveTo(500);
 
-	// Pickup cuppin
-	winch.moveTo(0);
-	spinClaw();
-	winch.moveBy(400);
-	
 	// Turn out
-	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
-	odom.moveBy(-3);
-	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
-	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
-	odom.wallReset(Wall::AUDIENCE);
-	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
-	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
-	odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
+	chassis.turnToHeading(SOUTH, 1000);
+	
+	// // Turn out
+	// chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
+	// odom.moveBy(-3);
+	// chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
+	// chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
+	// odom.wallReset(Wall::AUDIENCE);
+	// chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
+	// chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
+	// odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
 
-	// Score
-	stopClaw();
-	winch.moveTo(100);
-	pros::delay(500);
-	pros::delay(200);
-	openClaw();
-	pros::delay(500);
-	winch.moveTo(800);
-	pros::delay(500);
-	stopClaw();
+	// // Score
+	// stopClaw();
+	// winch.moveTo(100);
+	// pros::delay(500);
+	// pros::delay(200);
+	// openClaw();
+	// pros::delay(500);
+	// winch.moveTo(800);
+	// pros::delay(500);
+	// stopClaw();
 
-	// Reset for next cuppin
-	chassis.moveToPose(0, -36, 0, 2000);
-	winch.moveTo(0);
-	pros::delay(500);
-	pros::delay(500);
-	chassis.moveToPoint(4, -47, 1500, {}, false);
+	// // Reset for next cuppin
+	// chassis.moveToPose(0, -36, 0, 2000);
+	// winch.moveTo(0);
+	// pros::delay(500);
+	// pros::delay(500);
+	// chassis.moveToPoint(4, -47, 1500, {}, false);
 
-	// To next cuppin
-	odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
-	winch.moveTo(200);
-	odom.pushUntilStall(-6500);
-	odom.moveBy(2);
+	// // To next cuppin
+	// odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
+	// winch.moveTo(200);
+	// odom.pushUntilStall(-6500);
+	// odom.moveBy(2);
 
-	// Pickup
-	winch.moveTo(0);
-	spinClaw();
-	winch.moveBy(400);
+	// // Pickup
+	// winch.moveTo(0);
+	// spinClaw();
+	// winch.moveBy(400);
 }
 
 void leftAuton(tide::Alliance) {
@@ -250,8 +259,8 @@ std::string tuneMounts() {
 
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
-	{"Test",	testAuton},		// For testing only
 	{"X",		xAuton},		// Audience wall, centered on the Toggle, facing it
+	{"Test",	testAuton},		// For testing only
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 };
