@@ -2,6 +2,7 @@
 
 #include "robot.hpp"
 #include "tide/screen.hpp"
+#include <cmath>
 
 ////////////////////////////////////////////////////////////////
 #pragma region Body ////////////////////////////////////////////
@@ -30,16 +31,18 @@ inline void score() {
 
 constexpr int TOGGLE_MV   = 12000; 	// max voltage for toggles
 constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles
+constexpr double TOGGLE_HUE_SPAN = 20;	// [deg] either side of the alliance hue; dim blue drifts toward red past this
+constexpr double TOGGLE_MIN_SAT  = 0.5;	// Below this the hue is noise, as in dim light
 
 inline bool spinToggle = false;	// Driver override of toggles
 inline bool autoFlip   = false;	// Driver's auto flipping; never on before driver control in a match
 inline bool flipNow    = false;	// waitForToggle wants the Toggle in reach flipped
 
-// Whether color sensor sees alliance color
+// Whether color sensor clearly sees alliance color; anything unsure counts as not ours, so it flips
 inline bool toggleShowsAlliance() {
-	const double hue = colorSensor.get_hue();
-	if (tide::screen::alliance() == tide::Alliance::RED) return hue < 25 || hue > 335;  // Red
-	return hue > 190 && hue < 250;  // Blue
+	const double allianceHue = tide::screen::alliance() == tide::Alliance::RED ? 0 : 220;
+	const double off = std::remainder(colorSensor.get_hue() - allianceHue, 360);
+	return std::fabs(off) < TOGGLE_HUE_SPAN && colorSensor.get_saturation() >= TOGGLE_MIN_SAT;
 }
 
 // Whether a toggle is close enough

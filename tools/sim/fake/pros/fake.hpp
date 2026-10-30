@@ -177,6 +177,7 @@ class Optical {
 public:
 	Optical(std::uint8_t port) : port(port) {}
 	double get_hue() const { return read().first; }
+	double get_saturation() const { return 1; }	// Sim Toggle faces are pure colors
 	std::int32_t get_proximity() const { return read().second; }
 	std::int32_t set_led_pwm(std::uint8_t) { return 1; }
 	std::int32_t set_integration_time(double) { return 1; }
