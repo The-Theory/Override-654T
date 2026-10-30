@@ -22,21 +22,21 @@
 ////////////////////////////////////////////////////////////////
 
 // Drivetrain
-inline pros::MotorGroup leftMotors ({-7, -9}, pros::MotorGearset::blue);
+inline pros::MotorGroup	leftMotors ({-7, -9}, pros::MotorGearset::blue);
 inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
 
 // Sensors
-inline pros::Rotation verticalEncoder(-5);
-inline pros::Rotation winchEncoder(-4);
-inline pros::Imu imu(13);
-inline pros::Distance leftDistance(3);
-inline pros::Distance rightDistance(2);
-inline pros::Distance middleDistance(1);
-inline pros::Optical colorSensor(15);
+inline pros::Rotation 	verticalEncoder(-5);
+inline pros::Rotation 	winchEncoder(-4);
+inline pros::Imu 	  	imu(13);
+inline pros::Distance 	leftDistance(3);
+inline pros::Distance 	rightDistance(2);
+inline pros::Distance 	middleDistance(1);
+inline pros::Optical  	colorSensor(15);
 
 // Mechanisms
-inline pros::Motor activeToggle(-17, pros::MotorGearset::green);
-inline pros::Motor claw(18, pros::MotorGearset::green);
+inline pros::Motor 		activeToggle(-17, pros::MotorGearset::green);
+inline pros::Motor 		claw(18, pros::MotorGearset::green);
 inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);
 
 #pragma endregion
