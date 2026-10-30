@@ -71,7 +71,7 @@ inline lemlib::Drivetrain drivetrain(
 
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
-inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0);
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, -0.01);
 inline lemlib::OdomSensors sensors(
 	&verticalWheel,
 	nullptr, nullptr, nullptr,
@@ -80,10 +80,13 @@ inline lemlib::OdomSensors sensors(
 
 // Chassis PID
 inline lemlib::ControllerSettings lateralController(
-	9,			// kP
-	0.21324,	// kI
-	100,		// kD
-	6,			// anti windup		[in] integral pushes through drive friction once this close
+	// 9,			// kP
+	// 0.21324,	// kI
+	// 80,			// kD
+	16.032,			// kP
+	0.53662,	// kI
+	319.2,			// kD
+	6,			// anti windup		[in] wider pushes the robot on after it should be slowing
 	1,			// small error		[in]
 	100,		// small timeout	[ms]
 	1.5,		// large error		[in] wider counts a friction stall short of the target as arrived
@@ -91,9 +94,9 @@ inline lemlib::ControllerSettings lateralController(
 	0			// slew
 );
 inline lemlib::ControllerSettings angularController(
-	1.276,		// kP
-	0.05128,	// kI
-	21.15,		// kD
+	1.369,		// kP
+	0.05589,	// kI
+	22.37,		// kD
 	20,			// anti windup		[deg] integral pushes through turn friction once this close
 	1,			// small error		[deg]
 	100,		// small timeout	[ms]
@@ -110,7 +113,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
 	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
-}, {.toolForward = -9.08});	// [in] Claw scoring point, 21 cm behind the middle sensor
+}, {.toolForward = -3});	// [in] Claw scoring point, 21 cm behind the middle sensor
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -120,10 +123,10 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 ////////////////////////////////////////////////////////////////
 
 inline tide::Mechanism winch(winchMotors, winchEncoder, {
-	.kP		= 24.59,
-	.kI		= 2.0930,
-	.kD		= 192.6,
-	.kG		= 1062,	// [mV]
+	.kP		= 21.61,
+	.kI		= 1.8005,
+	.kD		= 172.9,
+	.kG		= 1025,	// [mV]
 }, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion
