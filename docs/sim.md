@@ -50,7 +50,8 @@ away from the robot (blue).
 - Time only moves while every task is waiting in `pros::delay`, so runs come out the same every
   time. A 15 s auton finishes in well under a second.
 - Each drive side reaches its voltage's share of top speed with a 0.25 s time constant
-  (`World::driveTau`). Coast, brake and hold slow it down at different rates.
+  (`World::driveTau`). Coast, brake and hold slow it down at different rates. Friction eats the
+  first 1.2 V (`World::driveStiction`), so a PID that fades out near its target stalls short, like on carpet.
 - The robot is a rectangle that stops at the perimeter. Driven into a wall at an angle, it pivots on the
   corner touching it until the bumper sits flush, like slamming into the wall to square up. Once flush
   its wheels stall, so `pushUntilStall` and `wallReset` work. It doesn't slide along the wall.
@@ -68,7 +69,7 @@ away from the robot (blue).
   Toggle owns its yellow halves; the Midfield Goal's go to red while our robot is in Midfield.
 
 ## Doesn't model
-Wheel slip, battery sag, motor heat, how the real drive responds (`driveTau` is a guess), sensor
+Wheel slip, battery sag, motor heat, how the real drive responds (`driveTau` and `driveStiction` are guesses), sensor
 noise, opponents, or the brain screen. For game pieces it doesn't model collisions with Goals,
 pieces tipping over, distance sensors seeing pieces, a Cup's orientation (every stacked Pin shows its
 top half), match loads or the auton bonus. The winch gearing and gravity, the footprint, and the
