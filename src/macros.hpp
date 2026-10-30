@@ -8,13 +8,13 @@
 ////////////////////////////////////////////////////////////////
 
 // Claw control
-inline void intakeClaw() 	{ claw.move_voltage(12000);}
-inline void stopClaw() 		{ claw.move_voltage(0);}
-inline void outtakeClaw() 	{ claw.move_voltage(-12000);}
+inline void spinClaw() 	{ claw.move_voltage(12000);}
+inline void stopClaw() 	{ claw.move_voltage(0);}
+inline void openClaw() 	{ claw.move_voltage(-12000);}
 
 // From scoring height; ends with the winch down
 inline void score() {
-	outtakeClaw();
+	openClaw();
 	pros::delay(750);
 	winch.moveTo(0);
 	pros::delay(750);

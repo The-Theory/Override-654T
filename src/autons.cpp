@@ -15,21 +15,28 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
-// Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
-void q2Opening() {
-	// Toggle
-	chassis.setPose(0, -65, SOUTH);
-	// odom.wallReset(Wall::AUDIENCE);
-	waitForToggle();
-
-	// To goal
-	winch.moveTo(550);
-	odom.reachPose(goal::Q2_ALLIANCE, EAST, 2000, {.forwards = false});
-
-	// Reset
+void resetEndSegment() {
+	odom.moveBy(-12);
 	pros::delay(800);
 	winch.moveTo(0);
 	pros::delay(800);
+}
+
+// Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
+void q2Opening() {
+	// Init
+	stopClaw();
+	chassis.setPose(0, -65, SOUTH);	// Start pos
+	
+	// Toggle
+	waitForToggle();				// Toggle to alliance
+	odom.wallReset(Wall::AUDIENCE);	// Wall reset
+	winch.moveTo(550);				// Lift winch							
+
+	// To goal and score
+	odom.reachPose(goal::Q2_ALLIANCE, 		// Turn to goal
+		EAST, 2000, {.forwards = false});	
+	openClaw();								// Release pin
 }
 
 void xAuton(tide::Alliance) {
@@ -47,7 +54,7 @@ void xAuton(tide::Alliance) {
 
 	// Pickup cuppin
 	winch.moveTo(0);
-	intakeClaw();
+	spinClaw();
 	winch.moveBy(400);
 	
 	// Turn out
@@ -65,7 +72,7 @@ void xAuton(tide::Alliance) {
 	winch.moveTo(100);
 	pros::delay(500);
 	pros::delay(200);
-	outtakeClaw();
+	openClaw();
 	pros::delay(500);
 	winch.moveTo(800);
 	pros::delay(500);
@@ -86,7 +93,7 @@ void xAuton(tide::Alliance) {
 
 	// Pickup
 	winch.moveTo(0);
-	intakeClaw();
+	spinClaw();
 	winch.moveBy(400);
 }
 
@@ -101,7 +108,7 @@ void leftBase() {
 	winch.moveTo(60);
 	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false, .minSpeed = 50});
 	pros::delay(150);
-	outtakeClaw();
+	openClaw();
 	pros::delay(230);
 
 	// To cuppin
@@ -110,7 +117,7 @@ void leftBase() {
 	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 1500, {.forwards = false, .minSpeed = 40});
 
 	// Pickup cuppin
-	intakeClaw();
+	spinClaw();
 	pros::delay(100);
 	winch.moveTo(20);
 	pros::delay(1500);
@@ -122,7 +129,7 @@ void leftBase() {
 	odom.reachPoint(goal::Q1_ALLIANCE, 600, {.minSpeed = 50});
 	winch.moveTo(15);
 	pros::delay(400);
-	outtakeClaw();
+	openClaw();
 	pros::delay(400);
 	stopClaw();
 	winch.moveTo(600);
@@ -135,7 +142,7 @@ void leftBase() {
 
 	// Pickup
 	pros::delay(800);
-	intakeClaw();
+	spinClaw();
 	winch.moveTo(30);
 	pros::delay(1000);
 	winch.moveTo(700);
@@ -146,7 +153,7 @@ void leftBase() {
 	odom.reachPoint(goal::Q1_ALLIANCE, 800, {.maxSpeed = 100});
 	winch.moveTo(15);
 	pros::delay(400);
-	outtakeClaw();
+	openClaw();
 	pros::delay(800);
 	stopClaw();
 	winch.moveTo(1000);
@@ -172,7 +179,7 @@ void skillsAuton(tide::Alliance) {
 	// Grab from midfield
 	chassis.moveToPoint(-10, -10, 800, {}, false);
 	chassis.turnToPoint(-24, 32, 2000, {}, false);
-	intakeClaw();
+	spinClaw();
 	chassis.moveToPose(-24, 32, NORTH, 2000, {}, false);
 	pros::delay(4000);
 
@@ -180,7 +187,7 @@ void skillsAuton(tide::Alliance) {
 	winch.moveTo(250);
 	stopClaw();
 	odom.reachPoint(goal::MIDFIELD);
-	outtakeClaw();
+	openClaw();
 }
 
 void testAuton(tide::Alliance) {
@@ -272,7 +279,8 @@ std::string robotInfo() {
 void initialize() {
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
-	pros::Task{autoToggle};	// Braces: parens would declare a Task named autoToggle
+	openClaw();
+	pros::Task{autoToggle}; // Start autoToggling
 }
 
 #pragma endregion
