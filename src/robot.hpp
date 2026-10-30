@@ -66,7 +66,7 @@ inline lemlib::Drivetrain drivetrain(
 	11.4173,					// track width [in]
 	lemlib::Omniwheel::NEW_275,
 	450,						// [rpm]
-	1							// horizontal drift
+	8							// horizontal drift	traction middle wheels; lower caps curve speed hard
 );
 
 // Odometry
