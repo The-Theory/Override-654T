@@ -386,13 +386,15 @@ void autonomous() { tide::screen::runAuton(); }	// Selected auton with selected 
 ```cpp
 tide::autotune("winch", tide::mechanismPlant(winch), {.setpoint = 400, .amplitude = 4000, .maxDeviation = 200});
 tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), {.setpoint = 0, .amplitude = 4000, .maxDeviation = 45});
+tide::autotune("lateral", tide::lateralPlant(leftMotors, rightMotors, tracking, wheelDiameter),
+	{.setpoint = 0, .amplitude = 7000, .maxDeviation = 12, .hysteresis = 0.25, .rule = tide::TuneRule::SOME_OVERSHOOT});
 ```
 
 Results print to the terminal and come back in `TuneResult::summary` (show it on the **Brain** with a screen tuner): only the gains to paste: `kP / kI / kD / kG` for a `tide::Gains` plant, or `kP / kI / kD` already scaled for **LemLib** `ControllerSettings` on the angular and lateral plants.
 
-- `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it.
+- `amplitude` [mV] must beat static friction and the holding voltage. If it reports no oscillation, raise it. For the drive, swing big (~7000): a small swing is mostly friction, which reads as a sluggish plant and gives slow gains.
 - `maxDeviation` aborts the tune if it swings too far, protecting hard stops.
-- `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`.
+- `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`. `NO_OVERSHOOT` creeps into its target, so a drive can stall short on friction; `SOME_OVERSHOOT` suits lateral.
 - `tide::trackingOffset(left, right, imu, tracking, wheelDiameter)` spins in place and returns the vertical tracking wheel's offset for `lemlib::TrackingWheel`, so you don't have to find the turning center by eye.
 - `odom.measureMounts(i, j, apart)` finds where each distance sensor sits (right and forward of the tracking center): it backs into a wall to square up, pulls off, then sweeps each sensor ±15° across that wall, spinning in place. Give it two sensors facing opposite ways and the tape-measured distance between their faces. It needs a flat back bumper (or pass a positive `squareMv` to use the front).
 - Anything can be tuned by giving a `tide::Plant` with `measure()` (position) and `apply(mV)`.
