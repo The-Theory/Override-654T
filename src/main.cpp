@@ -31,6 +31,7 @@ void opcontrol() {
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
+		.when(Y).toggle([](bool off) { autoFlip = !off; })	// On from the start; Y stops auto flipping
 		.on([&] { spinToggle = ctlr.held(R2); });
 
 	while (true) {

@@ -32,6 +32,8 @@ constexpr int TOGGLE_MV   = 12000; 	// max voltage for toggles
 constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles
 
 inline bool spinToggle = false;	// Driver override of toggles
+inline bool autoFlip   = false;	// Driver's auto flipping; off until opcontrol so a Toggle placed before the auton survives startup
+inline bool flipNow    = false;	// waitForToggle wants the Toggle in reach flipped
 
 // Whether color sensor sees alliance color
 inline bool toggleShowsAlliance() {
@@ -51,14 +53,15 @@ inline bool toggleNeedsFlip() {
 	return toggleInReach() && !toggleShowsAlliance();
 }
 
-// Flips any toggle in reach to alliance color
+// Flips a toggle in reach to alliance color while autoFlip or waitForToggle asks
 inline void autoToggle() {
 	bool lit = false;
 	while (true) {
 		const bool inReach = toggleInReach();
 		if (inReach != lit) colorSensor.set_led_pwm(inReach ? 100 : 0);  // Turn on light when near
 
-		if (spinToggle || (lit && inReach && !toggleShowsAlliance())) activeToggle.move_voltage(TOGGLE_MV);
+		const bool flip = (autoFlip || flipNow) && lit && inReach && !toggleShowsAlliance();
+		if (spinToggle || flip) activeToggle.move_voltage(TOGGLE_MV);
 		else activeToggle.brake();
 
 		lit = inReach;
@@ -66,10 +69,12 @@ inline void autoToggle() {
 	}
 }
 
-// Waits until autoToggle is done with the Toggle in reach; false on timeout
+// Has autoToggle flip the Toggle in reach and waits for it; false on timeout
 inline bool waitForToggle(int timeout = 3000) {
 	const std::uint32_t start = pros::millis();
+	flipNow = true;
 	while (toggleNeedsFlip() && pros::millis() - start < timeout) pros::delay(10);
+	flipNow = false;
 	return !toggleNeedsFlip();
 }
 
