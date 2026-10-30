@@ -207,10 +207,10 @@ std::string tuneAngular() {
 		{.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
 }
 
-// Needs ~1 ft clear in front and behind
+// Needs ~1 ft clear in front and behind. A big swing so it measures driving, not friction
 std::string tuneLateral() {
 	return tide::autotune("lateral", tide::lateralPlant(leftMotors, rightMotors, verticalEncoder, TRACKING_WHEEL),
-		{.setpoint = 0, .amplitude = 3000, .maxDeviation = 12, .hysteresis = 0.25}).summary;
+		{.setpoint = 0, .amplitude = 7000, .maxDeviation = 12, .hysteresis = 0.25, .rule = tide::TuneRule::SOME_OVERSHOOT}).summary;
 }
 
 // Spins 5 turns in place; paste the result into verticalWheel
