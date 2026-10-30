@@ -17,18 +17,19 @@ const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
 // Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
 void q2Opening() {
+	// Toggle
 	chassis.setPose(0, -65, SOUTH);
+	// odom.wallReset(Wall::AUDIENCE);
 	waitForToggle();
-	odom.wallReset(Wall::AUDIENCE);
 
-	// To goal: off the wall, then turn and back the claw onto it. A moveToPose from here backs
-	// straight out (its carrot sits right behind the robot) and only curves at the end
-	odom.moveBy(-6);
-	odom.aim(goal::Q2_ALLIANCE, TURN_TIMEOUT);
-	odom.reachPoint(goal::Q2_ALLIANCE);
-	pros::delay(150);
-	outtakeClaw();
-	pros::delay(230);
+	// To goal
+	winch.moveTo(550);
+	odom.reachPose(goal::Q2_ALLIANCE, EAST, 2000, {.forwards = false});
+
+	// Reset
+	pros::delay(800);
+	winch.moveTo(0);
+	pros::delay(800);
 }
 
 void xAuton(tide::Alliance) {
@@ -184,7 +185,7 @@ void skillsAuton(tide::Alliance) {
 
 void testAuton(tide::Alliance) {
 	q2Opening();
-	stopClaw();
+	// odom.moveBy(24);
 }
 
 #pragma endregion
@@ -234,7 +235,7 @@ std::string tuneMounts() {
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
 	{"Test",	testAuton},		// For testing only
-	{"X",	xAuton},			// Audience wall, centered on the Toggle, facing it
+	{"X",		xAuton},		// Audience wall, centered on the Toggle, facing it
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 };
