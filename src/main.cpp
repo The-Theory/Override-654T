@@ -20,18 +20,24 @@ using namespace tide::btn;
 
 void disabled() {}
 void competition_initialize() {}
-void autonomous() { tide::screen::runAuton(); }
+void autonomous() {
+	autoFlip = false;	// Only waitForToggle flips in an auton; the Y binding restores it after a driver-run test
+	tide::screen::runAuton();
+}
 
 ////////////////////////////////////////////////////////////////
 
 void opcontrol() {
+	// Without field control the program starts here, so a Toggle set up for an auton test waits for Y
+	const bool flipFromStart = pros::competition::is_connected();
+
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winch)
 		.when(R1).toggle(claw)
 		.when(X).macro(score)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
-		.when(Y).toggle([](bool off) { autoFlip = !off; })	// On from the start; Y stops auto flipping
+		.when(Y).toggle([=](bool pressed) { autoFlip = pressed != flipFromStart; })	// Y switches auto flipping
 		.on([&] { spinToggle = ctlr.held(R2); });
 
 	while (true) {
