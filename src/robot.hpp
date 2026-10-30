@@ -80,10 +80,10 @@ inline lemlib::OdomSensors sensors(
 
 // Chassis PID
 inline lemlib::ControllerSettings lateralController(
-	7.277,		// kP
+	9,			// kP
 	0.21324,	// kI
-	165.55,		// kD
-	3,			// anti windup
+	100,		// kD
+	6,			// anti windup		[in] integral pushes through drive friction once this close
 	1,			// small error		[in]
 	100,		// small timeout	[ms]
 	3,			// large error		[in]
