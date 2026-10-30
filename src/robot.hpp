@@ -86,7 +86,7 @@ inline lemlib::ControllerSettings lateralController(
 	6,			// anti windup		[in] integral pushes through drive friction once this close
 	1,			// small error		[in]
 	100,		// small timeout	[ms]
-	3,			// large error		[in]
+	1.5,		// large error		[in] wider counts a friction stall short of the target as arrived
 	500,		// large timeout	[ms]
 	0			// slew
 );
