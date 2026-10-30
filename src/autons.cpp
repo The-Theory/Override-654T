@@ -10,8 +10,9 @@ using namespace tide::override;
 using tide::Wall;
 
 ////////////////////////////////////////////////////////////////
-#pragma region Routines ////////////////////////////////////////
+#pragma region Sections ////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
+// Pieces of routines; not on the selector
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
@@ -37,64 +38,6 @@ void q2Opening() {
 	odom.reachPose(goal::Q2_ALLIANCE, 		// Turn to goal
 		EAST, 2000, {.forwards = false});	
 	openClaw();								// Release pin
-}
-
-void xAuton(tide::Alliance) {
-	q2Opening();
-
-	// Back off the goal, claw up
-	stopClaw();
-	winch.moveBy(50);
-	chassis.moveToPoint(-5, -47, 1500);
-
-	// To cuppin
-	odom.aim(cuppin::AUDIENCE_WALL_W, TURN_TIMEOUT);
-	odom.pushUntilStall(-6500);
-	odom.moveBy(2);
-
-	// Pickup cuppin
-	winch.moveTo(0);
-	spinClaw();
-	winch.moveBy(400);
-	
-	// Turn out
-	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
-	odom.moveBy(-3);
-	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
-	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
-	odom.wallReset(Wall::AUDIENCE);
-	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
-	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
-	odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
-
-	// Score
-	stopClaw();
-	winch.moveTo(100);
-	pros::delay(500);
-	pros::delay(200);
-	openClaw();
-	pros::delay(500);
-	winch.moveTo(800);
-	pros::delay(500);
-	stopClaw();
-
-	// Reset for next cuppin
-	chassis.moveToPose(0, -36, 0, 2000);
-	winch.moveTo(0);
-	pros::delay(500);
-	pros::delay(500);
-	chassis.moveToPoint(4, -47, 1500, {}, false);
-
-	// To next cuppin
-	odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
-	winch.moveTo(200);
-	odom.pushUntilStall(-6500);
-	odom.moveBy(2);
-
-	// Pickup
-	winch.moveTo(0);
-	spinClaw();
-	winch.moveBy(400);
 }
 
 void leftBase() {
@@ -161,6 +104,72 @@ void leftBase() {
 
 	// Back out
 	chassis.moveToPoint(-48, -48, 1500, {}, false);
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Routines ////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// Full autons, picked on the selector
+
+void xAuton(tide::Alliance) {
+	q2Opening();
+
+	// Back off the goal, claw up
+	stopClaw();
+	winch.moveBy(50);
+	chassis.moveToPoint(-5, -47, 1500);
+
+	// To cuppin
+	odom.aim(cuppin::AUDIENCE_WALL_W, TURN_TIMEOUT);
+	odom.pushUntilStall(-6500);
+	odom.moveBy(2);
+
+	// Pickup cuppin
+	winch.moveTo(0);
+	spinClaw();
+	winch.moveBy(400);
+	
+	// Turn out
+	chassis.turnToHeading(45, TURN_TIMEOUT, {}, false);
+	odom.moveBy(-3);
+	chassis.turnToHeading(55, TURN_TIMEOUT, {}, false);
+	chassis.turnToHeading(EAST, TURN_TIMEOUT, {}, false);
+	odom.wallReset(Wall::AUDIENCE);
+	chassis.moveToPose(-12, -60, EAST, 1500, {}, false);
+	chassis.turnToHeading(SOUTH_EAST, TURN_TIMEOUT, {}, false);
+	odom.reachPose(goal::Q2_ALLIANCE, SOUTH_EAST, 1100, {.forwards = false});
+
+	// Score
+	stopClaw();
+	winch.moveTo(100);
+	pros::delay(500);
+	pros::delay(200);
+	openClaw();
+	pros::delay(500);
+	winch.moveTo(800);
+	pros::delay(500);
+	stopClaw();
+
+	// Reset for next cuppin
+	chassis.moveToPose(0, -36, 0, 2000);
+	winch.moveTo(0);
+	pros::delay(500);
+	pros::delay(500);
+	chassis.moveToPoint(4, -47, 1500, {}, false);
+
+	// To next cuppin
+	odom.aim(cuppin::AUDIENCE_WALL_E, TURN_TIMEOUT);
+	winch.moveTo(200);
+	odom.pushUntilStall(-6500);
+	odom.moveBy(2);
+
+	// Pickup
+	winch.moveTo(0);
+	spinClaw();
+	winch.moveBy(400);
 }
 
 void leftAuton(tide::Alliance) {
