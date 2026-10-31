@@ -24,10 +24,10 @@ void resetEndSegment() {
 }
 
 void scoreSegment() {
-	winch.moveTo(750);			// Lower winch to score
+	winch.moveBy(-500);			// Move down
 	openClaw();					// Release pin
-	pros::delay(1000);			// Wait for pin to drop
-	odom.moveBy(12);			// Drive away from goal
+	pros::delay(800);			// Wait for pin to drop
+	odom.moveBy(8.5);			// Drive away from goal
 	winch.moveTo(0);			// Put winch down
 	stopClaw();					// Close claw
 }
@@ -57,7 +57,6 @@ void q2Opening() {
 }
 
 void leftBase() {
-	tide::Point DIAGONAL_OUTER_BETTER (-44, -49);
 	// Init
 	spinClaw();
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
@@ -72,7 +71,7 @@ void leftBase() {
 	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false});
 	odom.moveBy(1, 0, 0, 300);
 	winch.moveBy(-500);
-	pros::delay(300);						// Wait to settle at goal
+	//pros::delay(300);						// Wait to settle at goal
 	odom.wallReset(Wall::RED);			// Reset
 	openClaw();								// Release pin
 	pros::delay(800);						// Wait for pun to drop							// Close claw again
@@ -80,16 +79,11 @@ void leftBase() {
 	// To cuppin
 	odom.moveBy(6); 
 	winch.moveTo(0);
-	pros::delay(200);
-	stopClaw();	
 	spinClaw();
-	pros::delay(600);
 	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 2000, {.forwards = false});
 
 	// Pickup cuppin
-	pros::delay(1000);
 	winch.moveTo(1400); //Evil value, likes to change a lot because winch sucks.
-	pros::delay(300);
 
 	// Score cuppin
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
@@ -104,21 +98,19 @@ void leftBase() {
 	spinClaw();
 
 	// To next cuppin
-	pros::delay(400);
-	odom.reachPose(DIAGONAL_OUTER_BETTER, NORTH_EAST, 1350, {.forwards = false}); //this point and timeout is amazing im so good at coding
+	odom.reachPose(tide::Point(-44, -49), NORTH_EAST, 1500, {.forwards = false}); //this point and timeout is amazing im so good at coding - ryan
 
 	// Pickup
-	pros::delay(800);
+	pros::delay(900);
 	winch.moveTo(2200);
-	pros::delay(200);
 	stopClaw();
 
 	// Score
-	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
+	odom.aim(goal::Q1_ALLIANCE, 800);
 	odom.reachPoint(goal::Q1_ALLIANCE, 800);
 	odom.moveBy(1, 0, 0, 300);
 	winch.moveTo(15);
-	pros::delay(400);
+	pros::delay(300);
 	openClaw();
 	pros::delay(800);
 	winch.moveTo(0);
@@ -140,44 +132,43 @@ void xAuton(tide::Alliance) {
 	q2Opening();
 
     // Back off goal, ready to pick up
-    odom.moveBy(6);                                             // Back up from Q2 alliance
+    odom.moveBy(6);                                             	// Back up from Q2 alliance
     odom.wallReset(Wall::AUDIENCE);                                 // Reset position
     winch.moveTo(0);                                                // Put winch down
     spinClaw();                                                     // Spin claw to pick up cuppin
 
     // Get West Audience Wall Cuppin
     odom.aim(cuppin::AUDIENCE_WALL_W);                              // Aim to cuppin
-    odom.turnBy(8);                                             // Add turn offset
+    odom.turnBy(10);                                             	// Add turn offset
     odom.moveBy(-tide::TILE * 0.9, 0, 0, 1500, {.maxSpeed=100});    // Move to cuppin
-    odom.moveBy(-tide::TILE * 0.2, 0, 0, 1500, {.maxSpeed=20});     // Move to cuppin
-    pros::delay(1000);                                              // Wait for intake to get sucked up
-    winch.moveTo(1400);                                             // Lift cuppin up
+    odom.moveBy(-tide::TILE * 0.2, 0, 0, 800, {.maxSpeed=20});     	// Move to cuppin
+    winch.moveTo(1600);                                             // Lift cuppin up
 
     // Turn out
     chassis.turnToHeading(EAST, 800, {}, false);                    // Turn out
-    odom.moveBy(tide::TILE/2);                                      // Drive out
+	chassis.setPose(-tide::TILE, -2.5 * tide::TILE, EAST);
+    odom.moveBy(tide::TILE);                                    	// Drive out
 
     // Score    
-    odom.reachPoint(goal::Q2_ALLIANCE);                             // Move to goal
+    odom.reachPoint(goal::Q2_ALLIANCE, 1000);                       // Move to goal
     scoreSegment();                                                 // Score cuppin
 
     // Get new cuppin
     odom.aim(cuppin::MIDFIELD_S);                                   // Aim away
     odom.moveBy(-24);                                               // Get to a middle point
     odom.aim(cuppin::AUDIENCE_WALL_E);                              // Turn to new cuppin
+	odom.turnBy(4);                                             	// Add turn offset
     spinClaw();                                                     // Spin claw
-    odom.moveBy(tide::TILE * -2, 0, 0, 2000, {.maxSpeed=40});   // Move to cuppin
+    odom.moveBy(tide::TILE * -2, 0, 0, 2000, {.maxSpeed=40});   	// Move to cuppin
 
     pros::delay(1000);                                              // Wait for cuppin to get in claw
-    winch.moveTo(1300);                                             // Lift cuppin up
+    winch.moveTo(1800);                                             // Lift cuppin up
     chassis.turnToHeading(WEST, 800, {}, false);                    // Turn
     odom.moveBy(tide::TILE/2);                                      // Drive out
 
     // Score    
     odom.reachPoint(goal::Q2_NEUTRAL);                              // Get to goal
     scoreSegment();                                                 // Score cuppin
-
-    resetEndSegment();
 }
 
 void leftAuton(tide::Alliance) {
@@ -191,26 +182,15 @@ void skillsAuton(tide::Alliance) {
 
 	// Park
 	chassis.turnToPoint(-5, -5, TURN_TIMEOUT, {.forwards=false}, false);
-	chassis.moveToPoint(-5, -5, 1600, {.forwards=false}, false);
-
-	// Grab from midfield
-	chassis.moveToPoint(-10, -10, 800, {}, false);
-	chassis.turnToPoint(-24, 32, 2000, {}, false);
-	spinClaw();
-	chassis.moveToPose(-24, 32, NORTH, 2000, {}, false);
-	pros::delay(4000);
-
-	// Score
-	winch.moveTo(250);
-	stopClaw();
-	odom.reachPoint(goal::MIDFIELD);
-	openClaw();
+	chassis.moveToPoint(-5, -5, 3000, {.forwards=false}, false);
 }
 
 void testAuton(tide::Alliance) {
 	q2Opening();
 	// odom.moveBy(24);
 }
+
+void blankAuto(tide::Alliance) {}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
@@ -259,9 +239,10 @@ std::string tuneMounts() {
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
 	{"X",		xAuton},		// Audience wall, centered on the Toggle, facing it
+	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 	{"Test",	testAuton},		// For testing only
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
-	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
+	{"Blank", 	blankAuto},		// Does nothing except toggle
 };
 
 // Tune page
@@ -296,7 +277,6 @@ std::string robotInfo() {
 void initialize() {
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
-	//Removed the start open claw, used to be here (we are fixing bot to not be out of size hopefully). openClaw();
 	pros::Task{autoToggle}; // Start autoToggling
 }
 
