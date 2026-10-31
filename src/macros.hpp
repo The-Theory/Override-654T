@@ -18,7 +18,7 @@ inline void score() {
 	pros::delay(750);
 	winch.moveTo(0);
 	pros::delay(750);
-	stopClaw();
+	if (claw.get_voltage() < 0) stopClaw();	// Driver spinning the claw mid-macro keeps it spinning
 }
 
 #pragma endregion
