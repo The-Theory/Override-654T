@@ -431,14 +431,17 @@ public:
 	 * New trigger toggles motor state.
 	 * Motor keeps running after release.
 	 * - Only sets the motor on a press, so macros on the same motor aren't overwritten.
+	 * - Reads the motor instead of remembering, so a macro stopping it doesn't cost an extra press.
 	 */
 	Control& toggle(pros::AbstractMotor& motor, int mv = MAX_VOLTAGE) {
 		const int voltage = Control::checkVoltage(mv);
 		// Saves this binding to run every update()
 		return ctl.add({input}, [*this, &motor, voltage](Binding& self) {
 			if (!triggered(self)) return;
-			self.state = !self.state;
-			motor.move_voltage(self.state ? voltage : 0);
+			// Past half the toggle voltage in its direction, so brake hold isn't mistaken for spinning
+			const std::int32_t out = motor.get_voltage();
+			const bool spinning = out != PROS_ERR && (voltage > 0 ? out > voltage / 2 : out < voltage / 2);
+			motor.move_voltage(spinning ? 0 : voltage);
 		});
 	}
 
