@@ -42,7 +42,7 @@ void q2Opening() {
 	waitForToggle();				// Toggle to alliance
 	odom.wallReset(Wall::AUDIENCE);	// Wall reset
 	pros::delay(500);
-	winch.moveTo(1000);				// Lift winch							
+	winch.moveTo(1300);				// Lift winch							
 
 	// To goal and score
 	odom.reachPose(goal::Q2_ALLIANCE, 		// Turn to goal
@@ -65,7 +65,7 @@ void leftBase() {
 	waitForToggle();
 	odom.wallReset(Wall::RED);
 	pros::delay(500);
-	winch.moveTo(1000);	
+	winch.moveTo(1300);	
 
 	// To goal
 	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false});
@@ -138,8 +138,8 @@ void xAuton(tide::Alliance) {
     spinClaw();                                                     // Spin claw to pick up cuppin
 
     // Get West Audience Wall Cuppin
-    odom.aim(cuppin::AUDIENCE_WALL_W);                              // Aim to cuppin
-    odom.turnBy(10);                                             	// Add turn offset
+    odom.aim(cuppin::AUDIENCE_WALL_W, 800);                              // Aim to cuppin
+    odom.turnBy(10, 300);                                             	// Add turn offset
     odom.moveBy(-tide::TILE * 0.9, 0, 0, 1500, {.maxSpeed=100});    // Move to cuppin
     odom.moveBy(-tide::TILE * 0.2, 0, 0, 800, {.maxSpeed=20});     	// Move to cuppin
     winch.moveTo(1600);                                             // Lift cuppin up
@@ -151,13 +151,14 @@ void xAuton(tide::Alliance) {
 
     // Score    
     odom.reachPoint(goal::Q2_ALLIANCE, 1000);                       // Move to goal
+	pros::delay(100);
     scoreSegment();                                                 // Score cuppin
 
     // Get new cuppin
     odom.aim(cuppin::MIDFIELD_S);                                   // Aim away
     odom.moveBy(-24);                                               // Get to a middle point
     odom.aim(cuppin::AUDIENCE_WALL_E);                              // Turn to new cuppin
-	odom.turnBy(4);                                             	// Add turn offset
+	odom.turnBy(8);                                             	// Add turn offset
     spinClaw();                                                     // Spin claw
     odom.moveBy(tide::TILE * -2, 0, 0, 2000, {.maxSpeed=40});   	// Move to cuppin
 
