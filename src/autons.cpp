@@ -57,69 +57,75 @@ void q2Opening() {
 }
 
 void leftBase() {
+	tide::Point DIAGONAL_OUTER_BETTER (-44, -49);
+	// Init
+	spinClaw();
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
-	pros::delay(100);
+
+	//Toggle
 	waitForToggle();
 	odom.wallReset(Wall::RED);
+	pros::delay(500);
+	winch.moveTo(1000);	
 
 	// To goal
-	pros::delay(100);
-	winch.moveTo(60);
-	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false, .minSpeed = 50});
-	pros::delay(150);
-	openClaw();
-	pros::delay(230);
+	odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false});
+	odom.moveBy(1, 0, 0, 300);
+	winch.moveBy(-500);
+	pros::delay(300);						// Wait to settle at goal
+	odom.wallReset(Wall::RED);			// Reset
+	openClaw();								// Release pin
+	pros::delay(800);						// Wait for pun to drop							// Close claw again
 
 	// To cuppin
-	winch.moveTo(400);
-	chassis.moveToPose(-48, -10, NORTH, 1000, {.minSpeed=50});
-	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 1500, {.forwards = false, .minSpeed = 40});
+	odom.moveBy(6); 
+	winch.moveTo(0);
+	pros::delay(200);
+	stopClaw();	
+	spinClaw();
+	pros::delay(600);
+	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 2000, {.forwards = false});
 
 	// Pickup cuppin
-	spinClaw();
-	pros::delay(100);
-	winch.moveTo(20);
-	pros::delay(1500);
-	winch.moveTo(600);
-	stopClaw();
+	pros::delay(1000);
+	winch.moveTo(1400); //Evil value, likes to change a lot because winch sucks.
+	pros::delay(300);
 
 	// Score cuppin
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
-	odom.reachPoint(goal::Q1_ALLIANCE, 600, {.minSpeed = 50});
+	odom.reachPoint(goal::Q1_ALLIANCE, 600);
 	winch.moveTo(15);
 	pros::delay(400);
 	openClaw();
 	pros::delay(400);
+	odom.moveBy(10); 
 	stopClaw();
-	winch.moveTo(600);
+	winch.moveTo(0);
+	spinClaw();
 
 	// To next cuppin
 	pros::delay(400);
-	chassis.moveToPoint(-30, -24, 1500, {}, false);
-	odom.aim(cuppin::DIAGONAL_OUTER, TURN_TIMEOUT);
-	odom.reachPoint(cuppin::DIAGONAL_OUTER);
+	odom.reachPose(DIAGONAL_OUTER_BETTER, NORTH_EAST, 1350, {.forwards = false}); //this point and timeout is amazing im so good at coding
 
 	// Pickup
 	pros::delay(800);
-	spinClaw();
-	winch.moveTo(30);
-	pros::delay(1000);
-	winch.moveTo(700);
+	winch.moveTo(2200);
+	pros::delay(200);
 	stopClaw();
 
 	// Score
 	odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
-	odom.reachPoint(goal::Q1_ALLIANCE, 800, {.maxSpeed = 100});
+	odom.reachPoint(goal::Q1_ALLIANCE, 800);
+	odom.moveBy(1, 0, 0, 300);
 	winch.moveTo(15);
 	pros::delay(400);
 	openClaw();
 	pros::delay(800);
-	stopClaw();
-	winch.moveTo(1000);
-	pros::delay(500);
+	winch.moveTo(0);
 
 	// Back out
 	chassis.moveToPoint(-48, -48, 1500, {}, false);
+	stopClaw();
 }
 
 #pragma endregion
@@ -290,7 +296,7 @@ std::string robotInfo() {
 void initialize() {
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
-	openClaw();
+	//Removed the start open claw, used to be here (we are fixing bot to not be out of size hopefully). openClaw();
 	pros::Task{autoToggle}; // Start autoToggling
 }
 
