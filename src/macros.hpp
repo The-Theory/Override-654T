@@ -31,8 +31,8 @@ inline void score() {
 
 constexpr int TOGGLE_MV   = 12000; 	// max voltage for toggles
 constexpr int TOGGLE_NEAR = 50;		// Proximity for toggles
-constexpr double TOGGLE_HUE_SPAN = 20;	// [deg] either side of the alliance hue; dim blue drifts toward red past this
-constexpr double TOGGLE_MIN_SAT  = 0.5;	// Below this the hue is noise, as in dim light
+constexpr double TOGGLE_HUE_SPAN = 25;	// [deg] either side of the alliance hue; narrower and a real face can miss it
+constexpr double TOGGLE_MIN_SAT  = 0.25;	// Below this the hue is noise, as in dim light; too high and the alliance face never counts
 
 inline bool spinToggle = false;	// Driver override of toggles
 inline bool autoFlip   = false;	// Driver's auto flipping; never on before driver control in a match
