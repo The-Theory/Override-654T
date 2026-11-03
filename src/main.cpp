@@ -33,8 +33,7 @@ void opcontrol() {
 
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winch)
-		.when(R1).toggle(claw)
-		.when(X).macro(score)
+		.when(R1).altmacro(closeClaw, driverScore)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
 		.when(Y).toggle([=](bool pressed) { autoFlip = pressed != flipFromStart; })	// Y switches auto flipping
