@@ -66,7 +66,7 @@ inline std::function<std::string()> info;
 inline int autonIdx = 0;
 inline int tunerIdx = 0;
 inline int pageIdx  = 0;
-inline Alliance side = Alliance::RED;
+inline Alliance side = Alliance::BLUE;
 inline std::vector<char> optionOn;
 
 // Tuners run outside the LVGL task, so they hand text over through a buffer the refresh timer picks up

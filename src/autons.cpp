@@ -25,7 +25,7 @@ void resetEndSegment() {
 
 void scoreSegment() {
 	winch.moveBy(-500);			// Move down
-	openClaw();					// Release pin
+	closeClaw();					// Release pin
 	pros::delay(800);			// Wait for pin to drop
 	odom.moveBy(8.5);			// Drive away from goal
 	winch.moveTo(0);			// Put winch down
@@ -35,30 +35,30 @@ void scoreSegment() {
 // Flush on the audience wall facing the Q2 Toggle: flips it, then scores the preload in Q2 alliance
 void q2Opening() {
 	// Init
-	spinClaw();
+	closeClaw();
 	chassis.setPose(0, -65, SOUTH);	// Start pos
 	
 	// Toggle
 	waitForToggle();				// Toggle to alliance
 	odom.wallReset(Wall::AUDIENCE);	// Wall reset
 	pros::delay(500);
-	winch.moveTo(1300);				// Lift winch							
+	winch.moveTo(1000);				// Lift winch							
 
 	// To goal and score
 	odom.reachPose(goal::Q2_ALLIANCE, 		// Turn to goal
 		EAST, 2000, {.forwards = false});	
 	odom.moveBy(1, 0, 0, 300);
-	winch.moveBy(-500);
-	pros::delay(300);						// Wait to settle at goal
+	winch.moveBy(-600);
+	pros::delay(700);						// Wait to settle at goal
 	odom.wallReset(Wall::AUDIENCE);			// Reset
-	openClaw();								// Release pin
-	pros::delay(800);						// Wait for pun to drop
+	closeClaw();								// Release pin
+	pros::delay(1000);						// Wait for pun to drop
 	stopClaw();								// Close claw again
 }
 
 void leftBase() {
 	// Init
-	spinClaw();
+	closeClaw();
 	chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
 
 	//Toggle
@@ -73,13 +73,13 @@ void leftBase() {
 	winch.moveBy(-500);
 	//pros::delay(300);						// Wait to settle at goal
 	odom.wallReset(Wall::RED);			// Reset
-	openClaw();								// Release pin
+	closeClaw();								// Release pin
 	pros::delay(800);						// Wait for pun to drop							// Close claw again
 
 	// To cuppin
 	odom.moveBy(6); 
 	winch.moveTo(0);
-	spinClaw();
+	closeClaw();
 	odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 2000, {.forwards = false});
 
 	// Pickup cuppin
@@ -90,12 +90,12 @@ void leftBase() {
 	odom.reachPoint(goal::Q1_ALLIANCE, 600);
 	winch.moveTo(15);
 	pros::delay(400);
-	openClaw();
+	closeClaw();
 	pros::delay(400);
 	odom.moveBy(10); 
 	stopClaw();
 	winch.moveTo(0);
-	spinClaw();
+	closeClaw();
 
 	// To next cuppin
 	odom.reachPose(tide::Point(-44, -49), NORTH_EAST, 1500, {.forwards = false}); //this point and timeout is amazing im so good at coding - ryan
@@ -111,7 +111,7 @@ void leftBase() {
 	odom.moveBy(1, 0, 0, 300);
 	winch.moveTo(15);
 	pros::delay(300);
-	openClaw();
+	closeClaw();
 	pros::delay(800);
 	winch.moveTo(0);
 
@@ -132,44 +132,36 @@ void xAuton(tide::Alliance) {
 	q2Opening();
 
     // Back off goal, ready to pick up
-    odom.moveBy(6);                                             	// Back up from Q2 alliance
+    odom.moveBy(6, 0, 0, 600);                                      // Back up from Q2 alliance
     odom.wallReset(Wall::AUDIENCE);                                 // Reset position
     winch.moveTo(0);                                                // Put winch down
-    spinClaw();                                                     // Spin claw to pick up cuppin
+    closeClaw();                                                     // Spin claw to pick up cuppin
 
     // Get West Audience Wall Cuppin
     odom.aim(cuppin::AUDIENCE_WALL_W, 800);                              // Aim to cuppin
     odom.turnBy(10, 300);                                             	// Add turn offset
     odom.moveBy(-tide::TILE * 0.9, 0, 0, 1500, {.maxSpeed=100});    // Move to cuppin
-    odom.moveBy(-tide::TILE * 0.2, 0, 0, 800, {.maxSpeed=20});     	// Move to cuppin
+    odom.moveBy(-tide::TILE * 0.2, 0, 0, 300, {.maxSpeed=20});     	// Move to cuppin
     winch.moveTo(1600);                                             // Lift cuppin up
 
     // Turn out
-    chassis.turnToHeading(EAST, 800, {}, false);                    // Turn out
+    chassis.turnToHeading(EAST, 600, {}, false);                    // Turn out
 	chassis.setPose(-tide::TILE, -2.5 * tide::TILE, EAST);
-    odom.moveBy(tide::TILE);                                    	// Drive out
+    //odom.moveBy(tide::TILE);                                    	// Drive out
+	chassis.moveToPose(5, -48, EAST, 1000, {}, false);
 
     // Score    
-    odom.reachPoint(goal::Q2_ALLIANCE, 1000);                       // Move to goal
-	pros::delay(100);
+	winch.moveTo(1400);  
+	odom.aim(goal::Q2_ALLIANCE, 800);
+    odom.reachPoint(goal::Q2_ALLIANCE, 800);                       // Move to goal
+	odom.moveBy(1, 0, 0, 300);
     scoreSegment();                                                 // Score cuppin
 
     // Get new cuppin
-    odom.aim(cuppin::MIDFIELD_S);                                   // Aim away
-    odom.moveBy(-24);                                               // Get to a middle point
-    odom.aim(cuppin::AUDIENCE_WALL_E);                              // Turn to new cuppin
-	odom.turnBy(8);                                             	// Add turn offset
-    spinClaw();                                                     // Spin claw
-    odom.moveBy(tide::TILE * -2, 0, 0, 2000, {.maxSpeed=40});   	// Move to cuppin
+	closeClaw();   
+	//odom.reachPoint(tide::Point(0, -50), 1500);                   
+    //odom.reachPoint(cuppin::AUDIENCE_WALL_E, 1500);         
 
-    pros::delay(1000);                                              // Wait for cuppin to get in claw
-    winch.moveTo(1800);                                             // Lift cuppin up
-    chassis.turnToHeading(WEST, 800, {}, false);                    // Turn
-    odom.moveBy(tide::TILE/2);                                      // Drive out
-
-    // Score    
-    odom.reachPoint(goal::Q2_NEUTRAL);                              // Get to goal
-    scoreSegment();                                                 // Score cuppin
 }
 
 void leftAuton(tide::Alliance) {

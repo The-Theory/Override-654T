@@ -9,17 +9,20 @@
 ////////////////////////////////////////////////////////////////
 
 // Claw control
-inline void spinClaw() 	{ claw.move_voltage(12000);}
-inline void stopClaw() 	{ claw.move_voltage(0);}
-inline void openClaw() 	{ claw.move_voltage(-12000);}
+constexpr int CLAW_BURNOUT = 400;  // [ms]
+inline void stopClaw() 	{ claw.move_voltage(0);		}
+inline void closeClaw() { claw.move_voltage(12000); }
+inline void openClaw() {
+	claw.move_voltage(-12000);
+	pros::delay(CLAW_BURNOUT);
+	stopClaw();
+}
 
 // From scoring height; ends with the winch down
-inline void score() {
+inline void driverScore() {
 	openClaw();
-	pros::delay(750);
 	winch.moveTo(0);
 	pros::delay(750);
-	if (claw.get_voltage() < 0) stopClaw();	// Driver spinning the claw mid-macro keeps it spinning
 }
 
 #pragma endregion
