@@ -10,19 +10,16 @@
 
 // Claw control
 constexpr int CLAW_BURNOUT = 400;  // [ms]
-inline void stopClaw() 	{ claw.move_voltage(0);		}
-inline void closeClaw() { claw.move_voltage(12000); }
-inline void openClaw() {
-	claw.move_voltage(-12000);
-	pros::delay(CLAW_BURNOUT);
-	stopClaw();
-}
+inline void stopClaw() 	{ claw.move_voltage(0);		 }
+inline void closeClaw() { claw.move_voltage(12000);  }
+inline void openClaw() 	{ claw.move_voltage(-12000); }
 
 // From scoring height; ends with the winch down
 inline void driverScore() {
 	openClaw();
 	winch.moveTo(0);
 	pros::delay(750);
+	stopClaw();
 }
 
 #pragma endregion
