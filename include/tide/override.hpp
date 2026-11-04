@@ -26,9 +26,9 @@ namespace tide {
 namespace override {
 
 namespace goal {
-constexpr Point Q1_ALLIANCE = {-47.1, -23.5};
+constexpr Point Q1_ALLIANCE = {-48, -24};
 constexpr Point Q1_NEUTRAL  = {-47.1,  23.6};
-constexpr Point Q2_ALLIANCE = {-23.5, -47.1};
+constexpr Point Q2_ALLIANCE = {-24, -48};
 constexpr Point Q2_NEUTRAL  = { 23.6, -47.1};
 constexpr Point MIDFIELD    = {  0,     0  };
 }
@@ -38,7 +38,7 @@ constexpr Point RED_WALL_S      = {-68.6, -23.5};
 constexpr Point RED_WALL_N      = {-68.6,  23.6};
 constexpr Point AUDIENCE_WALL_W = {-23.5, -68.6};
 constexpr Point AUDIENCE_WALL_E = { 23.6, -68.6};
-constexpr Point DIAGONAL_INNER  = {-23.5, -23.5};
+constexpr Point DIAGONAL_INNER  = {-24, -24};
 constexpr Point DIAGONAL_OUTER  = {-47.1, -47.1};
 constexpr Point MIDFIELD_W      = {-23.5,   0  };
 constexpr Point MIDFIELD_S      = {  0,   -23.5};

@@ -32,7 +32,7 @@ inline pros::Imu 	  	imu(13);
 inline pros::Distance 	leftDistance(3);
 inline pros::Distance 	rightDistance(2);
 inline pros::Distance 	middleDistance(1);
-inline pros::Optical  	colorSensor(15);
+inline pros::Optical  	colorSensor(6);
 
 // Mechanisms
 inline pros::Motor 		activeToggle(-17, pros::MotorGearset::green);
@@ -113,7 +113,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
 	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
-}, {.toolForward = -3});	// [in] Claw scoring point, 21 cm behind the middle sensor
+}, {.toolForward = 0});	// [in] Claw scoring poin
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////
