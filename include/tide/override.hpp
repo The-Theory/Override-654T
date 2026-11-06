@@ -38,7 +38,7 @@ constexpr Point RED_WALL_S      = {-68.6, -23.5};
 constexpr Point RED_WALL_N      = {-68.6,  23.6};
 constexpr Point AUDIENCE_WALL_W = {-23.5, -68.6};
 constexpr Point AUDIENCE_WALL_E = { 23.6, -68.6};
-constexpr Point DIAGONAL_INNER  = {-24, -24};
+constexpr Point DIAGONAL_INNER  = {-23.6, -23.6};
 constexpr Point DIAGONAL_OUTER  = {-47.1, -47.1};
 constexpr Point MIDFIELD_W      = {-23.5,   0  };
 constexpr Point MIDFIELD_S      = {  0,   -23.5};
@@ -51,11 +51,13 @@ constexpr Point Q2_INNER = { 23.6, -23.5};
 constexpr Point Q2_OUTER = { 47.1, -47.1};
 }
 
-// Wall-mount centers
-// Ram with pushUntilStall
 namespace toggle {
 constexpr Point Q1 = {-70.2,   0  };
 constexpr Point Q2 = {  0,   -70.2};
+}
+
+namespace loader{
+constexpr Point RED_S = {-70.2, -60 };
 }
 
 }

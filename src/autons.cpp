@@ -16,6 +16,18 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
+void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffset=0) {
+	chassis.turnToPoint(point.x + xOffset, point.y + yOffset, 600, 
+		{.forwards=false}, false);
+	chassis.moveToPoint(point.x + xOffset, point.y + yOffset, 1200, 
+		{.forwards=false, .minSpeed=30, .earlyExitRange=10}, false);
+	chassis.moveToPoint(point.x + xOffset, point.y + yOffset, 500, 
+		{.forwards=false, .maxSpeed=30, .earlyExitRange=7}, false);
+	closeClaw();
+	winch.moveTo(winchHeight);
+	pros::delay(100);
+}
+
 void resetEndSegment() {
 	odom.moveBy(tide::TILE/2);
 	pros::delay(800);
@@ -36,109 +48,34 @@ void leftBase() {
 	/// Scoring first pin /////////////////////////////////////
 	// Init
 	closeClaw();
-	chassis.setPose(-65, 0, WEST);	// Start pos
-	odom.wallReset(Wall::RED);	// Wall reset
+	chassis.setPose(-65, 0, WEST);							// Start pos
+	odom.wallReset(Wall::RED);								// Wall reset
 	
 	// Toggle
-	waitForToggle();				// Toggle to alliance
-	winch.moveTo(1000);				// Lift winch							
+	waitForToggle();										// Toggle to alliance
+	winch.moveTo(1000);										// Lift winch							
 
 	// To goal and score
-	odom.reachPose(goal::Q1_ALLIANCE, 		// Turn to goal
+	odom.reachPose(goal::Q1_ALLIANCE,						// Turn to goal
 		NORTH, 2000, {.forwards = false, .minSpeed=30});	
 	autonScore(10);	
-	odom.wallReset(Wall::RED);	// Wall reset
+	odom.wallReset(Wall::RED);								// Wall reset
 
 	/// Scoring innner cup ////////////////////////////////////
-	chassis.turnToPoint(cuppin::DIAGONAL_INNER.x, cuppin::DIAGONAL_INNER.y, 500, 
-		{.forwards=false}, false);
-	chassis.moveToPoint(cuppin::DIAGONAL_INNER.x, cuppin::DIAGONAL_INNER.y, 2000, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	closeClaw();	
-	winch.moveTo(1600);
-	pros::delay(100);
-
+	pickupAt(cuppin::DIAGONAL_INNER, 1600, -2, 2);
 	odom.reachPose(goal::Q1_ALLIANCE, 
-		EAST, 1200, {.forwards=false, .minSpeed=3, .earlyExitRange=10});
+		EAST, 1200, {.forwards=false, .minSpeed=3});
 	autonScore(10);
 
 	/// Scoring aud. cup //////////////////////////////////////
-	chassis.turnToPoint(cuppin::DIAGONAL_OUTER.x + 3.5, cuppin::DIAGONAL_OUTER.y, 800, 
-		{.forwards=false}, false);
-	chassis.moveToPoint(cuppin::DIAGONAL_OUTER.x + 3.5, cuppin::DIAGONAL_OUTER.y, 1000, 
-		{.forwards=false, .minSpeed=20, .earlyExitRange=7}, false);
-	closeClaw();	
-	winch.moveTo(2200);
-	pros::delay(100);
+	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 3.5);
+	odom.wallReset(Wall::AUDIENCE);
 
 	chassis.turnToHeading(SOUTH, 800, {}, false);
 	chassis.moveToPoint(goal::Q1_ALLIANCE.x + 2, goal::Q1_ALLIANCE.y, 900, 
 		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::RED);
 	autonScore(10);
-}
-
-void fuckassleft() {
-	// // Init
-	// closeClaw();
-	// chassis.setPose(-65, 0, WEST);	// Flush on the red wall, facing it
-
-	// //Toggle
-	// waitForToggle();
-	// odom.wallReset(Wall::RED);
-	// pros::delay(500);
-	// winch.moveTo(1300);	
-
-	// // To goal
-	// odom.reachPose(goal::Q1_ALLIANCE, NORTH, 2000, {.forwards = false});
-	// odom.moveBy(1, 0, 0, 300);
-	// winch.moveBy(-500);
-	// //pros::delay(300);						// Wait to settle at goal
-	// odom.wallReset(Wall::RED);			// Reset
-	// closeClaw();								// Release pin
-	// pros::delay(800);						// Wait for pun to drop							// Close claw again
-
-	// // To cuppin
-	// odom.moveBy(6); 
-	// winch.moveTo(0);
-	// closeClaw();
-	// odom.reachPose(cuppin::DIAGONAL_INNER, NORTH_WEST, 2000, {.forwards = false});
-
-	// // Pickup cuppin
-	// winch.moveTo(1400); //Evil value, likes to change a lot because winch sucks.
-
-	// // Score cuppin
-	// odom.aim(goal::Q1_ALLIANCE, TURN_TIMEOUT);
-	// odom.reachPoint(goal::Q1_ALLIANCE, 600);
-	// winch.moveTo(15);
-	// pros::delay(400);
-	// closeClaw();
-	// pros::delay(400);
-	// odom.moveBy(10); 
-	// stopClaw();
-	// winch.moveTo(0);
-	// closeClaw();
-
-	// // To next cuppin
-	// odom.reachPose(tide::Point(-44, -49), NORTH_EAST, 1500, {.forwards = false}); //this point and timeout is amazing im so good at coding - ryan
-
-	// // Pickup
-	// pros::delay(900);
-	// winch.moveTo(2200);
-	// stopClaw();
-
-	// // Score
-	// odom.aim(goal::Q1_ALLIANCE, 800);
-	// odom.reachPoint(goal::Q1_ALLIANCE, 800);
-	// odom.moveBy(1, 0, 0, 300);
-	// winch.moveTo(15);
-	// pros::delay(300);
-	// closeClaw();
-	// pros::delay(800);
-	// winch.moveTo(0);
-
-	// // Back out
-	// chassis.moveToPoint(-48, -48, 1500, {}, false);
-	// stopClaw();
 }
 
 #pragma endregion
@@ -193,7 +130,9 @@ void xAuton(tide::Alliance) {
 
 void leftAuton(tide::Alliance) {
 	leftBase();
-	// TODO: Toggle
+
+	/// Scoring Wall cup //////////////////////////////////////
+	pickupAt(cuppin::RED_WALL_S, 3000, 3.5, -4);
 }
 
 void skillsAuton(tide::Alliance) {
@@ -257,9 +196,9 @@ std::string tuneMounts() {
 
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
+	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"X",		xAuton},		// Audience wall, centered on the Toggle, facing it
-	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 	{"Test",	testAuton},		// For testing only
 	{"Blank", 	blankAuto},		// Does nothing except toggle
 };
