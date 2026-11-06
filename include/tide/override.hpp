@@ -57,7 +57,7 @@ constexpr Point Q2 = {  0,   -70.2};
 }
 
 namespace loader{
-constexpr Point RED_S = {-70.2, -60 };
+constexpr Point RED_S = {-71, -64 };
 }
 
 }
