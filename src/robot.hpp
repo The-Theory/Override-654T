@@ -33,6 +33,7 @@ inline pros::Distance 	leftDistance(3);
 inline pros::Distance 	rightDistance(2);
 inline pros::Distance 	middleDistance(1);
 inline pros::Optical  	colorSensor(6);
+inline pros::Distance	clawDistance(14);
 
 // Mechanisms
 inline pros::Motor 		activeToggle(-17, pros::MotorGearset::green);
