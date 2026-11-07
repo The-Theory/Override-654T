@@ -16,7 +16,7 @@ using tide::Wall;
 
 const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 
-void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffset=0, bool leave=false) {
+void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffset=0, bool leave=false, bool liftLoader=false) {
 	chassis.turnToPoint(point.x + xOffset, point.y + yOffset, 500, 
 		{.forwards=false}, false);
 	openClaw();
@@ -24,14 +24,18 @@ void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffs
 		{.forwards=false, .minSpeed=30, .earlyExitRange=15}, false);
 	odom.moveBy(-8.5, 0, 0, 1000, {}, true);
 
-	while (clawDistance.get_distance() > 1) {
-		pros::delay(20);
+	while (clawDistance.get_distance() > 85) {
+		pros::delay(10);
 	}
 
 	closeClaw();
 	if (leave) {
-		pros::delay(100);
+		if (liftLoader) {
+			winch.moveTo(400);
+			pros::delay(100);
+		}
 		odom.moveBy(6);
+		pros::delay(100);
 	}
 	winch.moveTo(winchHeight);
 	pros::delay(100);
@@ -71,13 +75,13 @@ void leftBase() {
 	odom.wallReset(Wall::RED);								// Wall reset
 
 	/// Scoring innner cup ////////////////////////////////////
-	pickupAt(cuppin::DIAGONAL_INNER, 1600, 2);
+	pickupAt(cuppin::DIAGONAL_INNER, 1600, 2, -2);
 	odom.reachPose(goal::Q1_ALLIANCE, 
 		EAST, 1400, {.forwards=false, .minSpeed=30});
 	autonScore(10);
 
 	/// Scoring aud. cup //////////////////////////////////////
-	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 0, -1);
+	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 0, -2);
 	odom.wallReset(Wall::AUDIENCE);
 
 	chassis.turnToHeading(SOUTH, 800, {}, false);
@@ -149,8 +153,66 @@ void skillsAuton(tide::Alliance) {
 	leftBase();
 
 	/// Scoring first pin /////////////////////////////////////
-	chassis.moveToPose(-48, -60, EAST, 2000, {}, false);
-	pickupAt(loader::RED_S, 1500, 0, 0, true);
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 2900, 1, 2.5, true, true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
+	chassis.moveToPoint(goal::Q1_ALLIANCE.x, goal::Q1_ALLIANCE.y, 1000, 
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::RED);
+	autonScore(10);
+
+	/// Scoring second pin ////////////////////////////////////
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 3700, 1, 3, true, true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
+	chassis.moveToPoint(goal::Q1_ALLIANCE.x+1, goal::Q1_ALLIANCE.y, 1000,
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::RED);
+	autonScore(10);
+
+	/// Scoring first solo-pin on second goal /////////////////
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 1000, 2, 3, true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, WEST, 2000, {}, false);
+	chassis.moveToPoint(goal::Q2_ALLIANCE.x, goal::Q2_ALLIANCE.y, 1000,
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::AUDIENCE);
+	autonScore(6);
+
+	/// Scoring first cuppin on second goal ///////////////////
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 1600, 1, 3, true,true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, WEST, 2000, {}, false);
+	chassis.moveToPoint(goal::Q2_ALLIANCE.x, goal::Q2_ALLIANCE.y, 1000,
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::AUDIENCE);
+	autonScore(6);
+
+	/// Scoring second cuppin on second goal ///////////////////
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 2900, 1, 3, true,true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, WEST, 2000, {}, false);
+	chassis.moveToPoint(goal::Q2_ALLIANCE.x, goal::Q2_ALLIANCE.y, 1000,
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::AUDIENCE);
+	autonScore(6);
+
+	/// Scoring third cuppin on second goal ///////////////////
+	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
+	pickupAt(loader::RED_S, 3700, 1, 3, true,true);
+	pros::delay(100);
+	chassis.moveToPose(-46, -62, WEST, 2000, {}, false);
+	chassis.moveToPoint(goal::Q2_ALLIANCE.x, goal::Q2_ALLIANCE.y, 1000,
+		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
+	odom.wallReset(Wall::AUDIENCE);
+	autonScore(6);
+
+	
 }
 
 void testAuton(tide::Alliance) {
