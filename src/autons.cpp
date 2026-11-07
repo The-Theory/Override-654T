@@ -120,25 +120,7 @@ void xAuton(tide::Alliance) {
     odom.aim(cuppin::AUDIENCE_WALL_W, 600);    // Aim to cuppin
     odom.moveBy(-tide::TILE * 0.9, 0, 0, 1500, {.maxSpeed=100});    // Move to cuppin
     odom.moveBy(-tide::TILE * 0.2, 0, 0, 300, {.maxSpeed=20});     	// Move to cuppin
-    winch.moveTo(1600);                                             // Lift cuppin up
-
-    // // Turn out
-    // chassis.turnToHeading(EAST, 600, {}, false);                    // Turn out
-	// chassis.setPose(-tide::TILE, -2.5 * tide::TILE, EAST);
-    // //odom.moveBy(tide::TILE);                                    	// Drive out
-	// chassis.moveToPose(5, -48, EAST, 1000, {}, false);
-
-    // // Score    
-	// winch.moveTo(1400);  
-	// odom.aim(goal::Q2_ALLIANCE, 800);
-    // odom.reachPoint(goal::Q2_ALLIANCE, 800);                       // Move to goal
-	// odom.moveBy(1, 0, 0, 300);
-
-    // // Get new cuppin
-	// closeClaw();   
-	// //odom.reachPoint(tide::Point(0, -50), 1500);                   
-    // //odom.reachPoint(cuppin::AUDIENCE_WALL_E, 1500);         
-
+    winch.moveTo(1600);                                             // Lift cuppin up        
 }
 
 void leftAuton(tide::Alliance) {
