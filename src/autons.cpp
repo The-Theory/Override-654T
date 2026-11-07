@@ -19,12 +19,20 @@ const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
 void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffset=0, bool leave=false) {
 	chassis.turnToPoint(point.x + xOffset, point.y + yOffset, 500, 
 		{.forwards=false}, false);
+	openClaw();
 	chassis.moveToPoint(point.x + xOffset, point.y + yOffset, 1200, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=10}, false);
-	chassis.moveToPoint(point.x + xOffset, point.y + yOffset, 500, 
-		{.forwards=false, .maxSpeed=30, .earlyExitRange=7}, false);
+		{.forwards=false, .minSpeed=30, .earlyExitRange=15}, false);
+	odom.moveBy(-8.5, 0, 0, 1000, {}, true);
+
+	while (clawDistance.get_distance() > 1) {
+		pros::delay(20);
+	}
+
 	closeClaw();
-	if (leave) odom.moveBy(6);
+	if (leave) {
+		pros::delay(100);
+		odom.moveBy(6);
+	}
 	winch.moveTo(winchHeight);
 	pros::delay(100);
 }
@@ -63,13 +71,13 @@ void leftBase() {
 	odom.wallReset(Wall::RED);								// Wall reset
 
 	/// Scoring innner cup ////////////////////////////////////
-	pickupAt(cuppin::DIAGONAL_INNER, 1600);
+	pickupAt(cuppin::DIAGONAL_INNER, 1600, 2);
 	odom.reachPose(goal::Q1_ALLIANCE, 
 		EAST, 1400, {.forwards=false, .minSpeed=30});
 	autonScore(10);
 
 	/// Scoring aud. cup //////////////////////////////////////
-	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 3);
+	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 0, -1);
 	odom.wallReset(Wall::AUDIENCE);
 
 	chassis.turnToHeading(SOUTH, 800, {}, false);
@@ -141,6 +149,7 @@ void skillsAuton(tide::Alliance) {
 	leftBase();
 
 	/// Scoring first pin /////////////////////////////////////
+	chassis.moveToPose(-48, -60, EAST, 2000, {}, false);
 	pickupAt(loader::RED_S, 1500, 0, 0, true);
 }
 
