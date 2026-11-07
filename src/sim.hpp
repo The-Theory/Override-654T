@@ -33,7 +33,8 @@ inline void simRobot(sim::World& w) {
 	game.claw.forward = odom.getSettings().toolForward;
 	game.claw.grab    = [] { return claw.get_voltage() > 0; };
 	game.claw.release = [] { return claw.get_voltage() < 0; };
-	game.claw.lowered = [] { return winch.position() < 60; };	// Guess
+	game.claw.grabForward = -w.back;	// Closes on a piece at the back bumper
+	game.claw.sensor  = clawDistance.get_port();
 
 	// activeToggle wheel and colorSensor at the front
 	game.spinner.motor   = activeToggle.get_port();

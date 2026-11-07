@@ -243,6 +243,7 @@ public:
 	// Set by the game layer (game.hpp); empty without one, like in check.cpp
 	std::function<void()> game;	// after each physics ms
 	std::function<std::pair<double, std::int32_t>(int port)> optical;	// hue [deg], proximity 0-255
+	std::function<std::int32_t(int port)> pieceDistance;	// [mm] to a piece, or -1 if that port doesn't see pieces
 
 	std::vector<Frame> frames;
 	std::vector<std::pair<double, std::string>> events;
@@ -276,6 +277,8 @@ public:
 
 	// Distance sensor reading [mm]; 9999 like the real one with nothing in range
 	std::int32_t distance(int port) {
+		if (pieceDistance)
+			if (const std::int32_t mm = pieceDistance(std::abs(port)); mm >= 0) return mm;
 		const auto it = mounts.find(std::abs(port));
 		if (it == mounts.end()) return 9999;
 		const Mount& m = it->second;
@@ -407,11 +410,18 @@ private:
 			theta += turn;
 		}
 
+		// Wheels don't slip sideways, so back out along the heading; near parallel to the wall, straight out
 		std::tie(minX, maxX, minY, maxY) = extent();
-		if (maxX > halfField)  x -= maxX - halfField;
-		if (minX < -halfField) x += -halfField - minX;
-		if (maxY > halfField)  y -= maxY - halfField;
-		if (minY < -halfField) y += -halfField - minY;
+		const double hx = std::sin(toRad(theta)), hy = std::cos(toRad(theta));
+		auto backOut = [&](double depth, double along, double& axis) {
+			if (std::fabs(along) < 0.3) { axis += depth; return; }
+			x += depth / along * hx;
+			y += depth / along * hy;
+		};
+		if (maxX > halfField)  backOut(halfField - maxX, hx, x);
+		if (minX < -halfField) backOut(-halfField - minX, hx, x);
+		if (maxY > halfField)  backOut(halfField - maxY, hy, y);
+		if (minY < -halfField) backOut(-halfField - minY, hy, y);
 	}
 
 	bool driven(int port) const {

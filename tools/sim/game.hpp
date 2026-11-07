@@ -64,13 +64,14 @@ struct Toggle {
 
 // What a robot does to game pieces; each team fills this in its src/sim.hpp
 struct Robot {
-	// Claw: picks up a standing piece (or a Pin in a Cup) at its tool point, drops it or stacks it on a Goal
+	// Claw: grabs a standing piece (or a Pin in a Cup) at its tool point when it closes, drops it or stacks it on a Goal
 	struct {
-		double right = 0, forward = 0;	// tool point from the tracking center [in]
+		double right = 0, forward = 0;	// tool point from the tracking center [in]; where held pieces sit and stack
+		double grabForward = 0;			// [in] mouth the claw closes on and its sensor looks from
 		double reach = 3;				// [in]
 		std::function<bool()> grab    = [] { return false; };
 		std::function<bool()> release = [] { return false; };
-		std::function<bool()> lowered = [] { return true; };	// low enough to pick off the tiles
+		int    sensor = 0;				// distance sensor in the claw that sees pieces
 	} claw;
 
 	// Wheel that spins a Toggle it's pressed against, with a color sensor watching the face
@@ -169,6 +170,17 @@ public:
 		if ((w.sched.now - w.logStart) % 10 == 0) record(w);
 	}
 
+	// Claw sensor reading [mm]: the nearest loose piece in twice the claw's reach, else nothing in range.
+	// ponytail: measured from the mouth, not along the beam
+	std::int32_t clawSensor(const World& w, int port) const {
+		if (port != robot.claw.sensor) return -1;
+		const tide::Point at = mouth(w);
+		double nearest = INFINITY;
+		for (const Piece& p : pieces)
+			if (p.free() && !p.lying) nearest = std::min(nearest, std::hypot(p.x - at.x, p.y - at.y));
+		return nearest > 2 * robot.claw.reach ? 9999 : std::lround(nearest * 25.4);
+	}
+
 	// Hue the robot's color sensor reads off a Toggle it's touching, and how close it is
 	std::pair<double, std::int32_t> optical(const World& w, int port) const {
 		if (port != robot.spinner.optical) return {0, 0};
@@ -259,6 +271,7 @@ private:
 	}
 
 	tide::Point tool(const World& w) const { return onRobot(w, robot.claw.right, robot.claw.forward); }
+	tide::Point mouth(const World& w) const { return onRobot(w, robot.claw.right, robot.claw.grabForward); }
 
 	void moveHeld(const World& w) {
 		const tide::Point at = tool(w);
@@ -267,12 +280,12 @@ private:
 
 	// One Pin and one Cup at most (SG6), so a Cup with its Pin comes up together
 	void claw(World& w) {
-		const tide::Point at = tool(w);
-		if (held.empty() && robot.claw.grab() && robot.claw.lowered()) {
+		const tide::Point at = tool(w), in = mouth(w);
+		if (held.empty() && robot.claw.grab()) {
 			bool pin = false, cup = false;
 			for (std::size_t i = 0; i < pieces.size(); i++) {
 				Piece& p = pieces[i];
-				if (!p.free() || p.lying || std::hypot(p.x - at.x, p.y - at.y) > robot.claw.reach) continue;
+				if (!p.free() || p.lying || std::hypot(p.x - in.x, p.y - in.y) > robot.claw.reach) continue;
 				if (p.cup ? cup : pin) continue;
 				(p.cup ? cup : pin) = true;
 				p.held = true;
@@ -381,6 +394,7 @@ inline void start(World& w) {
 	field.setup();
 	w.game = [&w] { field.step(w, 0.001); };
 	w.optical = [&w](int port) { return field.optical(w, port); };
+	w.pieceDistance = [&w](int port) { return field.clawSensor(w, port); };
 }
 
 #pragma endregion
