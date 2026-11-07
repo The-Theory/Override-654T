@@ -53,16 +53,18 @@ away from the robot (blue).
   (`World::driveTau`). Coast, brake and hold slow it down at different rates. Friction eats the
   first 1.2 V (`World::driveStiction`), so a PID that fades out near its target stalls short, like on carpet.
 - The robot is a rectangle that stops at the perimeter. Driven into a wall at an angle, it pivots on the
-  corner touching it until the bumper sits flush, like slamming into the wall to square up. Once flush
+  corner touching it until the bumper sits flush, like slamming into the wall to square up; the wall
+  pushes it back along its heading, since the wheels don't slip sideways. Once flush
   its wheels stall, so `pushUntilStall` and `wallReset` work. It doesn't slide along the wall.
 - Motions use the robot's own `ControllerSettings` gains and exit conditions, with simplified
   LemLib logic (boomerang `moveToPose`, motion queueing, `minSpeed` early exits). Path shapes are
   close to LemLib's, not exact.
 - Odom uses LemLib's tracking-wheel and IMU math.
 - Game pieces are circles. The robot shoves loose ones out of its footprint, except in the channel
-  between its claw and the nearest edge. The claw picks up one Pin and one Cup within reach of its
-  tool point when `src/sim.hpp` says it's gripping and low enough. It drops them when it opens,
-  stacking them on a Goal if the tool point is within 2.5" of one.
+  between its claw and the nearest edge. The claw closes on one Pin and one Cup within reach of its
+  mouth (the back bumper) when `src/sim.hpp` says it's gripping, and its distance sensor reads the
+  nearest loose piece from there. It drops them when it opens, stacking them on a Goal if the tool
+  point is within 2.5" of one.
 - A Toggle turns to its next face while the spinner motor runs with the robot's front against it.
   The color sensor reads the hue of the face it's touching.
 - Score: 5 per alliance-coloured top half stacked on a Goal, 10 per owned yellow one. A Quadrant's
@@ -71,6 +73,6 @@ away from the robot (blue).
 ## Doesn't model
 Wheel slip, battery sag, motor heat, how the real drive responds (`driveTau` and `driveStiction` are guesses), sensor
 noise, opponents, or the brain screen. For game pieces it doesn't model collisions with Goals,
-pieces tipping over, distance sensors seeing pieces, a Cup's orientation (every stacked Pin shows its
+pieces tipping over, distance sensors other than the claw's seeing pieces, a Cup's orientation (every stacked Pin shows its
 top half), match loads or the auton bonus. The winch gearing and gravity, the footprint, and the
 claw's reach, height and preload in `src/sim.hpp` are guesses.
