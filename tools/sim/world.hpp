@@ -368,7 +368,9 @@ private:
 	double sideSpeed(const std::vector<std::int8_t>& ports, double v, double maxSpeed, double dt) {
 		if (ports.empty()) return 0;
 		const double mv = command(ports);
-		const double target = std::copysign(std::max(std::fabs(mv) - driveStiction, 0.0), mv) / (12000 - driveStiction) * maxSpeed;
+		// Friction opposes the motion while moving, braking included; at rest it holds anything under driveStiction
+		const double friction = std::fabs(v) > 0.5 ? std::copysign(driveStiction, v) : std::clamp(mv, -driveStiction, driveStiction);
+		const double target = (mv - friction) / (12000 - driveStiction) * maxSpeed;
 		return v + (target - v) * dt / tau(motor(ports[0]).brake, mv, driveTau + liftTau * liftRaised());
 	}
 

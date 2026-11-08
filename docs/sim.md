@@ -14,6 +14,11 @@ make -C tools/sim check              # tuners must find known offsets on a test 
 - `tools/sim/out/<auton>.json`: the pose every 10 ms, the motion and claw log, every piece's moves, Toggle faces and the score; the browser viewer reads the same file
 
 Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (skills length).
+- `--setup dx dy dheading`: the robot really sits this far off where the auton's first `setPose` says
+- `--distance-scale k`: distance sensors read k times the true range; `--jitter in [--seed n]`: Cup + Pin
+  spots land up to that far off their nominal spot
+- `--tune "<Tune page name>"`: runs a tuner on the sim robot instead of an auton
+- `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same
 
 ## In the browser
 ```bash
@@ -50,8 +55,9 @@ away from the robot (blue).
 - Time only moves while every task is waiting in `pros::delay`, so runs come out the same every
   time. A 15 s auton finishes in well under a second.
 - Each drive side reaches its voltage's share of top speed with a 0.25 s time constant
-  (`World::driveTau`). Coast, brake and hold slow it down at different rates. Friction eats the
-  first 1.2 V (`World::driveStiction`), so a PID that fades out near its target stalls short, like on carpet.
+  (`World::driveTau`), longer with the lift up (`World::liftTau`). Coast, brake and hold slow it down at
+  different rates. Friction (`World::driveStiction`, 1.2 V) holds it at rest under that voltage and opposes
+  it while moving, braking included, so a PID that fades out near its target stalls short, like on carpet.
 - The robot is a rectangle that stops at the perimeter. Driven into a wall at an angle, it pivots on the
   corner touching it until the bumper sits flush, like slamming into the wall to square up; the wall
   pushes it back along its heading, since the wheels don't slip sideways. Once flush

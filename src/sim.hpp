@@ -26,7 +26,7 @@ inline void simRobot(sim::World& w) {
 		.sensorPerMotor = 0.25,	// Guess
 		.gravityMv      = 1000,	// Near the tuned kG
 		.min            = 0,
-		.max            = 1200,
+		.max            = 3700,	// Guess: skills carries up to 3700
 	});
 
 	// Claw on the back, under the winch

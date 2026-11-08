@@ -14,6 +14,7 @@
 
 #include "lemlib/api.hpp"	// IWYU pragma: keep
 #include "tide/field.hpp"
+#include "tide/motion.hpp"
 #include "pros/distance.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/rotation.hpp"
@@ -25,6 +26,7 @@
 #include <cstdlib>
 #include <functional>
 #include <numbers>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -50,6 +52,12 @@ struct OdomSettings {
 	int    stallVelocity  = 11000;	// [centideg/s] tracking wheel speed counted as stopped
 	double toolRight      = 0;		// [in] scoring point, from the tracking center
 	double toolForward    = 0;		// [in] negative for a tool on the back
+
+	// Planned moves (profiledDrive/Turn), from the Tune page's FF runs; unmeasured falls back to LemLib's PID moves
+	Feedforward lateral, lateralLoaded;		// [mV per in] unloaded, and at load() = 1 (lift up)
+	Feedforward angular, angularLoaded;		// [mV per deg]
+	std::function<double()> load;			// 0..1 toward the loaded gains, e.g. lift height; empty = always unloaded
+	double bandwidth      = 6;		// [rad/s] how hard feedback chases the plan; higher is stiffer, too high buzzes
 };
 
 /**
@@ -109,6 +117,23 @@ public:
 	void approach(Point target, double heading, double standoff, int maxSpeed = 127, int timeout = 2000) {
 		const Point at = centerFor(shortOf(target, heading, standoff), heading);
 		const lemlib::Pose pose = chassis.getPose();
+		if (profiled()) {
+			const double dist = std::hypot(at.x - pose.x, at.y - pose.y);
+			if (dist > 0.5) {
+				// Forwards or backwards, whichever turns less in all
+				const double face = bearing({pose.x, pose.y}, at);
+				auto turning = [&](double facing) {
+					return std::fabs(lemlib::angleError(facing, pose.theta, false)) + std::fabs(lemlib::angleError(heading, facing, false));
+				};
+				const bool forwards = turning(face) <= turning(face + 180);
+				profiledTurn(forwards ? face : face + 180);
+				const lemlib::Pose turned = chassis.getPose();	// Distance from here: it may have still been rolling
+				const double left = std::hypot(at.x - turned.x, at.y - turned.y);
+				profiledDrive(forwards ? left : -left, at, maxSpeed / 127.0);
+			}
+			if (std::fabs(lemlib::angleError(heading, chassis.getPose().theta, false)) > 1) profiledTurn(heading);
+			return;
+		}
 		if (std::hypot(at.x - pose.x, at.y - pose.y) > 1) {
 			const bool forwards = std::fabs(lemlib::angleError(bearing({pose.x, pose.y}, at), heading, false)) <= 90;
 			// Nearly in line, steer onto the point and turn after: a tank can't fix a sideways
@@ -135,8 +160,7 @@ public:
 	 * - [] { return false; } just pushes for timeout ms
 	 */
 	bool creep(int mv, const std::function<bool()>& done, int timeout = 1500) {
-		chassis.cancelAllMotions();
-		chassis.waitUntilDone();	// A cancelled motion stops the motors as it ends
+		stopMotions();
 		drive(mv, mv);
 		const std::uint32_t start = pros::millis();
 		bool hit = false;
@@ -146,12 +170,96 @@ public:
 	}
 
 	/**
+	 * Drives distance [in] (negative backs up) on a speed plan, holding the heading it starts on,
+	 * or steering at aim until close. Feedforward does the work, Feedback::forPlant fixes the rest,
+	 * so it lands stopped on the end without tuning. Needs settings.lateral and .angular measured.
+	 * - speed: fraction of planned top speed
+	 * - timeout [ms]: past the plan's own length before giving up
+	 */
+	void profiledDrive(double distance, std::optional<Point> aim = {}, double speed = 1, int timeout = 750) {
+		stopMotions();
+		const Trapezoid plan(distance, lateralNow().topSpeed(PLAN_BATTERY) * speed, lateralNow().topAccel(ACCEL_BATTERY));
+		const lemlib::Pose start = chassis.getPose();
+		const Point along = toField(0, 1, start.theta);
+		double s = 0, v = 0, theta = start.theta, w = 0;	// [in], [in/s], [deg], [deg/s]
+
+		const std::uint32_t t0 = pros::millis();
+		std::uint32_t wake = t0;
+		while (true) {
+			const double t = (pros::millis() - t0) / 1000.0;
+			const lemlib::Pose pose = chassis.getPose();
+			const double now = (pose.x - start.x) * along.x + (pose.y - start.y) * along.y;
+			v += ((now - s) / DT - v) * SMOOTHING;
+			w += (std::remainder(pose.theta - theta, 360.0) / DT - w) * SMOOTHING;
+			s = now;
+			theta = pose.theta;
+
+			const Trapezoid::State ref = plan.at(t);
+			const double e = ref.position - s;
+			if (t > plan.duration() && std::fabs(e) < SETTLED_IN && std::fabs(v) < SETTLED_IN_S) break;
+			if (t > plan.duration() + timeout / 1000.0) {
+				std::printf("profiledDrive TIMEOUT %.1f in short\n", e);
+				break;
+			}
+			const double push = follow(lateralNow(), ref, e, v, SETTLED_IN);
+
+			// Toward aim while the bearing is steady; the last inches just hold it
+			double want = start.theta;
+			if (aim && std::fabs(distance - s) > AIM_LOCK) want = bearing({pose.x, pose.y}, *aim) + (distance < 0 ? 180 : 0);
+			const Feedback steer = Feedback::forPlant(angularNow(), settings.bandwidth);
+			const double turn = steer.kP * lemlib::angleError(want, pose.theta, false) - steer.kD * w;
+			drive(clampMv(push + turn), clampMv(push - turn));
+			pros::Task::delay_until(&wake, 10);
+		}
+		drive(0, 0);
+	}
+
+	// Turns to heading [deg]: planned if the feedforward is measured, else LemLib's turn
+	void turnTo(double heading, int timeout = 1000) {
+		if (profiled()) profiledTurn(heading);
+		else chassis.turnToHeading(heading, timeout, {}, false);
+	}
+
+	// Turns in place to heading [deg] the short way, on a speed plan like profiledDrive
+	void profiledTurn(double heading, double speed = 1, int timeout = 500) {
+		stopMotions();
+		const double delta = lemlib::angleError(heading, chassis.getPose().theta, false);
+		const Trapezoid plan(delta, angularNow().topSpeed(PLAN_BATTERY) * speed, angularNow().topAccel(ACCEL_BATTERY));
+		double turned = 0, w = 0, theta = chassis.getPose().theta;	// [deg], [deg/s]
+
+		const std::uint32_t t0 = pros::millis();
+		std::uint32_t wake = t0;
+		while (true) {
+			const double t = (pros::millis() - t0) / 1000.0;
+			const double now = chassis.getPose().theta;
+			const double step = std::remainder(now - theta, 360.0);
+			turned += step;
+			w += (step / DT - w) * SMOOTHING;
+			theta = now;
+
+			const Trapezoid::State ref = plan.at(t);
+			const double e = ref.position - turned;
+			if (t > plan.duration() && std::fabs(e) < SETTLED_DEG && std::fabs(w) < SETTLED_DEG_S) break;
+			if (t > plan.duration() + timeout / 1000.0) {
+				std::printf("profiledTurn TIMEOUT %.1f deg short\n", e);
+				break;
+			}
+			const double push = follow(angularNow(), ref, e, w, SETTLED_DEG);
+			drive(clampMv(push), clampMv(-push));
+			pros::Task::delay_until(&wake, 10);
+		}
+		drive(0, 0);
+	}
+
+	/**
 	 * Moves by an offset from the current pose, ending at heading + turn [deg].
 	 * - Tank can't strafe, so a sideways offset curves there.
 	 * - Chained moves stack their error; an absolute move or wallReset clears it.
+	 * - Straight and blocking, it's a profiledDrive when the feedforward is measured
 	 */
 	void moveBy(double forward, double right = 0, double turn = 0, int timeout = 1500,
 				lemlib::MoveToPoseParams params = {}, bool async = false) {
+		if (profiled() && right == 0 && turn == 0 && !async) return profiledDrive(forward);
 		const lemlib::Pose pose = chassis.getPose();
 		const Point offset = toField(right, forward, pose.theta);
 		params.forwards = forward >= 0;
@@ -300,6 +408,36 @@ private:
 	static double inches(pros::Distance& sensor) {
 		const std::int32_t mm = sensor.get();
 		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
+	}
+
+	static constexpr double DT            = 0.01;	// [s] control loop
+	static constexpr double SMOOTHING     = 0.5;	// of each new speed reading, against sensor jitter
+	static constexpr double PLAN_BATTERY  = 0.75;	// plans use this much of the battery for speed, leaving feedback room
+	static constexpr double ACCEL_BATTERY = 0.5;	// and this much to speed up; less keeps the wheels from slipping
+	static constexpr double AIM_LOCK      = 4;		// [in] from the end, stop steering at the aim point
+	static constexpr double SETTLED_IN    = 0.3,  SETTLED_IN_S  = 1.5;	// [in], [in/s]
+	static constexpr double SETTLED_DEG   = 0.75, SETTLED_DEG_S = 5;	// [deg], [deg/s]
+
+	bool profiled() const { return settings.lateral.measured() && settings.angular.measured(); }
+	double loadNow() const { return settings.load ? settings.load() : 0; }
+	Feedforward lateralNow() const { return settings.lateral.toward(settings.lateralLoaded, loadNow()); }
+	Feedforward angularNow() const { return settings.angular.toward(settings.angularLoaded, loadNow()); }
+
+	// Voltage to follow a plan: feedforward plus feedback on position and speed error. Once the plan
+	// has stopped, friction would hold a small miss, so push through it until within tolerance
+	double follow(const Feedforward& ff, Trapezoid::State ref, double error, double speed, double tolerance) const {
+		const Feedback fb = Feedback::forPlant(ff, settings.bandwidth);
+		double mv = ff.mv(ref.velocity, ref.acceleration) + fb.kP * error + fb.kD * (ref.velocity - speed);
+		if (ref.velocity == 0 && std::fabs(error) > tolerance / 2) mv += std::copysign(ff.kS, error);
+		return mv;
+	}
+
+	static double clampMv(double mv) { return std::clamp(mv, -12000.0, 12000.0); }
+
+	// A cancelled LemLib motion stops the motors as it ends, so wait it out before driving
+	void stopMotions() {
+		chassis.cancelAllMotions();
+		chassis.waitUntilDone();
 	}
 
 	// Median of a few readings, so one stray beam doesn't count; NaN if most saw nothing

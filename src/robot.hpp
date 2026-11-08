@@ -44,6 +44,22 @@ inline pros::MotorGroup winchMotors({21, -20, -19}, pros::MotorGearset::blue);
 ////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
+#pragma region Mechanisms //////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+inline tide::Mechanism winch(winchMotors, winchEncoder, {
+	.kP		= 21.61,
+	.kI		= 1.8005,
+	.kD		= 172.9,
+	.kG		= 1025,	// [mV]
+}, {.min = 0});	// Boots resting on bottom
+
+constexpr double LIFT_LOADED = 3300;	// winch [deg] the "FF up" run measures at: the highest the autons carry
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
 #pragma region Control /////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
@@ -114,21 +130,16 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
 	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
-}, {.toolForward = -10.5});	// [in] claw mouth at the back bumper; measure: tracking wheel axle to a held Pin's center
+}, {
+	.toolForward   = -10.5,	// [in] claw mouth at the back bumper; measure: tracking wheel axle to a held Pin's center
 
-#pragma endregion
-////////////////////////////////////////////////////////////////
-
-////////////////////////////////////////////////////////////////
-#pragma region Mechanisms //////////////////////////////////////
-////////////////////////////////////////////////////////////////
-
-inline tide::Mechanism winch(winchMotors, winchEncoder, {
-	.kP		= 21.61,
-	.kI		= 1.8005,
-	.kD		= 172.9,
-	.kG		= 1025,	// [mV]
-}, {.min = 0});	// Boots resting on bottom
+	// SIM VALUES: replace with the Tune page's "FF down" / "FF up" results before running autons
+	.lateral       = {1205, 166.49, 41.66},	// [mV], [mV per in/s], [mV per in/s²]
+	.lateralLoaded = {1205, 166.49, 58.24},
+	.angular       = {1205, 16.59, 4.15},	// per deg
+	.angularLoaded = {1205, 16.59, 5.80},
+	.load          = [] { return winch.position() / LIFT_LOADED; },
+});
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

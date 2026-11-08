@@ -89,9 +89,11 @@ void checkMounts() {
 }
 
 // Drive model: each side's mv = stiction + (12000 - stiction) / topSpeed · (v + tau · a)
+Feedforward truth(double perSideSpeed);
+
 void checkFeedforward(const char* what, const tide::Plant& plant, double perSideSpeed) {
 	sim::World& w = sim::world();
-	const double kV = (12000 - w.driveStiction) / (w.wheelRpm * std::numbers::pi * w.wheelDiameter / 60) * perSideSpeed;
+	const double kV = truth(perSideSpeed).kV;
 	Feedforward ff;
 	std::sscanf(tide::characterize(what, plant).c_str(), "FF %*s kS %lf  kV %lf  kA %lf", &ff.kS, &ff.kV, &ff.kA);
 	char name[32];
@@ -115,6 +117,54 @@ void checkFeedforwards() {
 	w.driveTau = 0.25;
 }
 
+// The check robot's true feedforward, straight [in] or turning [deg]
+Feedforward truth(double perSideSpeed) {
+	sim::World& w = sim::world();
+	const double kV = (12000 - w.driveStiction) / (w.wheelRpm * std::numbers::pi * w.wheelDiameter / 60) * perSideSpeed;
+	return {w.driveStiction, kV, kV * w.driveTau};
+}
+
+// Planned moves land where asked, also on a heavier robot (lift up) with its loaded gains
+void checkProfiled() {
+	sim::World& w = sim::world();
+	w.trackingOffset = 0;	// The code's wheel offset is 0 here; a real one is checkOffset's job
+	w.placed = false;
+	chassis.setPose(0, 0, 0);
+	const double degToSide = w.trackWidth / 2 * std::numbers::pi / 180;
+	tide::OdomSettings settings;
+	settings.lateral = truth(1);
+	settings.angular = truth(degToSide);
+	tide::Odom planned(chassis, leftMotors, rightMotors, tracking, {}, settings);
+
+	auto run = [&](const char* what, auto move, double wantY, double wantTheta) {
+		const std::uint32_t start = pros::millis();
+		move();
+		const lemlib::Pose p = chassis.getPose();
+		std::printf("     %-16s %.2f s\n", what, (pros::millis() - start) / 1000.0);
+		char name[32];
+		std::snprintf(name, sizeof(name), "%s y", what);
+		expect(name, p.y, wantY, 0.3);
+		std::snprintf(name, sizeof(name), "%s heading", what);
+		expect(name, std::remainder(p.theta - wantTheta, 360.0) + wantTheta, wantTheta, 1);
+	};
+	run("drive 24", [&] { planned.profiledDrive(24); }, 24, 0);
+	run("drive -36", [&] { planned.profiledDrive(-36); }, -12, 0);
+	run("turn 90", [&] { planned.profiledTurn(90); }, -12, 90);
+	run("turn back", [&] { planned.profiledTurn(0); }, -12, 0);
+
+	// Lift up: a heavier robot, told so through load()
+	w.driveTau = 0.4;
+	settings.lateralLoaded = truth(1);
+	settings.angularLoaded = truth(degToSide);
+	w.driveTau = 0.25;
+	settings.load = [] { return 1.0; };
+	tide::Odom loaded(chassis, leftMotors, rightMotors, tracking, {}, settings);
+	w.driveTau = 0.4;
+	run("heavy drive 24", [&] { loaded.profiledDrive(24); }, 12, 0);
+	run("heavy turn 90", [&] { loaded.profiledTurn(90); }, 12, 90);
+	w.driveTau = 0.25;
+}
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -132,6 +182,7 @@ int main() {
 		checkOffset();
 		checkMounts();
 		checkFeedforwards();
+		checkProfiled();
 		done = true;
 	});
 	w.sched.run([&] { return done; }, [&] { w.step(); });

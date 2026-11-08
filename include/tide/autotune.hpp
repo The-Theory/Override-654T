@@ -13,6 +13,7 @@
 #pragma once
 
 #include "tide/mechanism.hpp"
+#include "tide/motion.hpp"
 #include "pros/imu.hpp"
 #include "pros/motor_group.hpp"
 #include "pros/rotation.hpp"
@@ -63,14 +64,6 @@ struct TuneResult {
 	double ku = 0;					// ultimate gain [mV/unit]
 	double tu = 0;					// oscillation period [s]
 	std::string summary;			// what autotune() printed
-};
-
-// Voltage a plant needs to hold a speed and accelerate, so PID only fixes what's left
-struct Feedforward {
-	double kS = 0;	// [mV] to break friction
-	double kV = 0;	// [mV per plant unit/s]
-	double kA = 0;	// [mV per plant unit/s²]; grows with inertia, like a raised lift
-	double mv(double v, double a) const { return ((v > 0) - (v < 0)) * kS + kV * v + kA * a; }
 };
 
 // lemlib::PID outputs -127..127, not mV
