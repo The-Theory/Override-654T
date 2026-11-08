@@ -165,6 +165,21 @@ void checkProfiled() {
 	w.driveTau = 0.25;
 }
 
+// Starts facing the far wall a few inches off it, like the tuner asks
+void checkBumpers() {
+	sim::World& w = sim::world();
+	const double front = w.front, back = w.back;
+	w.trackingOffset = 0;
+	w.placed = false;
+	chassis.setPose(0, 70.2 - front - 3, NORTH);
+	tide::Odom measured(chassis, leftMotors, rightMotors, tracking, {
+		{leftSensor, LEFT.right, LEFT.forward, WEST}, {rightSensor, RIGHT.right, RIGHT.forward, EAST}});
+	double gotFront = NAN, gotBack = NAN;
+	std::sscanf(measured.measureBumpers(0).c_str(), "Bumpers from center: front %lf  back %lf", &gotFront, &gotBack);
+	expect("front bumper", gotFront, front, 0.15);
+	expect("back bumper", gotBack, back, 0.15);
+}
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -174,6 +189,9 @@ int main() {
 	w.mounts[leftSensor.get_port()]  = LEFT;
 	w.mounts[rightSensor.get_port()] = RIGHT;
 	w.mounts[frontSensor.get_port()] = FRONT;
+	w.front = 5.5;	// Bumpers the code doesn't know
+	w.back  = 11;
+	w.width = 14;
 
 	bool done = false;
 	pros::Task([&] {
@@ -183,6 +201,7 @@ int main() {
 		checkMounts();
 		checkFeedforwards();
 		checkProfiled();
+		checkBumpers();
 		done = true;
 	});
 	w.sched.run([&] { return done; }, [&] { w.step(); });

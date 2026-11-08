@@ -17,7 +17,8 @@ Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (sk
 - `--setup dx dy dheading`: the robot really sits this far off where the auton's first `setPose` says
 - `--distance-scale k`: distance sensors read k times the true range; `--jitter in [--seed n]`: Cup + Pin
   spots land up to that far off their nominal spot
-- `--tune "<Tune page name>"`: runs a tuner on the sim robot instead of an auton
+- `--tune "<Tune page name>" [--start x y heading]`: runs a tuner on the sim robot instead of an auton,
+  set down mid-field or at --start
 - `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same
 
 ## In the browser

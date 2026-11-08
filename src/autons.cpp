@@ -23,6 +23,7 @@ constexpr int    GRAB_MS       = 300;	// keeps backing while the claw closes, so
 constexpr double SCORE_BACKOFF = 8;		// [in] clear of the stack before turning
 constexpr int    SCORE_SPEED   = 35;	// [/127] onto the goal; slow enough to stop on it instead of rolling past
 
+constexpr double START_Y        = -70.2 + FRONT_BUMPER;	// [in] front flush on the audience wall
 constexpr int SQUARE_MV        = 4000;	// push that squares the bumper on a wall without bouncing off
 
 constexpr int CLEAR_EMPTY_GOAL = 1000;	// winch [deg] to carry a piece over a goal
@@ -174,9 +175,9 @@ void leftBase() {
 void xAuton(tide::Alliance) {
 	/// Flip the Q2 Toggle ////////////////////////////////////
 	closeClaw();									// Hold the preload
-	chassis.setPose(0, -65, SOUTH);					// Centered on the Toggle, facing it; the front beam reads the Toggle, so no reset here
+	chassis.setPose(0, START_Y, SOUTH);				// Centered on the Toggle, facing it; the front beam reads the Toggle, so no reset here
 	odom.pushUntilStall(SQUARE_MV, 800, 150);		// Flush on it: squares the heading, however it was set down
-	chassis.setPose(chassis.getPose().x, -65, SOUTH);
+	chassis.setPose(chassis.getPose().x, START_Y, SOUTH);
 	odom.moveBy(3, 0, 0, 500, {}, true);			// Keep pressing while it flips
 	waitForToggle();
 	winch.moveTo(CLEAR_EMPTY_GOAL);
@@ -324,6 +325,9 @@ std::string characterizeAt(int lift) {
 std::string ffLiftDown() { return characterizeAt(0); }
 std::string ffLiftUp()   { return characterizeAt(LIFT_LOADED); }
 
+// Facing a wall a few inches off it, room to spin; after Mounts. Paste into FRONT_BUMPER / BACK_BUMPER
+std::string tuneBumpers() { return odom.measureBumpers(0); }
+
 // Front a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
@@ -354,6 +358,7 @@ const std::vector<tide::screen::Tuner> tuners = {
 	{"Lateral",    tuneLateral},
 	{"Offset",     tuneOffset},
 	{"Mounts",     tuneMounts},
+	{"Bumpers",    tuneBumpers},
 	{"FF down",    ffLiftDown},
 	{"FF up",      ffLiftUp},
 };

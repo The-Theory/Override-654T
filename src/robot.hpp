@@ -124,6 +124,10 @@ inline lemlib::ControllerSettings angularController(
 
 inline lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
 
+// Tracking center to each bumper [in]; guesses until the Tune page's "Bumpers" run
+constexpr double FRONT_BUMPER = 5.2;
+constexpr double BACK_BUMPER  = 10.5;
+
 // Offsets from the tracking center
 inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
@@ -131,7 +135,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
 	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
 }, {
-	.toolForward   = -10.5,	// [in] claw mouth at the back bumper; measure: tracking wheel axle to a held Pin's center
+	.toolForward   = -BACK_BUMPER,	// [in] claw mouth at the back bumper
 
 	// SIM VALUES: replace with the Tune page's "FF down" / "FF up" results before running autons
 	.lateral       = {1205, 166.49, 41.66},	// [mV], [mV per in/s], [mV per in/s²]
@@ -142,7 +146,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 });
 
 // Claw's piece sensor, looking out the back; guess: at the mouth. Measure like odom's mounts
-inline const tide::DistanceMount clawMount = {clawDistance, 0, -10.5, 180};
+inline const tide::DistanceMount clawMount = {clawDistance, 0, -BACK_BUMPER, 180};
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

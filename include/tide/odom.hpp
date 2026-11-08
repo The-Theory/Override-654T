@@ -28,6 +28,7 @@
 #include <numbers>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 
 
@@ -339,19 +340,54 @@ public:
 	 * Drives into a hard stop (wall, Toggle) and cuts power once the tracking wheel stops,
 	 * so the end position doesn't depend on battery or tiles like a timed drive does.
 	 * - holdMs: full-voltage push after the stop, since a soft wall bends and stops the robot early
+	 * - false if it never stopped: nothing there to push on
 	 */
-	void pushUntilStall(int mv, int timeout = 1500, int holdMs = 0) {
+	bool pushUntilStall(int mv, int timeout = 1500, int holdMs = 0) {
+		stopMotions();
 		drive(mv, mv);
 		const std::uint32_t start = pros::millis();
 		pros::delay(settings.stallGrace);
-		while (pros::millis() - start < timeout && std::abs(tracking.get_velocity()) > settings.stallVelocity)
+		while (pros::millis() - start < (std::uint32_t)timeout && std::abs(tracking.get_velocity()) > settings.stallVelocity)
 			pros::delay(10);
+		const bool stalled = pros::millis() - start < (std::uint32_t)timeout;
 		if (holdMs > 0) {
 			const int full = mv < 0 ? -12000 : 12000;
 			drive(full, full);
 			pros::delay(holdMs);
 		}
 		drive(0, 0);
+		return stalled;
+	}
+
+	/**
+	 * Measures how far the front and back bumpers sit from the tracking center [in], so a start pose
+	 * flush on a wall, and a tool at a bumper, aren't guesses. Per bumper: squares it on a wall, backs
+	 * off, turns a side sensor to the wall; the center is then reading + mount offset from the wall,
+	 * and the bumper is that minus how far it backed off.
+	 * - Needs measured mounts (measureMounts first); side: index of a sideways mount
+	 * - Start facing a wall a few inches off it, with room to spin once backed off
+	 */
+	std::string measureBumpers(std::size_t side, double backOff = 10) {
+		const DistanceMount& mount = mounts[side];
+		double bumper[2] = {NAN, NAN};	// front, back
+		double wall = 0;
+		for (int k = 0; k < 2; k++) {
+			if (k == 1) turnTo(wall + 180);	// Back to the same wall
+			const auto [facing, travelled] = squareThenBackOff(k == 0 ? 6000 : -6000, backOff);
+			wall = facing;
+			turnTo(wall - mount.facing);
+			const double reading = medianInches(mount.sensor);
+			const double theta = chassis.getPose().theta;
+			const Point sensorAt = toField(mount.right, mount.forward, theta);
+			const Point toWall = toField(0, 1, wall);
+			const double centerToWall = sensorAt.x * toWall.x + sensorAt.y * toWall.y +
+										reading * std::cos(toRad(theta + mount.facing - wall));
+			bumper[k] = centerToWall - travelled;
+		}
+		char text[64];
+		std::snprintf(text, sizeof(text), "Bumpers from center: front %.2f  back %.2f\n", bumper[0], bumper[1]);
+		std::printf("%s", text);
+		return text;
 	}
 
 	/**
@@ -366,16 +402,7 @@ public:
 	 */
 	std::string measureMounts(std::size_t i, std::size_t j, double apart,
 							  int squareMv = -6000, double backOff = 6, double sweep = 15) {
-		pushUntilStall(squareMv, 1500, 300);
-		const double wall = chassis.getPose().theta + (squareMv < 0 ? 180 : 0);
-
-		// Straight off the wall by measured distance; a PID move from a stall can overshoot far
-		const int away = squareMv < 0 ? 3000 : -3000;
-		const lemlib::Pose start = chassis.getPose();
-		drive(away, away);
-		const std::uint32_t t0 = pros::millis();
-		while (chassis.getPose().distance(start) < backOff && pros::millis() - t0 < 2000) pros::delay(10);
-		drive(0, 0);
+		const double wall = squareThenBackOff(squareMv, backOff).first;
 
 		// Per mount: beam angle off the wall's normal [rad], and the reading [in].
 		// A slow steady spin samples continuously; sweeping both ways cancels the sensor's lag
@@ -478,6 +505,24 @@ private:
 	void stopMotions() {
 		chassis.cancelAllMotions();
 		chassis.waitUntilDone();
+	}
+
+	/**
+	 * Squares a bumper on a wall (squareMv < 0: the back), then backs straight off about backOff [in]
+	 * by voltage, since a PID move from a stall can overshoot far. Returns the heading that faces the
+	 * wall, and how far it really went once stopped [in]. Says so if there was no wall.
+	 */
+	std::pair<double, double> squareThenBackOff(int squareMv, double backOff) {
+		if (!pushUntilStall(squareMv, 1500, 300)) std::printf("No wall to square on: start a few inches from one\n");
+		const double wall = chassis.getPose().theta + (squareMv < 0 ? 180 : 0);
+		const int away = squareMv < 0 ? 3000 : -3000;
+		const lemlib::Pose start = chassis.getPose();
+		drive(away, away);
+		const std::uint32_t t0 = pros::millis();
+		while (chassis.getPose().distance(start) < backOff && pros::millis() - t0 < 2000) pros::delay(10);
+		drive(0, 0);
+		waitUntilStopped();
+		return {wall, chassis.getPose().distance(start)};
 	}
 
 	// Median of a few readings, so one stray beam doesn't count; NaN if most saw nothing

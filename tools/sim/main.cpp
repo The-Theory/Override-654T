@@ -76,9 +76,10 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 ////////////////////////////////////////////////////////////////
 
 // sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup dx dy dheading]
-//     [--distance-scale k] [--jitter in] [--seed n], sim --tune <Tune page name>, or sim --list for auton names
+//     [--distance-scale k] [--jitter in] [--seed n], sim --tune <Tune page name> [--start x y heading], or sim --list for auton names
 int main(int argc, char** argv) {
 	std::string auton, tune, outDir = "out", field;
+	double start[3] = {0, 0, 0};	// --tune: where the robot sits [in, in, deg]
 	bool blue = false, list = false;
 	std::uint32_t limit = 15000;	// [ms] auton period
 	for (int i = 1; i < argc; i++) {
@@ -97,6 +98,9 @@ int main(int argc, char** argv) {
 		else if (arg == "--jitter" && i + 1 < argc) sim::game::field.jitter = std::stod(argv[++i]);
 		else if (arg == "--seed" && i + 1 < argc) sim::game::field.seed = std::stoul(argv[++i]);
 		else if (arg == "--tune" && i + 1 < argc) tune = argv[++i];
+		else if (arg == "--start" && i + 3 < argc) {
+			for (double& v : start) v = std::stod(argv[++i]);
+		}
 		else auton = arg;
 	}
 
@@ -112,7 +116,7 @@ int main(int argc, char** argv) {
 			const auto it = std::find_if(tuners.begin(), tuners.end(), [&](const auto& t) { return tune == t.name; });
 			if (it == tuners.end()) std::printf("No tuner \"%s\"\n", tune.c_str());
 			else {
-				chassis.setPose(0, 0, 0);
+				chassis.setPose(start[0], start[1], start[2]);
 				it->run();
 			}
 			std::fflush(stdout);
