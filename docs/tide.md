@@ -321,13 +321,49 @@ tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 
 Each distance sensor is listed with where it sits relative to the tracking center and which way it points (`tide::dir` headings, relative to the robot's front).
 
-- `odom.wallReset(tide::Wall::RED)` corrects the one coordinate facing that wall, using whichever sensor points at it. It skips the reset (returns `false`) if no sensor is within 15° of square or the wall is over 40" away.
+- `odom.wallReset(tide::Wall::RED)` corrects the one coordinate facing that wall, using whichever sensor points at it. It waits until the robot has stopped moving and turning, takes the median of 5 readings, and prints what it changed. It skips the reset, prints why, and returns `false` if no sensor is within 15° of square, the wall is over 40" away, or the reading would move the pose more than 6" (the beam hit a robot or piece).
 - `odom.moveBy(-tide::TILE)` moves relative to where the robot is: forward, then optional right and turn (`odom.moveBy(12, 12, 90)`), all from the current pose. Negative forward backs up; heading holds unless `turn` is given. A sideways offset curves there, since tank can't strafe. Chained relative moves stack their small errors, so follow with an absolute move or `wallReset` when it matters.
 - `odom.reachPoint(goal)` drives straight at a spot and stops with the **tool** on it instead of the tracking center. It backs in if the tool is on the back. `odom.reachPose(goal, EAST)` does the same but arrives facing a heading. Set where the tool sits with `.toolRight` / `.toolForward` in the settings: `tide::Odom odom(chassis, ..., {mounts}, {.toolForward = -6});`
 - `odom.turnBy(-90)` turns relative to the current heading. Positive is clockwise, and it turns that way even past 180°.
 - `odom.pushUntilStall(6500)` drives into a wall or Toggle at a voltage and stops once the tracking wheel stops. `odom.pushUntilStall(6500, 1500, 250)` then keeps pushing at full voltage for 250 ms. On a soft wall that bends and stops the robot early, that steady push still turns the Toggle over.
 
->Only reset while stopped, with the beam on bare wall, not a Loader or Scoring Objects on the wall.
+>Only reset with the beam on bare wall, not a Loader, Toggle or Scoring Objects on the wall.
+
+### Steps for routines
+
+Coordinates get the robot close; sensors finish the job. Routines are built from small steps instead of one function with a flag per field:
+
+- `odom.approach(goal, EAST, 8)` lands the tool 8" short of `goal`, facing `EAST`, and waits until it's stopped. It drives forwards or backwards, whichever turns less, so it never loops around. `odom.approachStraight(piece, 8)` does the same facing straight at the target from where the robot is.
+- `odom.creep(-3000, [] { return clawSees(); })` drives straight at a low voltage until the condition is true (or the timeout), for the last inches onto something a sensor can see. `[] { return false; }` just pushes for the timeout.
+- `odom.scan(clawMount, 20, 1.55)` turns slowly through ±20° reading a distance sensor and returns where each object it passed sits on the field. Pick the one nearest where a piece should be, then `approachStraight` to it: a shifted piece or robot still lines up, and neighbors aren't mistaken for it.
+- `odom.turnTo(EAST)` turns to a heading.
+
+```cpp
+bool grab(tide::Point piece) {
+	openClaw();
+	odom.approachStraight(piece, 8);
+	odom.approachStraight(spotted(piece), 8);			// nearest scanned object
+	const bool seen = odom.creep(-3000, clawSeesPiece);
+	closeClaw();
+	return seen;
+}
+```
+
+### Planned moves
+
+Once the drive's feedforward is measured (see [Auto-Tuning](#auto-tuning)), `approach`, `turnTo` and straight `moveBy` stop using LemLib's PID and follow a speed plan instead: speed up at a set rate, cruise, slow down to land on the end stopped. Every 10 ms the robot knows where it should be and how fast; the feedforward (`kS + kV·v + kA·a`) supplies most of the voltage, and feedback fixes the rest. The feedback gains come from `kV` and `kA` (critically damped at `.bandwidth`), so there's nothing to tune.
+
+```cpp
+tide::Odom odom(chassis, ..., {mounts}, {
+	.lateral       = {1205, 166.5, 41.7},	// Tune page: FF down
+	.lateralLoaded = {1205, 166.5, 58.2},	// FF up
+	.angular       = {1205, 16.6, 4.15},
+	.angularLoaded = {1205, 16.6, 5.80},
+	.load          = [] { return winch.position() / LIFT_LOADED; },
+});
+```
+
+`.load` says how far toward the loaded gains the robot is right now (0 to 1), so a raised lift, which adds inertia, gets its own feedforward and stiffer feedback on its own, even mid-move. `odom.profiledDrive(24)` and `odom.profiledTurn(90)` run a planned move directly. Leave `.lateral` unset and everything uses LemLib's moves as before.
 
 ## Field
 
@@ -397,6 +433,17 @@ Results print to the terminal and come back in `TuneResult::summary` (show it on
 - `rule` picks how aggressive: `NO_OVERSHOOT` (default), `SOME_OVERSHOOT`, `CLASSIC`. `NO_OVERSHOOT` creeps into its target, so a drive can stall short on friction; `SOME_OVERSHOOT` suits lateral.
 - `tide::trackingOffset(left, right, imu, tracking, wheelDiameter)` spins in place and returns the vertical tracking wheel's offset for `lemlib::TrackingWheel`, so you don't have to find the turning center by eye.
 - `odom.measureMounts(i, j, apart)` finds where each distance sensor sits (right and forward of the tracking center): it backs into a wall to square up, pulls off, then sweeps each sensor ±15° across that wall, spinning in place. Give it two sensors facing opposite ways and the tape-measured distance between their faces. It needs a flat back bumper (or pass a positive `squareMv` to use the front).
+- `odom.measureBumpers(side)` finds how far the front and back bumpers are from the tracking center: it squares each bumper on a wall, backs off, and turns a sideways sensor (index `side`) to the wall. Needs measured mounts. Start poses flush on a wall and a tool at a bumper then come from measurements, not guesses.
+- `tide::characterize("lateral", plant)` measures a plant's feedforward (`kS` friction, `kV` speed, `kA` inertia) from a slow voltage ramp and a hard step each way, and prints a `tide::Feedforward` to paste. Run it once per pose that changes the robot (lift down, lift up): `kA` moves the most. About 2 ft clear front and back.
 - Anything can be tuned by giving a `tide::Plant` with `measure()` (position) and `apply(mV)`.
+
+### Calibration order
+
+Each step uses the ones before it:
+
+1. `trackingOffset` (tracking wheel offset)
+2. `measureMounts` (distance sensors)
+3. `measureBumpers` (start poses, tool point)
+4. `characterize` with the lift down, then up (planned moves)
 
 >The gains are a starting point. The chassis especially (friction, wheel slip) usually needs a little hand-tuning afterward.
