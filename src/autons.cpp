@@ -233,7 +233,7 @@ void skillsAuton(tide::Alliance) {
 
 	/// Scoring first pin /////////////////////////////////////
 	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
-	pickupAt(loader::RED_S, 3300, 3, 3, true, true);
+	pickupAt(loader::S, 3300, 3, 3, true, true);
 	pros::delay(100);
 	chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
 	chassis.moveToPoint(goal::Q1_ALLIANCE.x, goal::Q1_ALLIANCE.y, 1000, 
@@ -243,7 +243,7 @@ void skillsAuton(tide::Alliance) {
 
 	// /// Scoring second pin ////////////////////////////////////
 	// chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
-	// pickupAt(loader::RED_S, 4500, 3, 3, true, true);
+	// pickupAt(loader::S, 4500, 3, 3, true, true);
 	// pros::delay(100);
 	// chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
 	// chassis.moveToPoint(goal::Q1_ALLIANCE.x+1, goal::Q1_ALLIANCE.y, 1000,
@@ -254,7 +254,7 @@ void skillsAuton(tide::Alliance) {
 	/// Scoring Three cuppins on second goal //////////////////
 	for (int winch_height : {1000, 1600}) { // 2900, 3700
 		chassis.moveToPose(-46, -62, EAST, 2000, {}, false);    				// Swirve to face loader 
-		pickupAt(loader::RED_S, winch_height, 3, 3, true,true);					// Pickup loader cuppin
+		pickupAt(loader::S, winch_height, 3, 3, true,true);					// Pickup loader cuppin
 		pros::delay(100);														
 		chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
 		chassis.moveToPoint(goal::Q2_ALLIANCE.x + 3, goal::Q2_ALLIANCE.y - 1, 1500,

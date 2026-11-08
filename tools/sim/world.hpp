@@ -235,8 +235,12 @@ public:
 	double trackingDiameter = 2, trackingOffset = 0;	// [in] + right of center
 	double imuDrift = 0;			// [deg/s]
 
+	// Field Elements standing on the tiles, like Loaders: the robot stops on them and so do distance beams
+	struct Block { double minX, maxX, minY, maxY; };
+	std::vector<Block> blocks;
+
 	// How the real world differs from what the auton assumes, for --setup and --distance-scale
-	double setupX = 0, setupY = 0, setupTheta = 0;	// [in, deg] where the robot really sits, past where the auton's first setPose says
+	double setupRight = 0, setupBack = 0, setupTheta = 0;	// [in, deg] where the robot really sits, past where the auton's first setPose says, robot-relative: back is off the wall it faces
 	double distanceScale = 1;						// distance sensors read this times the true range
 
 	// Pose: LemLib frame, heading clockwise from +y [deg]
@@ -262,8 +266,9 @@ public:
 		if (placed) return;
 		placed = true;
 		imuOffset -= heading + setupTheta - theta;	// IMU reading doesn't jump
-		x = px + setupX;
-		y = py + setupY;
+		const double h = toRad(heading);
+		x = px + setupRight * std::cos(h) - setupBack * std::sin(h);
+		y = py - setupRight * std::sin(h) - setupBack * std::cos(h);
 		theta = heading + setupTheta;
 	}
 
@@ -297,6 +302,7 @@ public:
 		if (dx < -1e-9) hit = std::min(hit, (-halfField - sx) / dx);
 		if (dy > 1e-9)  hit = std::min(hit, ( halfField - sy) / dy);
 		if (dy < -1e-9) hit = std::min(hit, (-halfField - sy) / dy);
+		for (const Block& b : blocks) hit = std::min(hit, rayHit(b, sx, sy, dx, dy));
 		const double mm = hit * 25.4 * distanceScale;
 		return mm > 2000 ? 9999 : std::lround(mm);
 	}
@@ -436,6 +442,47 @@ private:
 		if (minX < -halfField) backOut(-halfField - minX, hx, x);
 		if (maxY > halfField)  backOut(halfField - maxY, hy, y);
 		if (minY < -halfField) backOut(-halfField - minY, hy, y);
+		for (const Block& b : blocks) backOutOf(b);
+	}
+
+	// Distance along a ray from (sx, sy) to where it enters b, or infinity if it misses
+	static double rayHit(const Block& b, double sx, double sy, double dx, double dy) {
+		double in = 0, out = INFINITY;
+		for (auto [s, d, lo, hi] : {std::array{sx, dx, b.minX, b.maxX}, std::array{sy, dy, b.minY, b.maxY}}) {
+			if (std::fabs(d) < 1e-9) {
+				if (s < lo || s > hi) return INFINITY;
+				continue;
+			}
+			const double t1 = (lo - s) / d, t2 = (hi - s) / d;
+			in  = std::max(in, std::min(t1, t2));
+			out = std::min(out, std::max(t1, t2));
+		}
+		return in <= out ? in : INFINITY;
+	}
+
+	// Backs the footprint out of b along the heading, the way it came in, since the wheels don't slip
+	// sideways. ponytail: a robot sliding in sideways gets shoved along its heading; fine for backing in
+	void backOutOf(const Block& b) {
+		const double h = toRad(theta), hx = std::sin(h), hy = std::cos(h);
+		double forward = 0, backward = 0;	// [in] it has to move to clear b
+		for (double cx : {b.minX, b.maxX})
+			for (double cy : {b.minY, b.maxY}) {
+				const double dx = cx - x, dy = cy - y;
+				const double r = dx * std::cos(h) - dy * std::sin(h), f = dx * hx + dy * hy;
+				if (std::fabs(r) >= width / 2 || f <= -back || f >= front) continue;
+				if (f < 0) forward = std::max(forward, f + back);
+				else backward = std::max(backward, front - f);
+			}
+		for (auto [cx, cy] : corners()) {
+			if (cx <= b.minX || cx >= b.maxX || cy <= b.minY || cy >= b.maxY) continue;
+			const bool behind = (cx - x) * hx + (cy - y) * hy < 0;
+			const double ux = behind ? hx : -hx, uy = behind ? hy : -hy;
+			const double tx = ux > 1e-9 ? (b.maxX - cx) / ux : ux < -1e-9 ? (b.minX - cx) / ux : INFINITY;
+			const double ty = uy > 1e-9 ? (b.maxY - cy) / uy : uy < -1e-9 ? (b.minY - cy) / uy : INFINITY;
+			(behind ? forward : backward) = std::max(behind ? forward : backward, std::min(tx, ty));
+		}
+		x += (forward - backward) * hx;
+		y += (forward - backward) * hy;
 	}
 
 	bool driven(int port) const {

@@ -14,12 +14,14 @@ make -C tools/sim check              # tuners must find known offsets on a test 
 - `tools/sim/out/<auton>.json`: the pose every 10 ms, the motion and claw log, every piece's moves, Toggle faces and the score; the browser viewer reads the same file
 
 Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (skills length).
-- `--setup dx dy dheading`: the robot really sits this far off where the auton's first `setPose` says
+- `--setup right back dheading`: the robot really sits this far off where the auton's first `setPose` says,
+  relative to the robot: `back` is off the wall it faces, so one sweep fits any start
 - `--distance-scale k`: distance sensors read k times the true range; `--jitter in [--seed n]`: Cup + Pin
   spots land up to that far off their nominal spot
 - `--tune "<Tune page name>" [--start x y heading]`: runs a tuner on the sim robot instead of an auton,
   set down mid-field or at --start
-- `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same
+- `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same.
+  `ARGS="--time 60000"` passes options through, for Skills
 
 ## In the browser
 ```bash
@@ -72,6 +74,9 @@ away from the robot (blue).
   mouth (the back bumper) when `src/sim.hpp` says it's gripping, and its distance sensor reads the
   nearest loose piece from there. It drops them when it opens, stacking them on a Goal if the tool
   point is within 2.5" of one.
+- Loaders are blocks the robot and distance beams stop on. What the drive team drops in comes from
+  `sim::game::matchLoads` in `src/sim.hpp`, per auton and in order (`PIN`, `CUPPIN`, `CUP`); the next
+  one lands in the bottom opening 0.3 s after the last is pulled out. Match autons get none (SG11).
 - A Toggle turns to its next face while the spinner motor runs with the robot's front against it.
   The color sensor reads the hue of the face it's touching.
 - Score: 5 per alliance-coloured top half stacked on a Goal, 10 per owned yellow one. A Quadrant's
@@ -81,5 +86,5 @@ away from the robot (blue).
 Wheel slip, battery sag, motor heat, how the real drive responds (`driveTau` and `driveStiction` are guesses), sensor
 noise, opponents, or the brain screen. For game pieces it doesn't model collisions with Goals,
 pieces tipping over, distance sensors other than the claw's seeing pieces, a Cup's orientation (every stacked Pin shows its
-top half), match loads or the auton bonus. The winch gearing and gravity, the footprint, and the
+top half) or the auton bonus. The winch gearing and gravity, the footprint, and the
 claw's reach, height and preload in `src/sim.hpp` are guesses.

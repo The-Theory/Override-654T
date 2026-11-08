@@ -32,7 +32,7 @@ inline void simRobot(sim::World& w) {
 	// Claw on the back, under the winch
 	auto& game = sim::game::robot;
 	game.claw.right   = odom.getSettings().toolRight;
-	game.claw.forward = odom.getSettings().toolForward;
+	game.claw.forward = -w.back;	// Truth, not the config: a wrong toolForward should miss
 	game.claw.grab    = [] { return claw.get_voltage() > 0; };
 	game.claw.release = [] { return claw.get_voltage() < 0; };
 	game.claw.grabForward = -w.back;	// Closes on a piece at the back bumper
@@ -44,6 +44,11 @@ inline void simRobot(sim::World& w) {
 	game.spinner.forward = w.front;
 
 	game.preload = {{.top = sim::game::RED, .bottom = sim::game::YELLOW}};	// Guess: our red/yellow Pin, red up
+
+	// What our drive team drops into the S Loader during Skills, in order: a Pin for Q1, a lone Pin
+	// on the empty Q2 goal, then a Cup + Pin on top of it
+	using sim::game::PIN, sim::game::CUPPIN;
+	sim::game::matchLoads["Skills"] = {.s = {PIN, PIN, CUPPIN}};
 }
 
 #pragma endregion

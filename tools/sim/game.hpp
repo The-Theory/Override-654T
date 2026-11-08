@@ -5,6 +5,8 @@
 #include <array>
 #include <cmath>
 #include <functional>
+#include <map>
+#include <string>
 #include <ostream>
 #include <vector>
 
@@ -33,11 +35,23 @@ struct Piece {
 	double angle = 0;						// [deg] heading a lying Pin's top half points along
 	double x = 0, y = 0;
 	int    goal  = -1;						// index into goals while stacked
+	int    loader = -1;						// index into loaders while it waits in one's bottom opening
 	bool   held  = false;
 
 	double radius() const { return cup ? CUP_R : PIN_R; }
 	bool free() const { return goal < 0 && !held; }
 };
+
+// What the drive team drops into a Loader: a Pin, a Cup, or a Pin already in a Cup
+struct Load {
+	bool  pin = true, cup = false;
+	Color top = RED, bottom = YELLOW;
+};
+constexpr Load PIN{}, CUPPIN{.cup = true}, CUP{.pin = false, .cup = true};
+
+// Per auton, what the drive team loads into our two Loaders, in order. Match autons get none (SG11)
+struct MatchLoads { std::vector<Load> s, n; };
+inline std::map<std::string, MatchLoads> matchLoads;
 
 struct Goal {
 	double   x, y;
@@ -53,6 +67,14 @@ struct Toggle {
 	double inward;		// [deg] heading from the wall into the field
 	int    face = 0;	// Color showing, starts yellow
 	double turn = 0;	// progress toward the next face, -1..1
+};
+
+struct Loader {
+	const char* name;
+	double x, y;				// stack center, where the bottom load sits
+	std::vector<Load> queue;	// what the drive team drops in, in order
+	std::size_t next = 0;
+	double dropAt = 0;			// [s] when the next load lands in the opening
 };
 
 #pragma endregion
@@ -105,7 +127,10 @@ public:
 	std::vector<Piece>  pieces;
 	std::vector<Goal>   goals;
 	std::vector<Toggle> toggles;
+	std::vector<Loader> loaders;
 
+	MatchLoads loads;		// for the picked auton, into our Loaders
+	bool       blue = false;	// our Loaders are the blue ones
 	// Starting layout from the manual's Appendix A, via tide::override's red-side spots rotated for blue
 	double   jitter = 0;	// [in] Cup + Pin spots land up to this far off their nominal spot, like hand-set fields
 	unsigned seed   = 1;
@@ -167,6 +192,10 @@ public:
 			}
 		}
 
+		const auto s = loader::S, n = loader::N;
+		loaders = {{"Red S", s.x, s.y, blue ? std::vector<Load>{} : loads.s}, {"Red N", n.x, n.y, blue ? std::vector<Load>{} : loads.n},
+				   {"Blue S", -s.x, -s.y, blue ? loads.s : std::vector<Load>{}}, {"Blue N", -n.x, -n.y, blue ? loads.n : std::vector<Load>{}}};
+
 		for (Piece p : robot.preload) {
 			p.held = true;
 			held.push_back(add(p));
@@ -177,6 +206,7 @@ public:
 		if (!w.placed) return;	// Nothing touches the field until the robot is set down
 		moveHeld(w);
 		claw(w);
+		load(w);
 		spin(w, dt);
 		push(w);
 		if ((w.sched.now - w.logStart) % 10 == 0) record(w);
@@ -305,7 +335,8 @@ private:
 				if (!p.free() || p.lying || std::hypot(p.x - in.x, p.y - in.y) > robot.claw.reach) continue;
 				if (p.cup ? cup : pin) continue;
 				(p.cup ? cup : pin) = true;
-				p.held = true;
+				p.held   = true;
+				p.loader = -1;
 				held.push_back(i);
 			}
 			if (!held.empty()) w.event("claw picked up %s", pin && cup ? "Pin in Cup" : pin ? "Pin" : "Cup");
@@ -322,6 +353,26 @@ private:
 			held.clear();
 			if (onto) w.event("claw stacked on %s", onto->name);
 			else w.event("claw dropped on the tiles");
+		}
+	}
+
+	// Next load drops into the bottom opening once the last one is pulled out. ponytail: the drive team
+	// keeps the tube stacked, so it's only the fall; a slow human isn't modeled
+	void load(World& w) {
+		constexpr double DROP = 0.3;	// [s] guess
+		const double now = (w.sched.now - w.logStart) / 1000.0;
+		for (std::size_t i = 0; i < loaders.size(); i++) {
+			Loader& l = loaders[i];
+			const bool empty = std::none_of(pieces.begin(), pieces.end(), [&](const Piece& p) { return p.loader == int(i); });
+			if (!empty || l.next >= l.queue.size()) continue;
+			if (l.dropAt < 0) l.dropAt = now + DROP;
+			if (now < l.dropAt) continue;
+
+			const Load& next = l.queue[l.next++];
+			if (next.cup) add({.cup = true, .x = l.x, .y = l.y, .loader = int(i)});
+			if (next.pin) add({.top = next.top, .bottom = next.bottom, .x = l.x, .y = l.y, .loader = int(i)});
+			l.dropAt = -1;
+			w.event("drive team loaded %s into %s Loader", next.pin && next.cup ? "Pin in Cup" : next.pin ? "Pin" : "Cup", l.name);
 		}
 	}
 
@@ -360,7 +411,7 @@ private:
 		const double c = std::cos(h), s = std::sin(h);
 		const auto& k = robot.claw;
 		for (Piece& p : pieces) {
-			if (!p.free()) continue;
+			if (!p.free() || p.loader >= 0) continue;	// The Loader's tube holds what's in it
 			const double dx = p.x - w.x, dy = p.y - w.y;
 			const double right = dx * c - dy * s, forward = dx * s + dy * c;
 			const double r = p.radius();
@@ -384,7 +435,7 @@ private:
 	}
 
 	void record(const World& w) {
-		if (tracks.size() != pieces.size()) restartLog();
+		tracks.resize(pieces.size());	// Match Loads join mid-run
 		const double t = (w.sched.now - w.logStart) / 1000.0;
 		for (std::size_t i = 0; i < pieces.size(); i++) {
 			const Piece& p = pieces[i];
@@ -409,6 +460,11 @@ inline Field field;
 // Wires the field into the world; call after the robot's setup so the preload is known
 inline void start(World& w) {
 	field.setup();
+	constexpr double DEPTH = 3.74, WIDTH = 4.02;	// [in] Loader body off the wall, Appendix A
+	for (const Loader& l : field.loaders) {
+		const double wall = std::copysign(w.halfField, l.x), face = wall - std::copysign(DEPTH, l.x);
+		w.blocks.push_back({std::min(wall, face), std::max(wall, face), l.y - WIDTH / 2, l.y + WIDTH / 2});
+	}
 	w.game = [&w] { field.step(w, 0.001); };
 	w.optical = [&w](int port) { return field.optical(w, port); };
 	w.pieceDistance = [&w](int port) { return field.clawSensor(w, port); };

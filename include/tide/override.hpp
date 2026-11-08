@@ -58,8 +58,8 @@ constexpr Point Q2 = {  0,   -70.2};
 
 // Center of the stack in the tube (Appendix A, Field Element Locations); the open face is 3.74" off the wall
 namespace loader {
-constexpr Point RED_S = {-68.2, -58.8};
-constexpr Point RED_N = {-68.2,  58.8};
+constexpr Point S = {-68.2, -58.8};
+constexpr Point N = {-68.2,  58.8};
 }
 
 }

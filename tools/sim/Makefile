@@ -30,7 +30,7 @@ SETUPS := "0 0 0" "1 0 0" "-1 0 0" "0 1 0" "0 2 0" "0 1 3" "0 1 -3" "1 1 2" "-1 
 robust: $(OUT)/sim
 	@for s in $(SETUPS); do for k in 1 1.03 0.97; do for j in 0 1.5; do \
 		printf "setup %-9s sensors x%-4s pieces ±%-3s " "$$s" $$k $$j; \
-		$(OUT)/sim "$(AUTON)" --setup $$s --distance-scale $$k --jitter $$j --out $(OUT)/robust | \
+		$(OUT)/sim "$(AUTON)" $(ARGS) --setup $$s --distance-scale $$k --jitter $$j --out $(OUT)/robust | \
 			awk '/still running/{late=1} /FAILED/{f++} /^Score/{s=$$3} END{printf "score %s%s%s\n", s, late?"  LATE":"", f?"  ("f" failed)":""}'; \
 	done; done; done
 

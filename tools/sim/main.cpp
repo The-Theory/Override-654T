@@ -75,7 +75,7 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 #pragma region Main ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup dx dy dheading]
+// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup right back dheading]
 //     [--distance-scale k] [--jitter in] [--seed n], sim --tune <Tune page name> [--start x y heading], or sim --list for auton names
 int main(int argc, char** argv) {
 	std::string auton, tune, outDir = "out", field;
@@ -90,8 +90,8 @@ int main(int argc, char** argv) {
 		else if (arg == "--out" && i + 1 < argc) outDir = argv[++i];
 		else if (arg == "--field" && i + 1 < argc) field = argv[++i];
 		else if (arg == "--setup" && i + 3 < argc) {
-			sim::world().setupX     = std::stod(argv[++i]);
-			sim::world().setupY     = std::stod(argv[++i]);
+			sim::world().setupRight = std::stod(argv[++i]);
+			sim::world().setupBack  = std::stod(argv[++i]);
 			sim::world().setupTheta = std::stod(argv[++i]);
 		}
 		else if (arg == "--distance-scale" && i + 1 < argc) sim::world().distanceScale = std::stod(argv[++i]);
@@ -106,6 +106,8 @@ int main(int argc, char** argv) {
 
 	sim::World& w = sim::world();
 	simRobot(w);
+	if (const auto it = sim::game::matchLoads.find(auton); it != sim::game::matchLoads.end()) sim::game::field.loads = it->second;
+	sim::game::field.blue = blue;
 	sim::game::start(w);
 
 	bool started = false, finished = false, found = true;
