@@ -21,13 +21,13 @@ constexpr int    CREEP_MV      = 3000;	// slow enough to stop on the claw sensor
 constexpr int    GRAB_MM       = 85;	// claw sensor reading once a piece is in the mouth
 constexpr int    GRAB_MS       = 300;	// keeps backing while the claw closes, so the piece seats
 constexpr double SCORE_BACKOFF = 8;		// [in] clear of the stack before turning
-constexpr int    SCORE_SPEED   = 35;	// [/127] onto the goal; slow enough to stop on it instead of rolling past
 
-constexpr double START_Y        = -70.2 + FRONT_BUMPER;	// [in] front flush on the audience wall
-constexpr int SQUARE_MV        = 4000;	// push that squares the bumper on a wall without bouncing off
 
-constexpr int CLEAR_EMPTY_GOAL = 1000;	// winch [deg] to carry a piece over a goal
-constexpr int CLEAR_ONE_PIN    = 1500;
+constexpr int    SQUARE_MV     = 4000;	// push that squares the bumper on a wall without bouncing off
+constexpr int    LOADER_LIFT   = 400;	// winch [deg] lifts a Match Load over the opening's lip before pulling out
+constexpr double LOADER_PULL   = 6;		// [in] out of the Loader before turning
+
+constexpr int CLEAR[] = {1000, 1600, 2200, 3300};	// winch [deg] to carry a piece over a goal with 0, 1, 2, 3 Pins on it
 
 bool clawSeesPiece() { return clawDistance.get_distance() < GRAB_MM; }
 
@@ -49,28 +49,76 @@ tide::Point spotted(tide::Point nominal) {
 	return *best;
 }
 
-// Backs onto a piece until the claw sees it, then grabs; false if nothing showed up
+// Backs straight onto target until the claw sees a piece, then grabs; false if nothing showed up
+bool backOnto(tide::Point target) {
+	odom.approachStraight(target, STANDOFF);
+	const bool seen = odom.creep(-CREEP_MV, clawSeesPiece);	// Claw on the back
+	closeClaw();
+	odom.creep(-CREEP_MV, [] { return false; }, GRAB_MS);
+	if (!seen) std::printf("Grab at (%.1f, %.1f) FAILED: claw saw nothing\n", target.x, target.y);
+	return seen;
+}
+
+// Picks up a piece off the tiles
 // - heading: robot facing at pickup, for pieces boxed in by a goal or wall; else straight from where it is
 bool grab(tide::Point piece, std::optional<double> heading = {}) {
 	openClaw();
 	if (heading) odom.approach(piece, *heading, STANDOFF);
 	else         odom.approachStraight(piece, STANDOFF);
-	odom.approachStraight(spotted(piece), STANDOFF);	// Line up on where it really is
-	const bool seen = odom.creep(-CREEP_MV, clawSeesPiece);	// Claw on the back
-	closeClaw();
-	odom.creep(-CREEP_MV, [] { return false; }, GRAB_MS);
-	if (!seen) std::printf("Grab at (%.1f, %.1f) FAILED: claw saw nothing\n", piece.x, piece.y);
-	return seen;
+	return backOnto(spotted(piece));	// Line up on where it really is
 }
 
-// From a standoff in front of the goal: backs the held piece onto it, drops it, pulls away
-void score(tide::Point goal, double heading) {
-	odom.approach(goal, heading, 0, SCORE_SPEED);
+// Next Match Load out of a Loader's bottom opening, backing in square to the wall. No scan: the tube
+// centers the piece, and its sides would read as objects
+bool grabLoad(tide::Point loader) {
+	openClaw();
+	odom.approach(loader, EAST, STANDOFF);
+	odom.wallReset(loader.y < 0 ? Wall::AUDIENCE : Wall::FAR);	// Lines up on the tube
+	const bool got = backOnto(loader);
+	winch.moveTo(LOADER_LIFT);
+	pros::delay(100);
+	odom.moveBy(LOADER_PULL);
+	return got;
+}
+
+// Backs the held piece onto the goal, drops it, pulls away
+// - heading: robot facing on the goal; else straight from where it is
+void score(tide::Point goal, std::optional<double> heading = {}) {
+	if (heading) odom.approach(goal, *heading, 0);
+	else         odom.approachStraight(goal, 0);
 	winch.moveTo(0);
 	pros::delay(350);
 	openClaw();
 	odom.moveBy(SCORE_BACKOFF);
 	stopClaw();
+}
+
+// Where the center sits with the front flush on the wall under a Toggle, facing it
+tide::Point flushOn(tide::Point toggle) {
+	const double heading = tide::bearing({0, 0}, toggle);
+	const tide::Point back = tide::toField(0, -FRONT_BUMPER, heading);
+	return {toggle.x + back.x, toggle.y + back.y};
+}
+
+// Front squared and pressed on the Toggle ahead until it shows our color; also resets the
+// coordinate across that wall and the heading
+void pressToggle(tide::Point toggle) {
+	const double heading = std::fmod(tide::bearing({0, 0}, toggle) + 360, 360);
+	const tide::Point flush = flushOn(toggle);
+	odom.pushUntilStall(SQUARE_MV, 800, 150);
+	const lemlib::Pose at = chassis.getPose();
+	const bool wallAlongX = std::fabs(toggle.y) > std::fabs(toggle.x);
+	chassis.setPose(wallAlongX ? at.x : flush.x, wallAlongX ? flush.y : at.y, heading);
+	odom.moveBy(3, 0, 0, 500, {}, true);	// Keep pressing while it flips
+	waitForToggle();
+}
+
+// Set down centered on a Toggle, facing it, holding the preload
+void startOnToggle(tide::Point toggle) {
+	closeClaw();
+	const tide::Point flush = flushOn(toggle);
+	chassis.setPose(flush.x, flush.y, std::fmod(tide::bearing({0, 0}, toggle) + 360, 360));
+	pressToggle(toggle);
 }
 
 #pragma endregion
@@ -81,87 +129,21 @@ void score(tide::Point goal, double heading) {
 ///////////////////////////////////////////////////////////////
 // Pieces of routines; not on the selector
 
-const int TURN_TIMEOUT = 1000;	// [ms] long enough to finish on weak battery
-
-void pickupAt(tide::Point point, int winchHeight, double xOffset=0, double yOffset=0, bool leave=false, bool liftLoader=false, float minSpeed=30, float maxSpeed=127, bool fuckassparameter=false) {
-	chassis.turnToPoint(point.x + xOffset, point.y + yOffset, 500, 
-		{.forwards=false}, false);
-	openClaw();
-	chassis.moveToPoint(point.x + xOffset, point.y + yOffset, 1200, 
-		{.forwards=false, .maxSpeed=maxSpeed, .minSpeed=minSpeed, .earlyExitRange=15}, false);
-	odom.moveBy(-8.5, 0, 0, 1000, {}, true);
-
-	if (fuckassparameter) {
-		//odom.moveBy(-8, 1, 0, 1000, {}, false);
-		//chassis.turnToHeading(NORTH + 30, 800, {}, false);
-		//odom.moveBy(-8, 1, 0, 1000, {}, false);
-		
-		odom.turnBy(-10);
-		odom.moveBy(-36, 0, 0, 500, {.minSpeed=127}, false);
-		leftMotors.move_voltage(-10000);
-		rightMotors.move_voltage(1000);
-	}
-		
-
-	while (clawDistance.get_distance() > 85) {
-		pros::delay(10);
-	}
-	leftMotors.move_voltage(0);
-	rightMotors.move_voltage(0);
-
-	closeClaw();
-	if (leave) {
-		if (liftLoader) {
-			winch.moveTo(400);
-			pros::delay(100);
-		}
-		odom.moveBy(6);
-		pros::delay(100);
-	}
-	winch.moveTo(winchHeight);
-	pros::delay(100);
-}
-
-void resetEndSegment() {
-	odom.moveBy(tide::TILE/2);
-	pros::delay(800);
-	winch.moveTo(0);
-	pros::delay(800);
-}
-
-void autonScore(int backup=6) {
-	winch.moveTo(0);			// Move down
-	pros::delay(350);		
-	openClaw();					// Release pin
-	odom.moveBy(backup);   		// Move out
-	stopClaw();					// Stop claw
-}
-
+// Q1 Toggle, preload and both diagonal cuppins on the Q1 alliance goal; ends holding the outer one
 void leftBase() {
-	/// Scoring first pin /////////////////////////////////////
-	// Init
-	closeClaw();
-	chassis.setPose(-65, 0, WEST);							// Start pos
-	odom.wallReset(Wall::RED);								// Wall reset
-	
-	// Toggle
-	waitForToggle();										// Toggle to alliance
-	winch.moveTo(1000);										// Lift winch							
+	startOnToggle(toggle::Q1);
+	winch.moveTo(CLEAR[0]);
 
-	// To goal and score
-	odom.reachPose(goal::Q1_ALLIANCE,						// Turn to goal
-		NORTH, 1500, {.forwards = false, .minSpeed=30, .earlyExitRange=5});	
-	autonScore(10);	
-	odom.wallReset(Wall::RED);								// Wall reset
+	odom.approach(goal::Q1_ALLIANCE, NORTH, STANDOFF);
+	odom.wallReset(Wall::RED);
+	score(goal::Q1_ALLIANCE, NORTH);
 
-	/// Scoring innner cup ////////////////////////////////////
-	pickupAt(cuppin::DIAGONAL_INNER, 1600, 2, -2);
-	odom.reachPose(goal::Q1_ALLIANCE, 
-		EAST, 1400, {.forwards=false, .minSpeed=30});
-	autonScore(10);
+	grab(cuppin::DIAGONAL_INNER);
+	winch.moveTo(CLEAR[1]);
+	score(goal::Q1_ALLIANCE, EAST);
 
-	pickupAt(cuppin::DIAGONAL_OUTER, 2200, 0, -2);
-	odom.wallReset(Wall::AUDIENCE);
+	grab(cuppin::DIAGONAL_OUTER);
+	winch.moveTo(CLEAR[2]);
 }
 
 #pragma endregion
@@ -174,13 +156,8 @@ void leftBase() {
 
 void xAuton(tide::Alliance) {
 	/// Flip the Q2 Toggle ////////////////////////////////////
-	closeClaw();									// Hold the preload
-	chassis.setPose(0, START_Y, SOUTH);				// Centered on the Toggle, facing it; the front beam reads the Toggle, so no reset here
-	odom.pushUntilStall(SQUARE_MV, 800, 150);		// Flush on it: squares the heading, however it was set down
-	chassis.setPose(chassis.getPose().x, START_Y, SOUTH);
-	odom.moveBy(3, 0, 0, 500, {}, true);			// Keep pressing while it flips
-	waitForToggle();
-	winch.moveTo(CLEAR_EMPTY_GOAL);
+	startOnToggle(toggle::Q2);
+	winch.moveTo(CLEAR[0]);
 
 	/// Preload on the Q2 alliance goal ///////////////////////
 	odom.approach(goal::Q2_ALLIANCE, EAST, STANDOFF);
@@ -191,84 +168,45 @@ void xAuton(tide::Alliance) {
 	// Boxed in: Goal 21.5" north, Cups either side, wall behind. Under ~25° the front clips
 	// the Goal, past ~30° the back corner hits the wall first
 	grab(cuppin::AUDIENCE_WALL_W, NORTH + 27);
-	winch.moveTo(CLEAR_ONE_PIN);
+	winch.moveTo(CLEAR[1]);
 	odom.turnTo(EAST);
 	odom.wallReset(Wall::AUDIENCE);					// Before the move, so it lands in line with the goal
-	odom.approach(goal::Q2_ALLIANCE, EAST, STANDOFF);
 	score(goal::Q2_ALLIANCE, EAST);
 }
 
 void leftAuton(tide::Alliance) {
 	leftBase();
-
-	//// Score aud. cuppin in S Goal ///////////////////////////
-	chassis.turnToHeading(SOUTH, 800, {}, false);
-	chassis.moveToPoint(goal::Q1_ALLIANCE.x + 2, goal::Q1_ALLIANCE.y, 900, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	odom.wallReset(Wall::RED);
-	autonScore(10);
+	score(goal::Q1_ALLIANCE, SOUTH);
 }
 
 void leftAWP(tide::Alliance) {
 	leftBase();
-
-	//// Score aud. cuppin in N Goal ///////////////////////////
-	chassis.turnToHeading(WEST-30, 800, {}, false);
-	chassis.moveToPoint(goal::Q1_NEUTRAL.x + 2, goal::Q1_NEUTRAL.y, 2500, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	odom.wallReset(Wall::RED);
-	autonScore(10);
+	score(goal::Q1_NEUTRAL);
 }
 
 void skillsAuton(tide::Alliance) {
-	/// Run left base /////////////////////////////////////////
 	leftBase();
+	score(goal::Q1_ALLIANCE, SOUTH);
 
-	/// Score aud. cuppin in S Goal ///////////////////////////
-	chassis.turnToHeading(SOUTH, 800, {}, false);
-	chassis.moveToPoint(goal::Q1_ALLIANCE.x + 2, goal::Q1_ALLIANCE.y, 900, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	odom.wallReset(Wall::RED);
-	autonScore(10);
+	/// Match Loads from the S Loader /////////////////////////
+	// The drive team loads a Pin, a Pin, then a Cup + Pin: the Q2 goal has no Cup to hold a Cup + Pin yet
+	grabLoad(loader::S);
+	winch.moveTo(CLEAR[3]);
+	score(goal::Q1_ALLIANCE, SOUTH);
 
-	/// Scoring first pin /////////////////////////////////////
-	chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
-	pickupAt(loader::S, 3300, 3, 3, true, true);
-	pros::delay(100);
-	chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
-	chassis.moveToPoint(goal::Q1_ALLIANCE.x, goal::Q1_ALLIANCE.y, 1000, 
-		{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	odom.wallReset(Wall::RED);
-	autonScore(10);
+	for (int height : {CLEAR[0], CLEAR[1]}) {
+		grabLoad(loader::S);
+		winch.moveTo(height);
+		score(goal::Q2_ALLIANCE, WEST - 30);			// Backing in from the Loader side, clear of the wall cuppin
+	}
 
-	// /// Scoring second pin ////////////////////////////////////
-	// chassis.moveToPose(-46, -62, EAST, 2000, {}, false);
-	// pickupAt(loader::S, 4500, 3, 3, true, true);
-	// pros::delay(100);
-	// chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
-	// chassis.moveToPoint(goal::Q1_ALLIANCE.x+1, goal::Q1_ALLIANCE.y, 1000,
-	// 	{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-	// odom.wallReset(Wall::RED);
-	// autonScore(10);
-
-	/// Scoring Three cuppins on second goal //////////////////
-	for (int winch_height : {1000, 1600}) { // 2900, 3700
-		chassis.moveToPose(-46, -62, EAST, 2000, {}, false);    				// Swirve to face loader 
-		pickupAt(loader::S, winch_height, 3, 3, true,true);					// Pickup loader cuppin
-		pros::delay(100);														
-		chassis.moveToPose(-46, -62, SOUTH, 2000, {}, false);
-		chassis.moveToPoint(goal::Q2_ALLIANCE.x + 3, goal::Q2_ALLIANCE.y - 1, 1500,
-			{.forwards=false, .minSpeed=30, .earlyExitRange=5}, false);
-		odom.wallReset(Wall::AUDIENCE);
-		autonScore(6);
-	}	
-
-	/// Go around to toggle  //////////////////////////////////
-	chassis.moveToPose(-48, -60, WEST, 1500, {}, false); 
-	chassis.moveToPose(0, -24, SOUTH, 1500, {.forwards=false}, false);
-	chassis.moveToPose(0, -60, SOUTH, 1500, {}, false);
-	waitForToggle();
-	chassis.moveToPoint(0, 0, 1000);
+	/// Q2 Toggle, then park in Midfield //////////////////////
+	chassis.moveToPoint(-30, -35, 1500, {}, false);	// North of the Q2 goal
+	chassis.moveToPoint(0, -35, 1500, {}, false);
+	odom.turnTo(SOUTH);
+	chassis.moveToPoint(0, flushOn(toggle::Q2).y + 3, 1500, {}, false);
+	pressToggle(toggle::Q2);
+	chassis.moveToPoint(0, 0, 1500, {.forwards = false}, false);
 }
 
 void testAuton(tide::Alliance) {
