@@ -75,7 +75,8 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 #pragma region Main ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
-// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg], or sim --list for auton names
+// sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup dx dy dheading]
+//     [--distance-scale k] [--jitter in] [--seed n], or sim --list for auton names
 int main(int argc, char** argv) {
 	std::string auton, outDir = "out", field;
 	bool blue = false, list = false;
@@ -87,6 +88,14 @@ int main(int argc, char** argv) {
 		else if (arg == "--time" && i + 1 < argc) limit = std::stoul(argv[++i]);
 		else if (arg == "--out" && i + 1 < argc) outDir = argv[++i];
 		else if (arg == "--field" && i + 1 < argc) field = argv[++i];
+		else if (arg == "--setup" && i + 3 < argc) {
+			sim::world().setupX     = std::stod(argv[++i]);
+			sim::world().setupY     = std::stod(argv[++i]);
+			sim::world().setupTheta = std::stod(argv[++i]);
+		}
+		else if (arg == "--distance-scale" && i + 1 < argc) sim::world().distanceScale = std::stod(argv[++i]);
+		else if (arg == "--jitter" && i + 1 < argc) sim::game::field.jitter = std::stod(argv[++i]);
+		else if (arg == "--seed" && i + 1 < argc) sim::game::field.seed = std::stoul(argv[++i]);
 		else auton = arg;
 	}
 

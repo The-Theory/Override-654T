@@ -114,7 +114,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
 	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
-}, {.toolForward = 0});	// [in] Claw scoring poin
+}, {.toolForward = -10.5});	// [in] claw mouth at the back bumper; measure: tracking wheel axle to a held Pin's center
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

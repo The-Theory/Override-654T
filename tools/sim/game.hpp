@@ -107,6 +107,15 @@ public:
 	std::vector<Toggle> toggles;
 
 	// Starting layout from the manual's Appendix A, via tide::override's red-side spots rotated for blue
+	double   jitter = 0;	// [in] Cup + Pin spots land up to this far off their nominal spot, like hand-set fields
+	unsigned seed   = 1;
+
+	// Deterministic offset in ±jitter, so a run repeats
+	double nudge() {
+		seed = seed * 1103515245 + 12345;
+		return jitter * (((seed >> 16) & 0x7fff) / 16383.5 - 1);
+	}
+
 	void setup() {
 		using namespace tide::override;
 		auto flip = [](tide::Point p) { return tide::Point{-p.x, -p.y}; };
@@ -131,10 +140,13 @@ public:
 		for (tide::Point p : {cuppin::RED_WALL_S, cuppin::RED_WALL_N, cuppin::AUDIENCE_WALL_W, cuppin::AUDIENCE_WALL_E,
 							  cuppin::DIAGONAL_INNER, cuppin::DIAGONAL_OUTER})
 			for (tide::Point at : {p, flip(p)}) {
+				const bool onWall = std::fabs(at.x) > 60 || std::fabs(at.y) > 60;
+				const bool alongY = std::fabs(at.x) > 60;
+				if (!onWall || alongY)  at.y += nudge();	// Wall sets stay touching the wall
+				if (!onWall || !alongY) at.x += nudge();
 				add({.cup = true, .x = at.x, .y = at.y});
 				add({.x = at.x, .y = at.y});
-				if (std::fabs(at.x) < 60 && std::fabs(at.y) < 60) continue;
-				const bool alongY = std::fabs(at.x) > 60;
+				if (!onWall) continue;
 				for (double side : {-3.16, 3.16})
 					add({.cup = true, .x = at.x + (alongY ? 0 : side), .y = at.y + (alongY ? side : 0)});
 			}

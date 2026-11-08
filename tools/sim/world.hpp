@@ -234,6 +234,10 @@ public:
 	double trackingDiameter = 2, trackingOffset = 0;	// [in] + right of center
 	double imuDrift = 0;			// [deg/s]
 
+	// How the real world differs from what the auton assumes, for --setup and --distance-scale
+	double setupX = 0, setupY = 0, setupTheta = 0;	// [in, deg] where the robot really sits, past where the auton's first setPose says
+	double distanceScale = 1;						// distance sensors read this times the true range
+
 	// Pose: LemLib frame, heading clockwise from +y [deg]
 	double x = 0, y = 0, theta = 0;
 	double odomX = 0, odomY = 0, odomTheta = 0;	// written by the fake chassis, for the log
@@ -256,10 +260,10 @@ public:
 	void place(double px, double py, double heading) {
 		if (placed) return;
 		placed = true;
-		imuOffset -= heading - theta;	// IMU reading doesn't jump
-		x = px;
-		y = py;
-		theta = heading;
+		imuOffset -= heading + setupTheta - theta;	// IMU reading doesn't jump
+		x = px + setupX;
+		y = py + setupY;
+		theta = heading + setupTheta;
 	}
 
 	double imu() const { return theta + imuOffset + imuDrift * sched.now / 1000.0; }
@@ -292,7 +296,7 @@ public:
 		if (dx < -1e-9) hit = std::min(hit, (-halfField - sx) / dx);
 		if (dy > 1e-9)  hit = std::min(hit, ( halfField - sy) / dy);
 		if (dy < -1e-9) hit = std::min(hit, (-halfField - sy) / dy);
-		const double mm = hit * 25.4;
+		const double mm = hit * 25.4 * distanceScale;
 		return mm > 2000 ? 9999 : std::lround(mm);
 	}
 

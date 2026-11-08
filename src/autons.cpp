@@ -3,11 +3,58 @@
 #include "tide/override.hpp"
 #include "tide/screen.hpp"
 #include <algorithm>
+#include <optional>
 #include <cstdio>
 
 using namespace tide::dir;
 using namespace tide::override;
 using tide::Wall;
+
+////////////////////////////////////////////////////////////////
+#pragma region Steps ///////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+// One thing each, few arguments. A field that differs is handled by what the robot
+// senses, not by offsets; routines compose these instead of growing flags
+
+constexpr double STANDOFF      = 8;		// [in] tool stops this short of a piece or goal, then finishes slowly
+constexpr int    CREEP_MV      = 3000;	// slow enough to stop on the claw sensor
+constexpr int    GRAB_MM       = 85;	// claw sensor reading once a piece is in the mouth
+constexpr int    GRAB_MS       = 300;	// keeps backing while the claw closes, so the piece seats
+constexpr double SCORE_BACKOFF = 8;		// [in] clear of the stack before turning
+constexpr int    SCORE_SPEED   = 35;	// [/127] onto the goal; slow enough to stop on it instead of rolling past
+
+constexpr int SQUARE_MV        = 4000;	// push that squares the bumper on a wall without bouncing off
+
+constexpr int CLEAR_EMPTY_GOAL = 1000;	// winch [deg] to carry a piece over a goal
+constexpr int CLEAR_ONE_PIN    = 1500;
+
+bool clawSeesPiece() { return clawDistance.get_distance() < GRAB_MM; }
+
+// Backs onto a piece until the claw sees it, then grabs; false if nothing showed up
+// - heading: robot facing at pickup, for pieces boxed in by a goal or wall; else straight from where it is
+bool grab(tide::Point piece, std::optional<double> heading = {}) {
+	openClaw();
+	if (heading) odom.approach(piece, *heading, STANDOFF);
+	else         odom.approachStraight(piece, STANDOFF);
+	const bool seen = odom.creep(-CREEP_MV, clawSeesPiece);	// Claw on the back
+	closeClaw();
+	odom.creep(-CREEP_MV, [] { return false; }, GRAB_MS);
+	if (!seen) std::printf("Grab at (%.1f, %.1f) FAILED: claw saw nothing\n", piece.x, piece.y);
+	return seen;
+}
+
+// From a standoff in front of the goal: backs the held piece onto it, drops it, pulls away
+void score(tide::Point goal, double heading) {
+	odom.approach(goal, heading, 0, SCORE_SPEED);
+	winch.moveTo(0);
+	pros::delay(350);
+	openClaw();
+	odom.moveBy(SCORE_BACKOFF);
+	stopClaw();
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
 
 ////////////////////////////////////////////////////////////////
 #pragma region Sections ////////////////////////////////////////
@@ -106,33 +153,29 @@ void leftBase() {
 // Full autons, picked on the selector
 
 void xAuton(tide::Alliance) {
-	/// Scoring first cuppin //////////////////////////////////
-	// Init
-	closeClaw();
-	chassis.setPose(0, -65, SOUTH);							// Start pos
-	odom.wallReset(Wall::AUDIENCE);								// Wall reset
-	
-	// Toggle
-	odom.moveBy(3, 0, 0, 500, {}, true);
-	waitForToggle();										// Toggle to alliance
-	winch.moveTo(1000);										// Lift winch							
+	/// Flip the Q2 Toggle ////////////////////////////////////
+	closeClaw();									// Hold the preload
+	chassis.setPose(0, -65, SOUTH);					// Centered on the Toggle, facing it; the front beam reads the Toggle, so no reset here
+	odom.pushUntilStall(SQUARE_MV, 800, 150);		// Flush on it: squares the heading, however it was set down
+	chassis.setPose(chassis.getPose().x, -65, SOUTH);
+	odom.moveBy(3, 0, 0, 500, {}, true);			// Keep pressing while it flips
+	waitForToggle();
+	winch.moveTo(CLEAR_EMPTY_GOAL);
 
-	// To goal and score
-	odom.reachPose(goal::Q2_ALLIANCE,						// Turn to goal
-		EAST, 2000, {.forwards = false, .minSpeed=30});	
-	autonScore(8);	
-	odom.wallReset(Wall::AUDIENCE);								// Wall reset
+	/// Preload on the Q2 alliance goal ///////////////////////
+	odom.approach(goal::Q2_ALLIANCE, EAST, STANDOFF);
+	odom.wallReset(Wall::AUDIENCE);					// Right beam on the audience wall
+	score(goal::Q2_ALLIANCE, EAST);
 
-	/// Pickup aud. cuppin ////////////////////////////////////
-	pickupAt(cuppin::AUDIENCE_WALL_W, 1500, -4, 0, false, false, 50, 100, true);
-	odom.wallReset(Wall::AUDIENCE);
-	chassis.turnToHeading(EAST, 800, {}, false);
-	pros::delay(100);
-	chassis.setPose(-24, -2.5*24, EAST);
-	odom.moveBy(24);
-	odom.reachPose(goal::Q2_ALLIANCE,						// Turn to goal
-		EAST, 2000, {.forwards = false, .minSpeed=20});	
-	autonScore(10);
+	/// Audience wall cuppin on top ///////////////////////////
+	// Boxed in: Goal 21.5" north, Cups either side, wall behind. Under ~25° the front clips
+	// the Goal, past ~30° the back corner hits the wall first
+	grab(cuppin::AUDIENCE_WALL_W, NORTH + 27);
+	winch.moveTo(CLEAR_ONE_PIN);
+	chassis.turnToHeading(EAST, 1000, {}, false);
+	odom.wallReset(Wall::AUDIENCE);					// Before the move, so it lands in line with the goal
+	odom.approach(goal::Q2_ALLIANCE, EAST, STANDOFF);
+	score(goal::Q2_ALLIANCE, EAST);
 }
 
 void leftAuton(tide::Alliance) {

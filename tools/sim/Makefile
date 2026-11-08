@@ -16,13 +16,23 @@ EMFLAGS  := -std=c++20 -O2 $(INCLUDES) -sASYNCIFY -sASYNCIFY_STACK_SIZE=131072 -
             -sMODULARIZE -sEXPORT_ES6 -sEXPORT_NAME=createSim -sSINGLE_FILE -sENVIRONMENT=web \
             -sINVOKE_RUN=0 -sEXIT_RUNTIME=0 -sALLOW_MEMORY_GROWTH -sEXPORTED_RUNTIME_METHODS=callMain,FS
 
-.PHONY: run check web view
+.PHONY: run check robust web view
 
 run: $(OUT)/sim
 	$(OUT)/sim "$(AUTON)" --out $(OUT) --field $(ROOT)/docs/field-map.svg
 
 check: $(OUT)/check
 	$(OUT)/check
+
+# AUTON on sloppy setups (dx dy dheading), off distance sensors and hand-set pieces; every line should score the same
+# +dy only: the auton starts flush on the audience wall, so it can't be set into it
+SETUPS := "0 0 0" "1 0 0" "-1 0 0" "0 1 0" "0 2 0" "0 1 3" "0 1 -3" "1 1 2" "-1 1 -2" "1 2 -3"
+robust: $(OUT)/sim
+	@for s in $(SETUPS); do for k in 1 1.03 0.97; do for j in 0 1.5; do \
+		printf "setup %-9s sensors x%-4s pieces ±%-3s " "$$s" $$k $$j; \
+		$(OUT)/sim "$(AUTON)" --setup $$s --distance-scale $$k --jitter $$j --out $(OUT)/robust | \
+			awk '/still running/{late=1} /FAILED/{f++} /^Score/{s=$$3} END{printf "score %s%s%s\n", s, late?"  LATE":"", f?"  ("f" failed)":""}'; \
+	done; done; done
 
 web: $(WEB)
 

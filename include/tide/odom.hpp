@@ -18,10 +18,12 @@
 #include "pros/motor_group.hpp"
 #include "pros/rotation.hpp"
 #include "pros/rtos.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>
+#include <functional>
 #include <numbers>
 #include <string>
 #include <vector>
@@ -43,6 +45,7 @@ struct OdomSettings {
 	double halfField      = 70.2;	// center to inside face of perimeter [in] (70.25 on metal perimeters)
 	double maxResetRange  = 40;		// [in] sensor error is ~5% of range past 8", so far walls hurt more than help
 	double maxResetAngle  = 15;		// [deg] off-perpendicular before beam can hit wall junk instead of the wall
+	double maxResetJump   = 6;		// [in] a reset that moves the pose further than this read a robot or piece, not the wall
 	int    stallGrace     = 200;	// [ms] to get moving before stall checks start
 	int    stallVelocity  = 11000;	// [centideg/s] tracking wheel speed counted as stopped
 	double toolRight      = 0;		// [in] scoring point, from the tracking center
@@ -61,33 +64,85 @@ public:
 		: chassis(chassis), left(left), right(right), tracking(tracking), mounts(mounts), settings(settings) {}
 
 	/**
-	 * Corrects the odom axis normal to a wall from a distance reading. Robot must be
-	 * stopped with the beam on bare perimeter (not a Loader or wall Scoring Objects).
-	 * Uses whichever sensor faces the wall; leaves the pose alone if none can.
+	 * Corrects the odom axis normal to a wall from a distance reading, once the robot stops.
+	 * The beam must be on bare perimeter (not a Loader, Toggle or wall Scoring Objects).
+	 * Uses whichever sensor faces the wall; leaves the pose alone and prints why if none can.
 	 */
 	bool wallReset(Wall wall) {
-		pros::delay(50);	// Sensor lags; get a reading taken after stopping
+		waitUntilStopped();
 
 		const bool xAxis = wall == Wall::RED || wall == Wall::BLUE;
 		const double sign = (wall == Wall::BLUE || wall == Wall::FAR) ? 1 : -1;
 		const double wallHeading = xAxis ? (sign > 0 ? dir::EAST : dir::WEST) : (sign > 0 ? dir::NORTH : dir::SOUTH);
 		const lemlib::Pose pose = chassis.getPose();
+		const char* why = "no sensor faces it";
 
 		for (const DistanceMount& mount : mounts) {
 			const double beam = pose.theta + mount.facing;
 			if (std::fabs(lemlib::angleError(beam, wallHeading, false)) > settings.maxResetAngle) continue;
 
-			const double dist = inches(mount.sensor);
-			if (std::isnan(dist) || dist > settings.maxResetRange) continue;
+			const double dist = medianInches(mount.sensor);
+			if (std::isnan(dist) || dist > settings.maxResetRange) { why = "wall out of range"; continue; }
 
 			const Point sensorAt = toField(mount.right, mount.forward, pose.theta);
 			const Point beamHit  = toField(0, dist, beam);
 			const double wallPos = sign * settings.halfField;
-			if (xAxis) chassis.setPose(wallPos - sensorAt.x - beamHit.x, pose.y, pose.theta);
-			else       chassis.setPose(pose.x, wallPos - sensorAt.y - beamHit.y, pose.theta);
+			const double fixed   = wallPos - (xAxis ? sensorAt.x + beamHit.x : sensorAt.y + beamHit.y);
+			const double jump    = fixed - (xAxis ? pose.x : pose.y);
+			// A beam on a robot or piece reads short; trusting it would throw the pose off
+			if (std::fabs(jump) > settings.maxResetJump) { why = "beam hit something else"; continue; }
+
+			if (xAxis) chassis.setPose(fixed, pose.y, pose.theta);
+			else       chassis.setPose(pose.x, fixed, pose.theta);
+			std::printf("Reset %s wall: %+.1f in\n", wallName(wall), jump);
 			return true;
 		}
+		std::printf("Reset %s wall FAILED: %s\n", wallName(wall), why);
 		return false;
+	}
+
+	/**
+	 * Lands the tool `standoff` inches short of target, facing heading, and waits for it to settle.
+	 * Coordinates get the robot close; finish onto anything whose real spot varies with creep().
+	 * - Drives forwards when the trip runs along heading, else backs in, so it never loops around
+	 */
+	void approach(Point target, double heading, double standoff, int maxSpeed = 127, int timeout = 2000) {
+		const Point at = centerFor(shortOf(target, heading, standoff), heading);
+		const lemlib::Pose pose = chassis.getPose();
+		if (std::hypot(at.x - pose.x, at.y - pose.y) > 1) {
+			const bool forwards = std::fabs(lemlib::angleError(bearing({pose.x, pose.y}, at), heading, false)) <= 90;
+			// Nearly in line, steer onto the point and turn after: a tank can't fix a sideways
+			// miss on a straight run, and the final turn pivots the tool onto target (centerFor)
+			const bool inLine = std::fabs(lemlib::angleError(bearing({pose.x, pose.y}, at) + (forwards ? 0 : 180), heading, false)) < 15;
+			if (inLine) chassis.moveToPoint(at.x, at.y, timeout, {.forwards = forwards, .maxSpeed = (float)maxSpeed}, false);
+			else        chassis.moveToPose(at.x, at.y, heading, timeout, {.forwards = forwards, .maxSpeed = (float)maxSpeed}, false);
+			waitUntilStopped();	// LemLib settles while still rolling; a turn now would carry it inches past
+		}
+		// moveToPose settles on position only; a big swing can end off heading
+		if (std::fabs(lemlib::angleError(heading, chassis.getPose().theta, false)) > 2) chassis.turnToHeading(heading, 1000, {}, false);
+	}
+
+	// Same, facing straight at target from where the robot is
+	void approachStraight(Point target, double standoff, int maxSpeed = 127, int timeout = 2000) {
+		const lemlib::Pose pose = chassis.getPose();
+		const double heading = bearing({pose.x, pose.y}, target) + (settings.toolForward >= 0 ? 0 : 180);
+		approach(target, heading, standoff, maxSpeed, timeout);
+	}
+
+	/**
+	 * Drives straight at mv until done() or timeout; true if done().
+	 * For the last inches onto something a sensor can see, where coordinates aren't good enough.
+	 * - [] { return false; } just pushes for timeout ms
+	 */
+	bool creep(int mv, const std::function<bool()>& done, int timeout = 1500) {
+		chassis.cancelAllMotions();
+		chassis.waitUntilDone();	// A cancelled motion stops the motors as it ends
+		drive(mv, mv);
+		const std::uint32_t start = pros::millis();
+		bool hit = false;
+		while (!(hit = done()) && pros::millis() - start < (std::uint32_t)timeout) pros::delay(10);
+		drive(0, 0);
+		return hit;
 	}
 
 	/**
@@ -245,6 +300,43 @@ private:
 	static double inches(pros::Distance& sensor) {
 		const std::int32_t mm = sensor.get();
 		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
+	}
+
+	// Median of a few readings, so one stray beam doesn't count; NaN if most saw nothing
+	static double medianInches(pros::Distance& sensor, int samples = 5) {
+		std::vector<double> seen;
+		for (int i = 0; i < samples; i++) {
+			if (const double d = inches(sensor); !std::isnan(d)) seen.push_back(d);
+			pros::delay(20);
+		}
+		if ((int)seen.size() * 2 <= samples) return NAN;
+		std::nth_element(seen.begin(), seen.begin() + seen.size() / 2, seen.end());
+		return seen[seen.size() / 2];
+	}
+
+	static const char* wallName(Wall wall) {
+		constexpr const char* names[] = {"red", "blue", "audience", "far"};
+		return names[static_cast<int>(wall)];
+	}
+
+	// Readings taken while still rolling or turning are of the wrong spot; a centered
+	// tracking wheel doesn't see turning, so watch the drive too
+	void waitUntilStopped(int timeout = 500) {
+		const std::uint32_t start = pros::millis();
+		auto moving = [&] {
+			return std::abs(tracking.get_velocity()) > settings.stallVelocity ||
+				   std::fabs(left.get_actual_velocity()) > STOPPED_RPM || std::fabs(right.get_actual_velocity()) > STOPPED_RPM;
+		};
+		do pros::delay(20);
+		while (moving() && pros::millis() - start < (std::uint32_t)timeout);
+	}
+
+	static constexpr double STOPPED_RPM = 5;
+
+	// Where the tool goes so it ends standoff short of target, coming in tool first
+	Point shortOf(Point target, double heading, double standoff) const {
+		const Point back = toField(0, settings.toolForward >= 0 ? standoff : -standoff, heading);
+		return {target.x - back.x, target.y - back.y};
 	}
 
 	// Current heading's angle past square [deg], wrapped to ±180

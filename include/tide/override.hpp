@@ -26,9 +26,9 @@ namespace tide {
 namespace override {
 
 namespace goal {
-constexpr Point Q1_ALLIANCE = {-48, -26};
+constexpr Point Q1_ALLIANCE = {-47.1, -23.5};
 constexpr Point Q1_NEUTRAL  = {-47.1,  23.6};
-constexpr Point Q2_ALLIANCE = {-24, -48};
+constexpr Point Q2_ALLIANCE = {-23.5, -47.1};
 constexpr Point Q2_NEUTRAL  = { 23.6, -47.1};
 constexpr Point MIDFIELD    = {  0,     0  };
 }
