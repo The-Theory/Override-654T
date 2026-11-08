@@ -141,6 +141,9 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	.load          = [] { return winch.position() / LIFT_LOADED; },
 });
 
+// Claw's piece sensor, looking out the back; guess: at the mouth. Measure like odom's mounts
+inline const tide::DistanceMount clawMount = {clawDistance, 0, -10.5, 180};
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 

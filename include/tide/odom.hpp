@@ -214,6 +214,45 @@ public:
 		drive(0, 0);
 	}
 
+	/**
+	 * Turns slowly through the current heading ± sweep [deg] reading a distance sensor, and returns
+	 * where each object it passed sits on the field [in]. For lining up on a piece that's off its
+	 * nominal spot, or has neighbors to tell it from.
+	 * - An object is a run of steady readings; a jump closer or further starts the next
+	 * - radius: for round pieces, reports centers instead of the nearest point the beam touched
+	 */
+	std::vector<Point> scan(const DistanceMount& mount, double sweep, double radius = 0, double maxRange = 24) {
+		const lemlib::Pose start = chassis.getPose();
+		turnTo(start.theta - sweep);
+		stopMotions();
+
+		struct Reading { double theta, dist; };
+		std::vector<Reading> seen;
+		drive(SWEEP_MV, -SWEEP_MV);	// Clockwise
+		const std::uint32_t t0 = pros::millis();
+		while (lemlib::angleError(start.theta + sweep, chassis.getPose().theta, false) > 0 && pros::millis() - t0 < 3000) {
+			seen.push_back({chassis.getPose().theta, inches(mount.sensor)});
+			pros::delay(20);
+		}
+		drive(0, 0);
+
+		std::vector<Point> objects;
+		for (std::size_t i = 0; i < seen.size(); i++) {
+			if (std::isnan(seen[i].dist) || seen[i].dist > maxRange) continue;
+			std::size_t j = i;
+			double nearest = seen[i].dist;
+			while (j + 1 < seen.size() && !std::isnan(seen[j + 1].dist) && std::fabs(seen[j + 1].dist - seen[j].dist) < SCAN_JUMP)
+				nearest = std::min(nearest, seen[++j].dist);
+			// Middle of the run is straight at it; turning in place, the center stays at start
+			const double theta = seen[(i + j) / 2].theta;
+			const Point sensorAt = toField(mount.right, mount.forward, theta);
+			const Point beam = toField(0, nearest + radius, theta + mount.facing);
+			objects.push_back({start.x + sensorAt.x + beam.x, start.y + sensorAt.y + beam.y});
+			i = j;
+		}
+		return objects;
+	}
+
 	// Turns to heading [deg]: planned if the feedforward is measured, else LemLib's turn
 	void turnTo(double heading, int timeout = 1000) {
 		if (profiled()) profiledTurn(heading);
@@ -411,6 +450,7 @@ private:
 	}
 
 	static constexpr double DT            = 0.01;	// [s] control loop
+	static constexpr double SCAN_JUMP     = 0.75;	// [in] reading change that means the beam moved to another object
 	static constexpr double SMOOTHING     = 0.5;	// of each new speed reading, against sensor jitter
 	static constexpr double PLAN_BATTERY  = 0.75;	// plans use this much of the battery for speed, leaving feedback room
 	static constexpr double ACCEL_BATTERY = 0.5;	// and this much to speed up; less keeps the wheels from slipping

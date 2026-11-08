@@ -182,15 +182,20 @@ public:
 		if ((w.sched.now - w.logStart) % 10 == 0) record(w);
 	}
 
-	// Claw sensor reading [mm]: the nearest loose piece in twice the claw's reach, else nothing in range.
-	// ponytail: measured from the mouth, not along the beam
+	// Claw sensor reading [mm]: the surface of the nearest standing piece in its beam, a cone out of the
+	// mouth the way the claw faces. ponytail: pieces only, no walls or robots; nothing past 24"
 	std::int32_t clawSensor(const World& w, int port) const {
 		if (port != robot.claw.sensor) return -1;
+		constexpr double CONE = 10;	// [deg] half-angle; guess
 		const tide::Point at = mouth(w);
+		const double facing = w.theta + (robot.claw.grabForward < 0 ? 180 : 0);
 		double nearest = INFINITY;
-		for (const Piece& p : pieces)
-			if (p.free() && !p.lying) nearest = std::min(nearest, std::hypot(p.x - at.x, p.y - at.y));
-		return nearest > 2 * robot.claw.reach ? 9999 : std::lround(nearest * 25.4);
+		for (const Piece& p : pieces) {
+			if (!p.free() || p.lying) continue;
+			const double off = std::remainder(tide::bearing(at, {p.x, p.y}) - facing, 360.0);
+			if (std::fabs(off) <= CONE) nearest = std::min(nearest, std::hypot(p.x - at.x, p.y - at.y) - (p.cup ? CUP_R : PIN_R));
+		}
+		return nearest > 24 ? 9999 : std::lround(std::max(nearest, 0.0) * 25.4);
 	}
 
 	// Hue the robot's color sensor reads off a Toggle it's touching, and how close it is

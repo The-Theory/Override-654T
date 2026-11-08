@@ -30,12 +30,31 @@ constexpr int CLEAR_ONE_PIN    = 1500;
 
 bool clawSeesPiece() { return clawDistance.get_distance() < GRAB_MM; }
 
+// Where the claw sensor sees the piece meant to be at nominal: the scanned object nearest it, so a
+// shifted piece or robot still lines up, and neighbors (wall Cups) aren't mistaken for it
+tide::Point spotted(tide::Point nominal) {
+	constexpr double SWEEP = 20;		// [deg] either side
+	constexpr double PIECE_R = 1.55;	// [in] Pin flange / Cup rim
+	constexpr double TRUST = 3;			// [in] further off than this is something else
+	const std::vector<tide::Point> seen = odom.scan(clawMount, SWEEP, PIECE_R);
+	const tide::Point* best = nullptr;
+	for (const tide::Point& p : seen)
+		if (!best || std::hypot(p.x - nominal.x, p.y - nominal.y) < std::hypot(best->x - nominal.x, best->y - nominal.y)) best = &p;
+	if (!best || std::hypot(best->x - nominal.x, best->y - nominal.y) > TRUST) {
+		std::printf("Scan at (%.1f, %.1f): nothing near, using the nominal spot\n", nominal.x, nominal.y);
+		return nominal;
+	}
+	std::printf("Scan at (%.1f, %.1f): piece %+.1f, %+.1f in off\n", nominal.x, nominal.y, best->x - nominal.x, best->y - nominal.y);
+	return *best;
+}
+
 // Backs onto a piece until the claw sees it, then grabs; false if nothing showed up
 // - heading: robot facing at pickup, for pieces boxed in by a goal or wall; else straight from where it is
 bool grab(tide::Point piece, std::optional<double> heading = {}) {
 	openClaw();
 	if (heading) odom.approach(piece, *heading, STANDOFF);
 	else         odom.approachStraight(piece, STANDOFF);
+	odom.approachStraight(spotted(piece), STANDOFF);	// Line up on where it really is
 	const bool seen = odom.creep(-CREEP_MV, clawSeesPiece);	// Claw on the back
 	closeClaw();
 	odom.creep(-CREEP_MV, [] { return false; }, GRAB_MS);
