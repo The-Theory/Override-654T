@@ -18,6 +18,8 @@ inline void simRobot(sim::World& w) {
 
 	for (const tide::DistanceMount& m : odom.getMounts()) w.mounts[m.sensor.get_port()] = {m.right, m.forward, m.facing};
 
+	w.liftTau = 0.1;	// Guess: a raised cascade slows the drive's response this much
+
 	w.joints.push_back({
 		.ports          = winchMotors.get_port_all(),
 		.sensor         = winchEncoder.get_port(),

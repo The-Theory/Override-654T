@@ -24,6 +24,8 @@
 #include <functional>
 #include <numbers>
 #include <string>
+#include <utility>
+#include <vector>
 
 
 
@@ -61,6 +63,14 @@ struct TuneResult {
 	double ku = 0;					// ultimate gain [mV/unit]
 	double tu = 0;					// oscillation period [s]
 	std::string summary;			// what autotune() printed
+};
+
+// Voltage a plant needs to hold a speed and accelerate, so PID only fixes what's left
+struct Feedforward {
+	double kS = 0;	// [mV] to break friction
+	double kV = 0;	// [mV per plant unit/s]
+	double kA = 0;	// [mV per plant unit/s²]; grows with inertia, like a raised lift
+	double mv(double v, double a) const { return ((v > 0) - (v < 0)) * kS + kV * v + kA * a; }
 };
 
 // lemlib::PID outputs -127..127, not mV
@@ -231,6 +241,90 @@ inline TuneResult autotune(const char* name, const Plant& plant, TuneSettings se
 	}
 	std::printf("%s", r.summary.c_str());
 	return r;
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Characterize ////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// One reading during characterize(): what was applied and where the plant was
+struct FeedforwardSample { double t, mv, position; };	// [s], [mV], [plant units]
+
+/**
+ * Least-squares fit of mv = kS·sign(v) + kV·v + kA·a over a run, with speed and
+ * acceleration from central differences. No PROS calls, so it can be checked off-robot.
+ * - Skips samples near standstill (friction there isn't kS), and coasting or braking ones,
+ *   where the motor isn't what drives the motion
+ */
+inline Feedforward fitFeedforward(const std::vector<FeedforwardSample>& s, double minSpeed, int window = 5) {
+	double m[3][4] = {};	// normal equations, augmented with the right side
+	for (std::size_t i = window; i + window < s.size(); i++) {
+		const double dt = s[i + window].t - s[i].t;
+		const double v  = (s[i + window].position - s[i - window].position) / (2 * dt);
+		const double a  = (s[i + window].position - 2 * s[i].position + s[i - window].position) / (dt * dt);
+		if (std::fabs(v) < minSpeed || v * s[i].mv <= 0) continue;
+		if (s[i - window].mv * s[i + window].mv <= 0) continue;	// Window spans a rest or the switch to another run
+		const double row[3] = {double((v > 0) - (v < 0)), v, a};
+		for (int r = 0; r < 3; r++) {
+			for (int c = 0; c < 3; c++) m[r][c] += row[r] * row[c];
+			m[r][3] += row[r] * s[i].mv;
+		}
+	}
+	// Gaussian elimination with partial pivoting
+	for (int c = 0; c < 3; c++) {
+		int pivot = c;
+		for (int r = c + 1; r < 3; r++) if (std::fabs(m[r][c]) > std::fabs(m[pivot][c])) pivot = r;
+		std::swap(m[c], m[pivot]);
+		if (std::fabs(m[c][c]) < 1e-9) return {NAN, NAN, NAN};	// Never moved, or never sped up
+		for (int r = 0; r < 3; r++) {
+			if (r == c) continue;
+			const double f = m[r][c] / m[c][c];
+			for (int k = c; k < 4; k++) m[r][k] -= f * m[c][k];
+		}
+	}
+	return {m[0][3] / m[0][0], m[1][3] / m[1][1], m[2][3] / m[2][2]};
+}
+
+/**
+ * Measures a plant's Feedforward from four runs, each way: slow voltage ramps show friction
+ * and speed, hard steps show inertia. Prints the gains in plant units and returns the same text.
+ * - Run it in each pose that changes the robot (lift down, lift up): kA moves the most
+ * - Each pair comes back about where it started; drive needs ~2 ft clear front and back
+ */
+inline std::string characterize(const char* name, const Plant& plant, int rampMs = 4000, int stepMv = 5000, int stepMs = 1000) {
+	constexpr double RAMP_RATE = 1000;	// [mV/s] slow, so most of the ramp is near steady speed
+	constexpr int    REST_MS   = 400;	// stopped between runs, so each starts from standstill
+	struct Run { bool ramp; int sign; };
+	constexpr Run RUNS[] = {{true, 1}, {true, -1}, {false, 1}, {false, -1}};
+
+	std::vector<FeedforwardSample> samples;
+	const std::uint32_t start = pros::millis();
+	std::uint32_t wake = start;
+	double topSpeed = 0;	// [plant units/s] end of the first ramp, for a standstill cutoff that fits any units
+	for (const Run& run : RUNS) {
+		const int length = run.ramp ? rampMs : stepMs;
+		const std::uint32_t runStart = pros::millis();
+		for (std::uint32_t t = 0; t < (std::uint32_t)(length + REST_MS); t = pros::millis() - runStart) {
+			const double mv = t >= (std::uint32_t)length ? 0 : run.sign * (run.ramp ? RAMP_RATE * t / 1000 : stepMv);
+			samples.push_back({(pros::millis() - start) / 1000.0, mv, plant.measure()});
+			plant.apply(mv);
+			pros::Task::delay_until(&wake, 10);	// Steady 10 ms, or the differences skew
+		}
+		if (topSpeed == 0) {
+			const std::size_t end = samples.size() - REST_MS / 10;
+			topSpeed = std::fabs(samples[end].position - samples[end - 10].position) / 0.1;
+		}
+	}
+	plant.apply(0);
+
+	const Feedforward ff = fitFeedforward(samples, 0.05 * topSpeed);
+	char text[96];
+	std::snprintf(text, sizeof(text), "FF %s: kS %.0f  kV %.2f  kA %.2f\n", name, ff.kS, ff.kV, ff.kA);
+	std::printf("%s", text);
+	return text;
 }
 
 #pragma endregion

@@ -11,6 +11,7 @@
 #include <string>
 
 using namespace tide::dir;
+using tide::Feedforward;
 
 ////////////////////////////////////////////////////////////////
 #pragma region Robot ///////////////////////////////////////////
@@ -87,6 +88,33 @@ void checkMounts() {
 	}
 }
 
+// Drive model: each side's mv = stiction + (12000 - stiction) / topSpeed · (v + tau · a)
+void checkFeedforward(const char* what, const tide::Plant& plant, double perSideSpeed) {
+	sim::World& w = sim::world();
+	const double kV = (12000 - w.driveStiction) / (w.wheelRpm * std::numbers::pi * w.wheelDiameter / 60) * perSideSpeed;
+	Feedforward ff;
+	std::sscanf(tide::characterize(what, plant).c_str(), "FF %*s kS %lf  kV %lf  kA %lf", &ff.kS, &ff.kV, &ff.kA);
+	char name[32];
+	std::snprintf(name, sizeof(name), "%s kS", what);
+	expect(name, ff.kS, w.driveStiction, 0.03 * w.driveStiction);
+	std::snprintf(name, sizeof(name), "%s kV", what);
+	expect(name, ff.kV, kV, 0.03 * kV);
+	std::snprintf(name, sizeof(name), "%s kA", what);
+	expect(name, ff.kA, kV * w.driveTau, 0.05 * kV * w.driveTau);
+}
+
+void checkFeedforwards() {
+	sim::World& w = sim::world();
+	w.placed = false;	// Mid-field, clear of walls
+	chassis.setPose(0, 0, 0);
+	const double degToSide = w.trackWidth / 2 * std::numbers::pi / 180;	// side speed per deg/s spinning
+	checkFeedforward("lateral", tide::lateralPlant(leftMotors, rightMotors, tracking, WHEEL), 1);
+	checkFeedforward("angular", tide::angularPlant(leftMotors, rightMotors, imu), degToSide);
+	w.driveTau = 0.4;	// Heavier robot, as with a lift up: only kA should move
+	checkFeedforward("heavy", tide::lateralPlant(leftMotors, rightMotors, tracking, WHEEL), 1);
+	w.driveTau = 0.25;
+}
+
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
@@ -103,6 +131,7 @@ int main() {
 		chassis.setBrakeMode(pros::E_MOTOR_BRAKE_BRAKE);
 		checkOffset();
 		checkMounts();
+		checkFeedforwards();
 		done = true;
 	});
 	w.sched.run([&] { return done; }, [&] { w.step(); });

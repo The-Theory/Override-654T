@@ -76,9 +76,9 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 ////////////////////////////////////////////////////////////////
 
 // sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup dx dy dheading]
-//     [--distance-scale k] [--jitter in] [--seed n], or sim --list for auton names
+//     [--distance-scale k] [--jitter in] [--seed n], sim --tune <Tune page name>, or sim --list for auton names
 int main(int argc, char** argv) {
-	std::string auton, outDir = "out", field;
+	std::string auton, tune, outDir = "out", field;
 	bool blue = false, list = false;
 	std::uint32_t limit = 15000;	// [ms] auton period
 	for (int i = 1; i < argc; i++) {
@@ -96,6 +96,7 @@ int main(int argc, char** argv) {
 		else if (arg == "--distance-scale" && i + 1 < argc) sim::world().distanceScale = std::stod(argv[++i]);
 		else if (arg == "--jitter" && i + 1 < argc) sim::game::field.jitter = std::stod(argv[++i]);
 		else if (arg == "--seed" && i + 1 < argc) sim::game::field.seed = std::stoul(argv[++i]);
+		else if (arg == "--tune" && i + 1 < argc) tune = argv[++i];
 		else auton = arg;
 	}
 
@@ -106,6 +107,17 @@ int main(int argc, char** argv) {
 	bool started = false, finished = false, found = true;
 	pros::Task([&] {
 		initialize();
+		if (!tune.empty()) {	// A Tune page entry instead of an auton, robot set mid-field
+			const auto& tuners = tide::screen::detail::tuners;
+			const auto it = std::find_if(tuners.begin(), tuners.end(), [&](const auto& t) { return tune == t.name; });
+			if (it == tuners.end()) std::printf("No tuner \"%s\"\n", tune.c_str());
+			else {
+				chassis.setPose(0, 0, 0);
+				it->run();
+			}
+			std::fflush(stdout);
+			std::_Exit(it == tuners.end());
+		}
 		const auto& list = tide::screen::detail::autons;
 		const auto it = std::find_if(list.begin(), list.end(), [&](const auto& a) { return auton == a.name; });
 		if (it == list.end()) {

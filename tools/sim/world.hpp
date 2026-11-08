@@ -227,6 +227,7 @@ public:
 	double width = 18;				// footprint [in]
 	double front = 9, back = 9;		// [in] from the tracking center
 	double driveTau = 0.25;			// [s] drive speed time constant; lower is snappier
+	double liftTau  = 0;			// [s] added to driveTau with the first joint at its top: a raised lift is more inertia
 	double driveStiction = 1200;	// [mV] friction eats this much of a side's voltage, so less doesn't move it
 	double trackWidth = 12, wheelDiameter = 3.25, wheelRpm = 450;
 	std::vector<std::int8_t> left, right;
@@ -350,6 +351,13 @@ private:
 		return b == COAST ? 0.3 : b == BRAKE ? 0.08 : 0.04;	// Coast rolls on, brake shorts the motor
 	}
 
+	// How far the first joint is up its travel, 0..1
+	double liftRaised() const {
+		if (joints.empty() || !std::isfinite(joints[0].min) || !std::isfinite(joints[0].max)) return 0;
+		const Joint& j = joints[0];
+		return std::clamp((j.angle - j.min) / (j.max - j.min), 0.0, 1.0);
+	}
+
 	// Mean commanded voltage of a side
 	double command(const std::vector<std::int8_t>& ports) {
 		double mv = 0;
@@ -361,7 +369,7 @@ private:
 		if (ports.empty()) return 0;
 		const double mv = command(ports);
 		const double target = std::copysign(std::max(std::fabs(mv) - driveStiction, 0.0), mv) / (12000 - driveStiction) * maxSpeed;
-		return v + (target - v) * dt / tau(motor(ports[0]).brake, mv, driveTau);
+		return v + (target - v) * dt / tau(motor(ports[0]).brake, mv, driveTau + liftTau * liftRaised());
 	}
 
 	void driveMotors(const std::vector<std::int8_t>& ports, double v) {

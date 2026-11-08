@@ -288,6 +288,25 @@ std::string tuneOffset() {
 	return tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL);
 }
 
+// Drive and turn feedforward, lift down then up, since a raised lift is more inertia.
+// ~2 ft clear front and back; paste each into the matching tide::Feedforward
+constexpr int LIFT_TEST_UP = 3300;	// highest the autons carry
+
+std::string characterizeAt(int lift) {
+	winch.moveTo(lift);
+	pros::delay(1500);
+	const char* pose = lift == 0 ? "down" : "up";
+	char lateral[16], angular[16];
+	std::snprintf(lateral, sizeof(lateral), "lateral-%s", pose);
+	std::snprintf(angular, sizeof(angular), "angular-%s", pose);
+	std::string out = tide::characterize(lateral, tide::lateralPlant(leftMotors, rightMotors, verticalEncoder, TRACKING_WHEEL));
+	out += tide::characterize(angular, tide::angularPlant(leftMotors, rightMotors, imu));
+	winch.moveTo(0);
+	return out;
+}
+std::string ffLiftDown() { return characterizeAt(0); }
+std::string ffLiftUp()   { return characterizeAt(LIFT_TEST_UP); }
+
 // Front a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
@@ -318,6 +337,8 @@ const std::vector<tide::screen::Tuner> tuners = {
 	{"Lateral",    tuneLateral},
 	{"Offset",     tuneOffset},
 	{"Mounts",     tuneMounts},
+	{"FF down",    ffLiftDown},
+	{"FF up",      ffLiftUp},
 };
 
 // Info page
