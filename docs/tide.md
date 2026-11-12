@@ -365,6 +365,25 @@ tide::Odom odom(chassis, ..., {mounts}, {
 
 `.load` says how far toward the loaded gains the robot is right now (0 to 1), so a raised lift, which adds inertia, gets its own feedforward and stiffer feedback on its own, even mid-move. `odom.profiledDrive(24)` and `odom.profiledTurn(90)` run a planned move directly. Leave `.lateral` unset and everything uses LemLib's moves as before.
 
+### Recording a driver run
+
+`tide::Recorder` (`tide/record.hpp`) records a driver run to the SD card and plays it back as an auton. Every 10 ms it saves where odom thinks the robot is, plus each mechanism you list as a `tide::Channel`. A Channel is a name, how to read it, and how to set it on playback:
+
+```cpp
+tide::Recorder recorder(odom, chassis, {
+	{"claw",  [] { return double(claw.get_voltage()); }, [](double mv) { claw.move_voltage(mv); }, 1000},
+	{"winch", [] { return winch.position(); },           [](double at) { winch.moveTo(at); },     20},
+});
+
+recorder.start("skills");	// from a known start pose, in driver control
+recorder.stop();			// saves /usd/skills.txt
+recorder.replay("skills");	// in an auton
+```
+
+It doesn't record controller input: replaying sticks would drift a little more every second. Playback sets the pose to where the recording started, then `odom.track` follows the path. Track is a RAMSETE path follower: the feedforward supplies the voltage, and RAMSETE steers back onto the path when the robot gets pushed off, so it needs planned moves measured first. Each channel is set again as the path reaches the point where it changed. The last number in a channel is the smallest change worth replaying, so sensor noise isn't replayed.
+
+A channel's setter can take its time. The path waits while it runs, so it can, for example, look for a piece that sits somewhere else on this field before the claw closes. Square the robot on a wall before `replay` too, so a crooked setup doesn't bend the whole path.
+
 ## Field
 
 `tide/field.hpp` holds the field geometry the rest of Tide uses, the same every season:

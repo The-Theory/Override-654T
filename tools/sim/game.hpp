@@ -1,6 +1,7 @@
 #pragma once
 
 #include "tide/override.hpp"
+#include "tide/record.hpp"
 #include "world.hpp"
 #include <array>
 #include <cmath>
@@ -105,6 +106,8 @@ struct Robot {
 	} spinner;
 
 	std::vector<Piece> preload;			// starts in the claw
+
+	tide::Recorder* recorder = nullptr;	// --record runs the auton as if a driver were recording it
 };
 
 inline Robot robot;

@@ -14,6 +14,8 @@
 
 #include <algorithm>
 #include <cmath>
+#include <numbers>
+#include <utility>
 
 // Planned moves: what the drive needs (Feedforward) and when it should be where (Trapezoid).
 // No PROS calls, so it can be checked off-robot; Odom runs them on hardware
@@ -100,6 +102,44 @@ private:
 	double sign, length, accel;
 	double cruise = 0, ramp = 0, hold = 0;	// [unit/s], [s], [s]
 };
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Ramsete /////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Where the robot should be at t along a path, and how fast. Headings clockwise from +y like LemLib
+struct Waypoint {
+	double t;			// [s]
+	double x, y, theta;	// [in], [deg]
+	double v = 0, w = 0;	// [in/s] forward, [deg/s] clockwise
+	double a = 0, alpha = 0;	// [in/s²], [deg/s²]
+};
+
+/**
+ * Speed and turn rate {in/s, deg/s} that pull a robot at (x, y, theta) back onto ref while it
+ * keeps moving (RAMSETE). Corrects sideways error by steering, since a tank can't strafe.
+ * - b: how hard sideways error steers [1/in²]; zeta: damping, 0.7 settles without overshoot
+ */
+inline std::pair<double, double> ramsete(const Waypoint& ref, double x, double y, double theta,
+										 double b = 0.0013, double zeta = 0.7) {
+	constexpr double MIN_GAIN = 2;	// [1/s] RAMSETE's own gain is zero while the path stands still
+	const double rad = std::numbers::pi / 180;
+	const double h = theta * rad;
+	const double dx = ref.x - x, dy = ref.y - y;
+	const double ahead = dx * std::sin(h) + dy * std::cos(h);
+	const double right = dx * std::cos(h) - dy * std::sin(h);
+	const double turn  = std::remainder(ref.theta - theta, 360.0) * rad;	// clockwise to ref
+	const double wr = ref.w * rad;
+
+	const double k = std::max(MIN_GAIN, 2 * zeta * std::sqrt(wr * wr + b * ref.v * ref.v));
+	const double sinc = std::fabs(turn) < 1e-6 ? 1 : std::sin(turn) / turn;
+	const double v = ref.v * std::cos(turn) + k * ahead;
+	const double w = wr + k * turn + b * ref.v * sinc * right;
+	return {v, w / rad};
+}
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

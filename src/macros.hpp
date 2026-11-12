@@ -1,6 +1,7 @@
 #pragma once
 
 #include "robot.hpp"
+#include "tide/record.hpp"
 #include "tide/screen.hpp"
 #include <cmath>
 
@@ -20,6 +21,13 @@ inline void driverScore() {
 	winch.moveTo(0);
 	pros::delay(750);
 	stopClaw();
+}
+
+// Where the center sits with the front flush on the wall under a Toggle, facing it
+inline tide::Point flushOn(tide::Point toggle) {
+	const double heading = tide::bearing({0, 0}, toggle);
+	const tide::Point back = tide::toField(0, -FRONT_BUMPER, heading);
+	return {toggle.x + back.x, toggle.y + back.y};
 }
 
 #pragma endregion
@@ -80,6 +88,17 @@ inline bool waitForToggle(int timeout = 3000) {
 	flipNow = false;
 	return !toggleNeedsFlip();
 }
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Recording ///////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// In autons.cpp, beside the steps a replay's grabs use
+extern tide::Recorder recorder;	// What a driver recording keeps besides the drive
+void toggleRecording();			// Driver: from the Skills start, starts a recording or ends and saves it
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

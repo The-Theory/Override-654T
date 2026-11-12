@@ -183,6 +183,16 @@ void checkBumpers() {
 #pragma endregion
 ////////////////////////////////////////////////////////////////
 
+// Path tracker steers back toward a path it's beside, the right way going forwards and backwards
+void checkRamsete() {
+	const tide::Waypoint north = {.t = 0, .x = 1, .y = 0, .theta = 0, .v = 20};	// Path 1" to the right, heading north
+	expect("ramsete fwd turn", tide::ramsete(north, 0, 0, 0).second > 0, 1, 0);
+	tide::Waypoint back = north;
+	back.v = -20;
+	expect("ramsete back turn", tide::ramsete(back, 0, 0, 0).second < 0, 1, 0);
+	expect("ramsete on path", tide::ramsete(north, 1, 0, 0).first, 20, 1e-9);
+}
+
 int main() {
 	sim::World& w = sim::world();
 	w.trackingOffset = OFFSET;
@@ -202,6 +212,7 @@ int main() {
 		checkFeedforwards();
 		checkProfiled();
 		checkBumpers();
+		checkRamsete();
 		done = true;
 	});
 	w.sched.run([&] { return done; }, [&] { w.step(); });

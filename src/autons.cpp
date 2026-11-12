@@ -93,13 +93,6 @@ void score(tide::Point goal, std::optional<double> heading = {}) {
 	stopClaw();
 }
 
-// Where the center sits with the front flush on the wall under a Toggle, facing it
-tide::Point flushOn(tide::Point toggle) {
-	const double heading = tide::bearing({0, 0}, toggle);
-	const tide::Point back = tide::toField(0, -FRONT_BUMPER, heading);
-	return {toggle.x + back.x, toggle.y + back.y};
-}
-
 // Front squared and pressed on the Toggle ahead until it shows our color; also resets the
 // coordinate across that wall and the heading
 void pressToggle(tide::Point toggle) {
@@ -119,6 +112,42 @@ void startOnToggle(tide::Point toggle) {
 	const tide::Point flush = flushOn(toggle);
 	chassis.setPose(flush.x, flush.y, std::fmod(tide::bearing({0, 0}, toggle) + 360, 360));
 	pressToggle(toggle);
+}
+
+#pragma endregion
+////////////////////////////////////////////////////////////////
+
+////////////////////////////////////////////////////////////////
+#pragma region Recording ///////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// Claw on playback. A recorded grab closes where the piece sat on that field; if the claw doesn't
+// see one here, it finds it first: a short creep, else a scan behind the mouth
+void replayClaw(double mv) {
+	static double was = NAN;	// The preload is already held when playback starts
+	if (mv > 0 && was <= 0 && !clawSeesPiece() && !odom.creep(-CREEP_MV, clawSeesPiece, 600)) {
+		const lemlib::Pose pose = chassis.getPose();
+		const tide::Point behind = tide::toField(0, -BACK_BUMPER - 2, pose.theta);
+		backOnto(spotted({pose.x + behind.x, pose.y + behind.y}));
+	}
+	claw.move_voltage(mv);
+	was = mv;
+}
+
+tide::Recorder recorder(odom, chassis, {
+	{"claw",   [] { return double(claw.get_voltage()); }, replayClaw, 1000},
+	{"winch",  [] { return winch.position(); },           [](double at) { winch.moveTo(at); }, 20},
+	{"toggle", [] { return double(activeToggle.get_voltage() > 0); }, [](double on) { spinToggle = on > 0.5; }},
+});
+
+void toggleRecording() {
+	if (recorder.recording()) {
+		recorder.stop();
+		return;
+	}
+	const tide::Point start = flushOn(toggle::Q1);	// Driver Skills starts where the Skills auton does
+	chassis.setPose(start.x, start.y, WEST);
+	recorder.start("skills");
 }
 
 #pragma endregion
@@ -209,6 +238,15 @@ void skillsAuton(tide::Alliance) {
 	chassis.moveToPoint(0, 0, 1500, {.forwards = false}, false);
 }
 
+// The last driver recording, played back from the Skills start; squares on the Toggle first, since a
+// crooked setup would bend the whole path
+void replayAuton(tide::Alliance) {
+	const tide::Point start = flushOn(toggle::Q1);
+	chassis.setPose(start.x, start.y, WEST);
+	odom.pushUntilStall(SQUARE_MV, 800, 150);
+	recorder.replay("skills");
+}
+
 void testAuton(tide::Alliance) {
 	// odom.moveBy(24);
 }
@@ -285,6 +323,7 @@ const std::vector<tide::screen::Auton> autons = {
 	{"Left AWP", leftAWP}, 		// Alliance wall - Scores on neutral for AWP
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
 	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
+	{"Replay",	replayAuton},	// Last driver recording (B in driver control), from the Skills start
 	{"Test",	testAuton},		// For testing only
 	{"Blank", 	blankAuto},		// Does nothing except toggle
 };

@@ -2,7 +2,7 @@
 
 // 654T in the desktop sim (tools/sim); the brain build never includes this
 
-#include "robot.hpp"
+#include "macros.hpp"
 #include "game.hpp"
 #include "world.hpp"
 
@@ -43,12 +43,14 @@ inline void simRobot(sim::World& w) {
 	game.spinner.optical = colorSensor.get_port();
 	game.spinner.forward = w.front;
 
+	game.recorder = &recorder;
 	game.preload = {{.top = sim::game::RED, .bottom = sim::game::YELLOW}};	// Guess: our red/yellow Pin, red up
 
 	// What our drive team drops into the S Loader during Skills, in order: a Pin for Q1, a lone Pin
 	// on the empty Q2 goal, then a Cup + Pin on top of it
 	using sim::game::PIN, sim::game::CUPPIN;
 	sim::game::matchLoads["Skills"] = {.s = {PIN, PIN, CUPPIN}};
+	sim::game::matchLoads["Replay"] = sim::game::matchLoads["Skills"];	// Replays a Skills run
 }
 
 #pragma endregion

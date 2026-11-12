@@ -20,6 +20,7 @@ Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (sk
   spots land up to that far off their nominal spot
 - `--tune "<Tune page name>" [--start x y heading]`: runs a tuner on the sim robot instead of an auton,
   set down mid-field or at --start
+- `--record name`: records the auton like a driver run, to `tools/sim/out/usd/name.txt` (the sim's SD card)
 - `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same.
   `ARGS="--time 60000"` passes options through, for Skills
 

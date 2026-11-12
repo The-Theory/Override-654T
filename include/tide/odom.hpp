@@ -292,6 +292,43 @@ public:
 	}
 
 	/**
+	 * Follows a timed path, such as a recorded drive, pulling back onto it when pushed off (ramsete),
+	 * with the feedforward supplying the voltage. at(i) runs as the path passes point i, for whatever
+	 * else should happen there; the path waits while it runs, so it can stop to look for a piece.
+	 * Needs settings.lateral and .angular measured.
+	 */
+	void track(const std::vector<Waypoint>& path, const std::function<void(std::size_t)>& at = {}) {
+		if (!profiled() || path.empty()) {
+			std::printf("track: %s\n", path.empty() ? "empty path" : "measure the feedforward first");
+			return;
+		}
+		stopMotions();
+		std::size_t i = 0;
+		std::uint32_t t0 = pros::millis();
+		std::uint32_t wake = t0;
+		while (i < path.size()) {
+			const double t = (pros::millis() - t0) / 1000.0;
+			const std::uint32_t before = pros::millis();
+			while (i < path.size() && path[i].t <= t) {
+				if (at) at(i);
+				i++;
+			}
+			if (const std::uint32_t paused = pros::millis() - before; paused > 0) {
+				t0 += paused;
+				wake = pros::millis();
+			}
+			const Waypoint& ref = path[std::min(i, path.size() - 1)];
+			const lemlib::Pose pose = chassis.getPose();
+			const auto [v, w] = ramsete(ref, pose.x, pose.y, pose.theta);
+			// ponytail: lateral and angular kS add on a turning wheel; split kS per side if turns run hot
+			const double push = lateralNow().mv(v, ref.a), turn = angularNow().mv(w, ref.alpha);
+			drive(clampMv(push + turn), clampMv(push - turn));
+			pros::Task::delay_until(&wake, 10);
+		}
+		drive(0, 0);
+	}
+
+	/**
 	 * Moves by an offset from the current pose, ending at heading + turn [deg].
 	 * - Tank can't strafe, so a sideways offset curves there.
 	 * - Chained moves stack their error; an absolute move or wallReset clears it.

@@ -37,6 +37,7 @@ void opcontrol() {
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
 		.when(Y).toggle([=](bool pressed) { autoFlip = pressed != flipFromStart; })	// Y switches auto flipping
+		.when(B).run(toggleRecording)	// From the Skills start: records a driver run to replay as an auton
 		.on([&] { spinToggle = ctlr.held(R2); });
 
 	while (true) {

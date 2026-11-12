@@ -76,9 +76,9 @@ void writeSvg(const fs::path& file, const fs::path& field, const sim::World& w) 
 ////////////////////////////////////////////////////////////////
 
 // sim [auton] [--blue] [--time ms] [--out dir] [--field field.svg] [--setup right back dheading]
-//     [--distance-scale k] [--jitter in] [--seed n], sim --tune <Tune page name> [--start x y heading], or sim --list for auton names
+//     [--distance-scale k] [--jitter in] [--seed n] [--record name], sim --tune <Tune page name> [--start x y heading], or sim --list for auton names
 int main(int argc, char** argv) {
-	std::string auton, tune, outDir = "out", field;
+	std::string auton, tune, record, outDir = "out", field;
 	double start[3] = {0, 0, 0};	// --tune: where the robot sits [in, in, deg]
 	bool blue = false, list = false;
 	std::uint32_t limit = 15000;	// [ms] auton period
@@ -98,11 +98,15 @@ int main(int argc, char** argv) {
 		else if (arg == "--jitter" && i + 1 < argc) sim::game::field.jitter = std::stod(argv[++i]);
 		else if (arg == "--seed" && i + 1 < argc) sim::game::field.seed = std::stoul(argv[++i]);
 		else if (arg == "--tune" && i + 1 < argc) tune = argv[++i];
+		else if (arg == "--record" && i + 1 < argc) record = argv[++i];
 		else if (arg == "--start" && i + 3 < argc) {
 			for (double& v : start) v = std::stod(argv[++i]);
 		}
 		else auton = arg;
 	}
+
+	tide::sdRoot = (fs::path(argv[0]).parent_path() / "usd").string() + "/";	// The SD card, next to the binary
+	fs::create_directories(tide::sdRoot);
 
 	sim::World& w = sim::world();
 	simRobot(w);
@@ -137,7 +141,10 @@ int main(int argc, char** argv) {
 		w.logStart = w.sched.now;
 		sim::game::field.restartLog();
 		started = true;
+		tide::Recorder* recorder = sim::game::robot.recorder;
+		if (!record.empty() && recorder) recorder->start(record);
 		autonomous();
+		if (!record.empty() && recorder) recorder->stop();
 		finished = true;
 	});
 	w.sched.run([&] { return finished || (started && w.sched.now - w.logStart >= limit); }, [&] { w.step(); });
