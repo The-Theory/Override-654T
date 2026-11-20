@@ -9,14 +9,31 @@
 #pragma region Body ////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////
 
+const int MIN_PICKUP_DISTANCE = 70;
+const int PICKUP_HEIGHT = 90;
+inline bool cancelPickup = false;
+
 // Claw control
-constexpr int CLAW_BURNOUT = 400;  // [ms]
 inline void stopClaw() 	{ claw.move_voltage(0);		 }
 inline void closeClaw() { claw.move_voltage(12000);  }
 inline void openClaw() 	{ claw.move_voltage(-12000); }
 
-// From scoring height; ends with the winch down
-inline void driverScore() {
+inline void trappedPickupMacro() {
+	while (clawDistance.get_distance() > MIN_PICKUP_DISTANCE && frontDistance.get_distance() > 205) {
+		controller.rumble("-");
+		openClaw();
+		pros::delay(15);
+		if (cancelPickup) {
+			stopClaw();
+			return;
+		}
+	}
+
+	closeClaw();
+	winch.moveBy(PICKUP_HEIGHT);
+}
+
+inline void scoreMacro() {
 	openClaw();
 	winch.moveTo(0);
 	pros::delay(750);
