@@ -33,14 +33,16 @@ void opcontrol() {
 
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winch)
-		.when(R1).altmacro(closeClaw, driverScore)
+		.when(A).macro(closeClaw)
+		.when(X).macro(trappedPickupMacro)
+		.when(R1).macro(scoreMacro)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
 		.when(Y).toggle([=](bool pressed) { autoFlip = pressed != flipFromStart; })	// Y switches auto flipping
-		.on([&] { spinToggle = ctlr.held(R2); });
+		.on([&] { spinToggle = ctlr.held(R2); cancelPickup = ctlr.pressed(R1); });
 
 	while (true) {
 		ctlr.update();
-		chassis.curvature(ctlr.axis(LY), ctlr.axis(RX));
+		chassis.curvature(ctlr.axis(LY), -ctlr.axis(RX));
 	}
 }

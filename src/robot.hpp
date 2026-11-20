@@ -22,18 +22,20 @@
 ////////////////////////////////////////////////////////////////
 
 // Drivetrain
-inline pros::MotorGroup	leftMotors ({-7, -9}, pros::MotorGearset::blue);
-inline pros::MotorGroup rightMotors({ 8, 10}, pros::MotorGearset::blue);
+inline pros::MotorGroup	leftMotors ({  7,   9 }, pros::MotorGearset::blue);
+inline pros::MotorGroup rightMotors({ -8, -10 }, pros::MotorGearset::blue);
 
 // Sensors
-inline pros::Rotation 	verticalEncoder(-5);
-inline pros::Rotation 	winchEncoder(-4);
+inline pros::Rotation 	verticalEncoder(5);
+inline pros::Rotation 	horizontalEncoder(12);
+inline pros::Rotation 	winchEncoder(-14);
 inline pros::Imu 	  	imu(13);
 inline pros::Distance 	leftDistance(3);
 inline pros::Distance 	rightDistance(2);
-inline pros::Distance 	middleDistance(1);
+inline pros::Distance 	frontDistance(15);
+inline pros::Distance 	backDistance(1);
 inline pros::Optical  	colorSensor(6);
-inline pros::Distance	clawDistance(14);
+inline pros::Distance	clawDistance(4);
 
 // Mechanisms
 inline pros::Motor 		activeToggle(-17, pros::MotorGearset::green);
@@ -72,10 +74,12 @@ inline lemlib::Drivetrain drivetrain(
 
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
+constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter
 inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, -0.01);
+inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -0.01);
 inline lemlib::OdomSensors sensors(
-	&verticalWheel,
-	nullptr, nullptr, nullptr,
+	&verticalWheel, nullptr, 
+	&horizontalWheel, nullptr,
 	&imu
 );
 
@@ -113,7 +117,7 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
-	{middleDistance,	-0.43,		-0.81,			tide::dir::NORTH},
+	{frontDistance,	-0.43,		-0.81,			tide::dir::NORTH},
 }, {.toolForward = 0});	// [in] Claw scoring poin
 
 #pragma endregion
@@ -124,10 +128,10 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 ////////////////////////////////////////////////////////////////
 
 inline tide::Mechanism winch(winchMotors, winchEncoder, {
-	.kP		= 21.61,
-	.kI		= 1.8005,
-	.kD		= 172.9,
-	.kG		= 1025,	// [mV]
+	.kP		= 67.53,
+	.kI		= 4.9110,
+	.kD		= 619.0,
+	.kG		= 1423,	// [mV]
 }, {.min = 0});	// Boots resting on bottom
 
 #pragma endregion
