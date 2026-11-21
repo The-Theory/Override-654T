@@ -33,9 +33,8 @@ void opcontrol() {
 
 	tide::Control ctlr(controller);
 	ctlr.when(L).bidir(winch)
-		.when(A).macro(closeClaw)
-		.when(X).macro(trappedPickupMacro)
-		.when(R1).macro(scoreMacro)
+		.when(X).macro(closeClaw)
+		.when(R1).altmacro(trappedPickupMacro, scoreMacro)
 		.when(LEFT).run(autonomous)
 		.when(RIGHT).run(tide::screen::runTuner)
 		.when(Y).toggle([=](bool pressed) { autoFlip = pressed != flipFromStart; })	// Y switches auto flipping

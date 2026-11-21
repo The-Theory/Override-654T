@@ -104,9 +104,9 @@ inline lemlib::ControllerSettings lateralController(
 	// 9,			// kP
 	// 0.21324,	// kI
 	// 80,			// kD
-	16.032,			// kP
-	0.53662,	// kI
-	319.2,			// kD
+	10.048,			// kP
+	0.28812,	// kI
+	233.62,			// kD
 	6,			// anti windup		[in] wider pushes the robot on after it should be slowing
 	1,			// small error		[in]
 	100,		// small timeout	[ms]

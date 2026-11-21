@@ -270,7 +270,7 @@ std::string tuneWinch() {
 // Needs ~2 ft clear around the robot
 std::string tuneAngular() {
 	return tide::autotune("angular", tide::angularPlant(leftMotors, rightMotors, imu), 
-		{.setpoint = 0, .amplitude = 4000, .maxDeviation = 45}).summary;
+		{.setpoint = 0, .amplitude = 8000, .maxDeviation = 45}).summary;
 }
 
 // Needs ~1 ft clear in front and behind. A big swing so it measures driving, not friction

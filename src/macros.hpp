@@ -19,7 +19,7 @@ inline void closeClaw() { claw.move_voltage(12000);  }
 inline void openClaw() 	{ claw.move_voltage(-12000); }
 
 inline void trappedPickupMacro() {
-	while (clawDistance.get_distance() > MIN_PICKUP_DISTANCE && frontDistance.get_distance() > 205) {
+	while (clawDistance.get_distance() > MIN_PICKUP_DISTANCE) {
 		controller.rumble(".");
 		openClaw();
 		pros::delay(15);
