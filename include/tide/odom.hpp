@@ -512,7 +512,8 @@ private:
 		intercept = (sy - slope * sx) / count;
 	}
 
-	static constexpr int SWEEP_MV = 2500;	// Slow enough for the sensor to keep up, enough to beat friction
+	static constexpr int SWEEP_MV    = 2500;	// Slow enough for the sensor to keep up, enough to beat friction
+	static constexpr int BACK_OFF_MV = 5000;	// Off a wall it was just pushed into, where friction is worst
 
 	static constexpr double DT            = 0.01;	// [s] control loop
 	static constexpr double SCAN_JUMP     = 0.75;	// [in] reading change that means the beam moved to another object
@@ -554,14 +555,16 @@ private:
 	std::pair<double, double> squareThenBackOff(int squareMv, double backOff) {
 		if (!pushUntilStall(squareMv, 1500, 300)) std::printf("No wall to square on: start a few inches from one\n");
 		const double wall = chassis.getPose().theta + (squareMv < 0 ? 180 : 0);
-		const int away = squareMv < 0 ? 3000 : -3000;
+		const int away = squareMv < 0 ? BACK_OFF_MV : -BACK_OFF_MV;
 		const lemlib::Pose start = chassis.getPose();
 		drive(away, away);
 		const std::uint32_t t0 = pros::millis();
 		while (chassis.getPose().distance(start) < backOff && pros::millis() - t0 < 2000) pros::delay(10);
 		drive(0, 0);
 		waitUntilStopped();
-		return {wall, chassis.getPose().distance(start)};
+		const double went = chassis.getPose().distance(start);
+		if (went < backOff - 2) std::printf("Backed off only %.1f of %.0f in: stuck on the wall, or BACK_OFF_MV too weak\n", went, backOff);
+		return {wall, went};
 	}
 
 	// Median of a few readings, so one stray beam doesn't count; NaN if most saw nothing
