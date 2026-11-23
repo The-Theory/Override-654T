@@ -49,12 +49,12 @@ tide::Point spotted(tide::Point nominal) {
 	return *best;
 }
 
-// Backs straight onto target until the claw sees a piece, then grabs; false if nothing showed up
-bool backOnto(tide::Point target) {
+// Drives straight onto target until the claw sees a piece, then grabs; false if nothing showed up
+bool driveOnto(tide::Point target) {
 	odom.approachStraight(target, STANDOFF);
-	const bool seen = odom.creep(-CREEP_MV, clawSeesPiece);	// Claw on the back
+	const bool seen = odom.creep(CREEP_MV, clawSeesPiece);
 	closeClaw();
-	odom.creep(-CREEP_MV, [] { return false; }, GRAB_MS);
+	odom.creep(CREEP_MV, [] { return false; }, GRAB_MS);
 	if (!seen) std::printf("Grab at (%.1f, %.1f) FAILED: claw saw nothing\n", target.x, target.y);
 	return seen;
 }
@@ -65,23 +65,23 @@ bool grab(tide::Point piece, std::optional<double> heading = {}) {
 	openClaw();
 	if (heading) odom.approach(piece, *heading, STANDOFF);
 	else         odom.approachStraight(piece, STANDOFF);
-	return backOnto(spotted(piece));	// Line up on where it really is
+	return driveOnto(spotted(piece));	// Line up on where it really is
 }
 
-// Next Match Load out of a Loader's bottom opening, backing in square to the wall. No scan: the tube
+// Next Match Load out of a Loader's bottom opening, driving in square to the wall. No scan: the tube
 // centers the piece, and its sides would read as objects
 bool grabLoad(tide::Point loader) {
 	openClaw();
-	odom.approach(loader, EAST, STANDOFF);
+	odom.approach(loader, WEST, STANDOFF);
 	odom.wallReset(loader.y < 0 ? Wall::AUDIENCE : Wall::FAR);	// Lines up on the tube
-	const bool got = backOnto(loader);
+	const bool got = driveOnto(loader);
 	winch.moveTo(LOADER_LIFT);
 	pros::delay(100);
-	odom.moveBy(LOADER_PULL);
+	odom.moveBy(-LOADER_PULL);
 	return got;
 }
 
-// Backs the held piece onto the goal, drops it, pulls away
+// Drives the held piece onto the goal, drops it, backs away
 // - heading: robot facing on the goal; else straight from where it is
 void score(tide::Point goal, std::optional<double> heading = {}) {
 	if (heading) odom.approach(goal, *heading, 0);
@@ -89,28 +89,27 @@ void score(tide::Point goal, std::optional<double> heading = {}) {
 	winch.moveTo(0);
 	pros::delay(350);
 	openClaw();
-	odom.moveBy(SCORE_BACKOFF);
+	odom.moveBy(-SCORE_BACKOFF);
 	stopClaw();
 }
 
-// Front squared and pressed on the Toggle ahead until it shows our color; also resets the
+// Back squared and pressed on the Toggle behind until it shows our color; also resets the
 // coordinate across that wall and the heading
 void pressToggle(tide::Point toggle) {
-	const double heading = std::fmod(tide::bearing({0, 0}, toggle) + 360, 360);
 	const tide::Point flush = flushOn(toggle);
-	odom.pushUntilStall(SQUARE_MV, 800, 150);
+	odom.pushUntilStall(-SQUARE_MV, 800, 150);
 	const lemlib::Pose at = chassis.getPose();
 	const bool wallAlongX = std::fabs(toggle.y) > std::fabs(toggle.x);
-	chassis.setPose(wallAlongX ? at.x : flush.x, wallAlongX ? flush.y : at.y, heading);
-	odom.moveBy(3, 0, 0, 500, {}, true);	// Keep pressing while it flips
+	chassis.setPose(wallAlongX ? at.x : flush.x, wallAlongX ? flush.y : at.y, backTo(toggle));
+	odom.moveBy(-3, 0, 0, 500, {}, true);	// Keep pressing while it flips
 	waitForToggle();
 }
 
-// Set down centered on a Toggle, facing it, holding the preload
+// Set down centered on a Toggle, back to it, holding the preload
 void startOnToggle(tide::Point toggle) {
 	closeClaw();
 	const tide::Point flush = flushOn(toggle);
-	chassis.setPose(flush.x, flush.y, std::fmod(tide::bearing({0, 0}, toggle) + 360, 360));
+	chassis.setPose(flush.x, flush.y, backTo(toggle));
 	pressToggle(toggle);
 }
 
@@ -122,14 +121,14 @@ void startOnToggle(tide::Point toggle) {
 ////////////////////////////////////////////////////////////////
 
 // Claw on playback. A recorded grab closes where the piece sat on that field; if the claw doesn't
-// see one here, it finds it first: a short creep, else a scan behind the mouth
+// see one here, it finds it first: a short creep, else a scan ahead of the mouth
 double replayClawWas = NAN;	// The preload is already held when playback starts
 void replayClaw(double mv) {
 	double& was = replayClawWas;
-	if (mv > 0 && was <= 0 && !clawSeesPiece() && !odom.creep(-CREEP_MV, clawSeesPiece, 600)) {
+	if (mv > 0 && was <= 0 && !clawSeesPiece() && !odom.creep(CREEP_MV, clawSeesPiece, 600)) {
 		const lemlib::Pose pose = chassis.getPose();
-		const tide::Point behind = tide::toField(0, -BACK_BUMPER - 2, pose.theta);
-		backOnto(spotted({pose.x + behind.x, pose.y + behind.y}));
+		const tide::Point ahead = tide::toField(0, FRONT_BUMPER + 2, pose.theta);
+		driveOnto(spotted({pose.x + ahead.x, pose.y + ahead.y}));
 	}
 	claw.move_voltage(mv);
 	was = mv;
@@ -147,7 +146,7 @@ void toggleRecording() {
 		return;
 	}
 	const tide::Point start = flushOn(toggle::Q1);	// Driver Skills starts where the Skills auton does
-	chassis.setPose(start.x, start.y, WEST);
+	chassis.setPose(start.x, start.y, backTo(toggle::Q1));
 	recorder.start("skills");
 }
 
@@ -164,13 +163,13 @@ void leftBase() {
 	startOnToggle(toggle::Q1);
 	winch.moveTo(CLEAR[0]);
 
-	odom.approach(goal::Q1_ALLIANCE, NORTH, STANDOFF);
+	odom.approach(goal::Q1_ALLIANCE, SOUTH, STANDOFF);
 	odom.wallReset(Wall::RED);
-	score(goal::Q1_ALLIANCE, NORTH);
+	score(goal::Q1_ALLIANCE, SOUTH);
 
 	grab(cuppin::DIAGONAL_INNER);
 	winch.moveTo(CLEAR[1]);
-	score(goal::Q1_ALLIANCE, EAST);
+	score(goal::Q1_ALLIANCE, WEST);
 
 	grab(cuppin::DIAGONAL_OUTER);
 	winch.moveTo(CLEAR[2]);
@@ -184,67 +183,37 @@ void leftBase() {
 ////////////////////////////////////////////////////////////////
 // Full autons, picked on the selector
 
-void xAuton(tide::Alliance) {
-	/// Flip the Q2 Toggle ////////////////////////////////////
-	startOnToggle(toggle::Q2);
-	winch.moveTo(CLEAR[0]);
-
-	/// Preload on the Q2 alliance goal ///////////////////////
-	odom.approach(goal::Q2_ALLIANCE, EAST, STANDOFF);
-	odom.wallReset(Wall::AUDIENCE);					// Right beam on the audience wall
-	score(goal::Q2_ALLIANCE, EAST);
-
-	/// Audience wall cuppin on top ///////////////////////////
-	// Boxed in: Goal 21.5" north, Cups either side, wall behind. Under ~25° the front clips
-	// the Goal, past ~30° the back corner hits the wall first
-	grab(cuppin::AUDIENCE_WALL_W, NORTH + 27);
-	winch.moveTo(CLEAR[1]);
-	odom.turnTo(EAST);
-	odom.wallReset(Wall::AUDIENCE);					// Before the move, so it lands in line with the goal
-	score(goal::Q2_ALLIANCE, EAST);
-}
-
-void leftAuton(tide::Alliance) {
-	leftBase();
-	score(goal::Q1_ALLIANCE, SOUTH);
-}
-
-void leftAWP(tide::Alliance) {
-	leftBase();
-	score(goal::Q1_NEUTRAL);
-}
-
 void skillsAuton(tide::Alliance) {
 	leftBase();
-	score(goal::Q1_ALLIANCE, SOUTH);
+	score(goal::Q1_ALLIANCE, NORTH);
 
 	/// Match Loads from the S Loader /////////////////////////
 	// The drive team loads a Pin, a Pin, then a Cup + Pin: the Q2 goal has no Cup to hold a Cup + Pin yet
 	grabLoad(loader::S);
 	winch.moveTo(CLEAR[3]);
-	score(goal::Q1_ALLIANCE, SOUTH);
+	score(goal::Q1_ALLIANCE, NORTH);
 
 	for (int height : {CLEAR[0], CLEAR[1]}) {
 		grabLoad(loader::S);
 		winch.moveTo(height);
-		score(goal::Q2_ALLIANCE, WEST - 30);			// Backing in from the Loader side, clear of the wall cuppin
+		score(goal::Q2_ALLIANCE, EAST - 30);			// Driving in from the Loader side, clear of the wall cuppin
 	}
 
 	/// Q2 Toggle, then park in Midfield //////////////////////
 	chassis.moveToPoint(-30, -35, 1500, {}, false);	// North of the Q2 goal
 	chassis.moveToPoint(0, -35, 1500, {}, false);
-	odom.turnTo(SOUTH);
-	chassis.moveToPoint(0, flushOn(toggle::Q2).y + 3, 1500, {}, false);
+	odom.turnTo(NORTH);
+	chassis.moveToPoint(0, flushOn(toggle::Q2).y + 3, 1500, {.forwards = false}, false);
 	pressToggle(toggle::Q2);
-	chassis.moveToPoint(0, 0, 1500, {.forwards = false}, false);
+	chassis.moveToPoint(0, 0, 1500, {}, false);
 }
 
 // The last driver recording, played back from the Skills start; squares on the Toggle first, since a
 // crooked setup would bend the whole path
 void replayAuton(tide::Alliance) {
 	const tide::Point start = flushOn(toggle::Q1);
-	chassis.setPose(start.x, start.y, WEST);
-	odom.pushUntilStall(SQUARE_MV, 800, 150);
+	chassis.setPose(start.x, start.y, backTo(toggle::Q1));
+	odom.pushUntilStall(-SQUARE_MV, 800, 150);
 	replayClawWas = NAN;
 	recorder.replay("skills");
 }
@@ -307,10 +276,10 @@ std::string ffLiftUp()   { return characterizeAt(LIFT_LOADED); }
 // Facing a wall a few inches off it, room to spin; after Mounts. Paste into FRONT_BUMPER / BACK_BUMPER
 std::string tuneBumpers() { return odom.measureBumpers(0); }
 
-// Front a few inches from a wall, room to spin; paste the results into odom's mounts
+// Back a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
-	return odom.measureMounts(0, 1, SENSOR_WIDTH, 6000);
+	return odom.measureMounts(0, 1, SENSOR_WIDTH, -6000);
 }
 
 #pragma endregion
@@ -322,10 +291,7 @@ std::string tuneMounts() {
 
 // Auton page
 const std::vector<tide::screen::Auton> autons = {
-	{"X",		xAuton},		// Audience wall, centered on the Toggle, facing it
-	{"Left AWP", leftAWP}, 		// Alliance wall - Scores on neutral for AWP
 	{"Skills",	skillsAuton},	// Skills only - crosses Auton Line
-	{"Left",	leftAuton},		// Alliance wall, centered on the Toggle, facing it
 	{"Replay",	replayAuton},	// Last driver recording (B in driver control), from the Skills start
 	{"Test",	testAuton},		// For testing only
 	{"Blank", 	blankAuto},		// Does nothing except toggle

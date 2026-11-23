@@ -22,8 +22,9 @@
 ////////////////////////////////////////////////////////////////
 
 // Drivetrain
-inline pros::MotorGroup	leftMotors ({  7,   9 }, pros::MotorGearset::blue);
-inline pros::MotorGroup rightMotors({ -8, -10 }, pros::MotorGearset::blue);
+// Claw is the front
+inline pros::MotorGroup	leftMotors ({ -8, -10 }, pros::MotorGearset::blue);
+inline pros::MotorGroup rightMotors({  7,   9 }, pros::MotorGearset::blue);
 
 // Sensors
 inline pros::Rotation 	verticalEncoder(5);
@@ -129,18 +130,19 @@ inline lemlib::ControllerSettings angularController(
 inline lemlib::Chassis chassis(drivetrain, lateralController, angularController, sensors);
 
 // Tracking center to each bumper [in]; guesses until the Tune page's "Bumpers" run
-constexpr double FRONT_BUMPER = 5.2;
-constexpr double BACK_BUMPER  = 10.5;
+constexpr double FRONT_BUMPER = 10.5;	// Claw end
+constexpr double BACK_BUMPER  = 5.2;	// Toggle wheel end
 
 // Offsets from the tracking center
 inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
-	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
-	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
-	{frontDistance,		 0,			 0,				tide::dir::NORTH},	// Unmeasured until the Mounts run
-	{backDistance,		 0,			 0,				tide::dir::SOUTH},	// Unmeasured until the Mounts run
+	// Old claw-at-back measurements turned around, until the Mounts run; front is unmeasured
+	{leftDistance,		-5.33,		-1.97,			tide::dir::WEST},
+	{rightDistance,		 5.89,		 0.33,			tide::dir::EAST},
+	{frontDistance,		 0,			 0,				tide::dir::NORTH},
+	{backDistance,		 0.43,		 0.81,			tide::dir::SOUTH},
 }, {
-	.toolForward   = -BACK_BUMPER,	// [in] claw mouth at the back bumper
+	.toolForward   = FRONT_BUMPER,	// [in] claw mouth at the front bumper
 
 	// SIM VALUES: replace with the Tune page's "FF down" / "FF up" results before running autons
 	.lateral       = {1205, 166.49, 41.66},	// [mV], [mV per in/s], [mV per in/s²]
@@ -150,8 +152,8 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	.load          = [] { return winch.position() / LIFT_LOADED; },
 });
 
-// Claw's piece sensor, looking out the back; guess: at the mouth. Measure like odom's mounts
-inline const tide::DistanceMount clawMount = {clawDistance, 0, -BACK_BUMPER, 180};
+// Claw's piece sensor, looking out the front; guess: at the mouth. Measure like odom's mounts
+inline const tide::DistanceMount clawMount = {clawDistance, 0, FRONT_BUMPER, 0};
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

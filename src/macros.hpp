@@ -40,12 +40,14 @@ inline void scoreMacro() {
 	stopClaw();
 }
 
-// Where the center sits with the front flush on the wall under a Toggle, facing it
+// Where the center sits with the back (Toggle wheel) flush on the wall under a Toggle
 inline tide::Point flushOn(tide::Point toggle) {
-	const double heading = tide::bearing({0, 0}, toggle);
-	const tide::Point back = tide::toField(0, -FRONT_BUMPER, heading);
-	return {toggle.x + back.x, toggle.y + back.y};
+	const tide::Point off = tide::toField(0, -BACK_BUMPER, tide::bearing({0, 0}, toggle));
+	return {toggle.x + off.x, toggle.y + off.y};
 }
+
+// Heading with the back to a Toggle
+inline double backTo(tide::Point toggle) { return std::fmod(tide::bearing(toggle, {0, 0}) + 360, 360); }
 
 #pragma endregion
 ////////////////////////////////////////////////////////////////

@@ -13,8 +13,8 @@
 // What the robot physically is; drivetrain and tracking wheel come from robot.hpp unless set here
 inline void simRobot(sim::World& w) {
 	w.width = 13.6;			// [in]
-	w.front = 5.2;			// Autons set the center 65" out when flush on a wall
-	w.back  = 15.718 - w.front;	// 15.718" long overall
+	w.back  = 5.2;				// Toggle wheel end
+	w.front = 15.718 - w.back;	// Claw end; 15.718" long overall
 
 	for (const tide::DistanceMount& m : odom.getMounts()) w.mounts[m.sensor.get_port()] = {m.right, m.forward, m.facing};
 
@@ -29,19 +29,19 @@ inline void simRobot(sim::World& w) {
 		.max            = 3700,	// Guess: skills carries up to 3700
 	});
 
-	// Claw on the back, under the winch
+	// Claw on the front, under the winch
 	auto& game = sim::game::robot;
 	game.claw.right   = odom.getSettings().toolRight;
-	game.claw.forward = -w.back;	// Truth, not the config: a wrong toolForward should miss
+	game.claw.forward = w.front;	// Truth, not the config: a wrong toolForward should miss
 	game.claw.grab    = [] { return claw.get_voltage() > 0; };
 	game.claw.release = [] { return claw.get_voltage() < 0; };
-	game.claw.grabForward = -w.back;	// Closes on a piece at the back bumper
+	game.claw.grabForward = w.front;	// Closes on a piece at the front bumper
 	game.claw.sensor  = clawDistance.get_port();
 
-	// activeToggle wheel and colorSensor at the front
+	// activeToggle wheel and colorSensor at the back
 	game.spinner.motor   = activeToggle.get_port();
 	game.spinner.optical = colorSensor.get_port();
-	game.spinner.forward = w.front;
+	game.spinner.forward = -w.back;
 
 	game.recorder = &recorder;
 	game.preload = {{.top = sim::game::RED, .bottom = sim::game::YELLOW}};	// Guess: our red/yellow Pin, red up

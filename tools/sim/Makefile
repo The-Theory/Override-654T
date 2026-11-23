@@ -24,9 +24,9 @@ run: $(OUT)/sim
 check: $(OUT)/check
 	$(OUT)/check
 
-# AUTON on sloppy setups (dx dy dheading), off distance sensors and hand-set pieces; every line should score the same
-# +dy only: the auton starts flush on the audience wall, so it can't be set into it
-SETUPS := "0 0 0" "1 0 0" "-1 0 0" "0 1 0" "0 2 0" "0 1 3" "0 1 -3" "1 1 2" "-1 1 -2" "1 2 -3"
+# AUTON on sloppy setups (right back dheading), off distance sensors and hand-set pieces; every line should score the same
+# Forward (-back) only: autons start with the back flush on a wall, so it can't be set into it
+SETUPS := "0 0 0" "1 0 0" "-1 0 0" "0 -1 0" "0 -2 0" "0 -1 3" "0 -1 -3" "1 -1 2" "-1 -1 -2" "1 -2 -3"
 robust: $(OUT)/sim
 	@for s in $(SETUPS); do for k in 1 1.03 0.97; do for j in 0 1.5; do \
 		printf "setup %-9s sensors x%-4s pieces ±%-3s " "$$s" $$k $$j; \

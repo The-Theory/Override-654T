@@ -21,7 +21,7 @@ Options go straight to the binary: `tools/sim/out/sim X --blue --time 60000` (sk
 - `--tune "<Tune page name>" [--start x y heading]`: runs a tuner on the sim robot instead of an auton,
   set down mid-field or at --start
 - `--record name`: records the auton like a driver run, to `tools/sim/out/usd/name.txt` (the sim's SD card)
-- `make -C tools/sim robust AUTON=X`: X over a grid of those; every line should score the same.
+- `make -C tools/sim robust AUTON=Replay ARGS="--time 60000"`: an auton over a grid of those; every line should score the same. Skills and Replay need `--time 60000` (the default is the 15 s auton period).
   `ARGS="--time 60000"` passes options through, for Skills
 
 ## In the browser
@@ -72,7 +72,7 @@ away from the robot (blue).
 - Odom uses LemLib's tracking-wheel and IMU math.
 - Game pieces are circles. The robot shoves loose ones out of its footprint, except in the channel
   between its claw and the nearest edge. The claw closes on one Pin and one Cup within reach of its
-  mouth (the back bumper) when `src/sim.hpp` says it's gripping, and its distance sensor reads the
+  mouth (the front bumper) when `src/sim.hpp` says it's gripping, and its distance sensor reads the
   nearest loose piece from there. It drops them when it opens, stacking them on a Goal if the tool
   point is within 2.5" of one.
 - Loaders are blocks the robot and distance beams stop on. What the drive team drops in comes from

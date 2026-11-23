@@ -43,6 +43,6 @@ void opcontrol() {
 
 	while (true) {
 		ctlr.update();
-		chassis.curvature(ctlr.axis(LY), -ctlr.axis(RX));
+		chassis.curvature(ctlr.axis(LY), ctlr.axis(RX));
 	}
 }
