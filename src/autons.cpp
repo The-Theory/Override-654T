@@ -232,8 +232,9 @@ void blankAuto(tide::Alliance) {}
 ////////////////////////////////////////////////////////////////
 
 std::string tuneWinch() {
-	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch), 
-		{.setpoint = 400, .amplitude = 4'000, .maxDeviation = 200, .hysteresis = 1});
+	// Mid-travel, clear of the bottom stop; swings from the current kG so friction can't stall it
+	const tide::TuneResult result = tide::autotune("winch", tide::mechanismPlant(winch),
+		{.setpoint = 1500, .amplitude = 6'000, .maxDeviation = 600, .hysteresis = 2, .bias = winch.getGains().kG});
 	winch.moveTo(0);
 	return result.summary;
 }

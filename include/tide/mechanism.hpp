@@ -103,6 +103,8 @@ public:
 	// Holds wherever it is now
 	void hold() { moveTo(positionOr(target)); }
 
+	const Gains& getGains() const { return gains; }
+
 	// Overrides PID with a raw voltage until the next move
 	void drive(int mv) {
 		manualMv  = mv;

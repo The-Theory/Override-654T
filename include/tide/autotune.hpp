@@ -51,6 +51,7 @@ struct TuneSettings {
 	double amplitude;				// relay swing [mV]; must beat static friction and the voltage needed to hold the load
 	double maxDeviation;			// aborts if it strays this far once oscillating [plant units]
 	double hysteresis    = 0.5;		// noise band so the relay doesn't chatter [plant units]
+	double bias          = 0;		// relay middle to start from [mV], e.g. a known kG; it adapts from there
 	int    warmupCycles  = 2;		// lets the holding voltage settle before measuring
 	int    measureCycles = 4;
 	int    timeout       = 15000;	// [ms]
@@ -86,7 +87,7 @@ class RelayTuner {
 public:
 	static constexpr double DT = 0.01;	// [s] update period of Mechanism and lemlib::PID, which per-update gains assume
 
-	explicit RelayTuner(TuneSettings settings) : s(settings) {}
+	explicit RelayTuner(TuneSettings settings) : s(settings), bias(settings.bias) {}
 
 	// Feeds one reading taken at t [s]; returns the voltage to apply
 	double step(double y, double t) {
@@ -142,7 +143,7 @@ private:
 	bool   high      = false;
 	bool   crossed   = false;	// Reached the setpoint once, so the deviation guard applies
 	bool   aborted   = false;
-	double bias      = 0;
+	double bias;
 	double highStart = -1;		// -1 until the first full high phase starts
 	double lowStart  = 0;
 	double maxY      = -INFINITY;
