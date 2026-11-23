@@ -90,7 +90,7 @@ inline lemlib::Drivetrain drivetrain(
 
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
-constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter
+constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter, horizontal
 inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, -0.01);
 inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -0.01);
 inline lemlib::OdomSensors sensors(
@@ -137,7 +137,8 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
 	{leftDistance,		-5.89,		-0.33,			tide::dir::WEST},
 	{rightDistance,		 5.33,		 1.97,			tide::dir::EAST},
-	{frontDistance,		-0.43,		-0.81,			tide::dir::NORTH},
+	{frontDistance,		 0,			 0,				tide::dir::NORTH},	// Unmeasured until the Mounts run
+	{backDistance,		 0,			 0,				tide::dir::SOUTH},	// Unmeasured until the Mounts run
 }, {
 	.toolForward   = -BACK_BUMPER,	// [in] claw mouth at the back bumper
 

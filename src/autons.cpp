@@ -279,9 +279,10 @@ std::string tuneLateral() {
 		{.setpoint = 0, .amplitude = 7000, .maxDeviation = 12, .hysteresis = 0.25, .rule = tide::TuneRule::SOME_OVERSHOOT}).summary;
 }
 
-// Spins 5 turns in place; paste the result into verticalWheel
+// Spins 5 turns in place per wheel; paste each result into verticalWheel / horizontalWheel
 std::string tuneOffset() {
-	return tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL);
+	return "Vertical " + tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL) +
+		   "Horizontal " + tide::trackingOffset(leftMotors, rightMotors, imu, horizontalEncoder, TRACKING_WHEEL_H);
 }
 
 // Drive and turn feedforward, lift down then up, since a raised lift is more inertia.
@@ -345,15 +346,17 @@ std::string robotInfo() {
 	using tide::screen::hottest;
 	using tide::screen::inches;
 	const lemlib::Pose pose = chassis.getPose();
-	char text[512];
+	char text[600];
 	std::snprintf(text, sizeof(text),
 		"Pose\tx %.1f\ty %.1f\theading %.1f°\n"
-		"Distance\tL %s in\tR %s in\tM %s in\n"
+		"Distance\tL %s in\tR %s in\n"
+		"\tF %s in\tB %s in\tclaw %d mm\n"
 		"Winch\t%.0f°\n"
 		"Toggle\thue %.0f°\tnear %d\t%s\n"
 		"Temps\tdrive %.0f °C\twinch %.0f °C\tclaw %.0f °C",
 		pose.x, pose.y, pose.theta,
-		inches(leftDistance).c_str(), inches(rightDistance).c_str(), inches(frontDistance).c_str(),
+		inches(leftDistance).c_str(), inches(rightDistance).c_str(),
+		inches(frontDistance).c_str(), inches(backDistance).c_str(), clawDistance.get(),
 		winch.position(),
 		colorSensor.get_hue(), colorSensor.get_proximity(), toggleShowsAlliance() ? "ours" : "not ours",
 		std::max(hottest(leftMotors), hottest(rightMotors)), hottest(winchMotors), claw.get_temperature());
