@@ -439,6 +439,7 @@ private:
 
 	void record(const World& w) {
 		tracks.resize(pieces.size());	// Match Loads join mid-run
+		faces.resize(toggles.size());	// Tune runs skip restartLog
 		const double t = (w.sched.now - w.logStart) / 1000.0;
 		for (std::size_t i = 0; i < pieces.size(); i++) {
 			const Piece& p = pieces[i];

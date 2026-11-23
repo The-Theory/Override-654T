@@ -263,7 +263,7 @@ public:
 	bool isInMotion() const { return running; }
 	void cancelMotion() { running = false; }
 	void cancelAllMotions() { running = false; }
-	void waitUntilDone() { while (running) pros::delay(10); }
+	void waitUntilDone() { do pros::delay(10); while (!finished); }	// Like LemLib's: hangs until a motion has finished
 	void waitUntil(float dist) { while (running && traveled < dist) pros::delay(10); }
 
 	void tank(int left, int right, bool = false) {
@@ -309,6 +309,7 @@ private:
 	Pose pose{0, 0, 0};
 	bool tracking = false;
 	bool running = false;
+	bool finished = false;	// LemLib's distTraveled == -1: false until the first motion ends
 	float traveled = 0;
 
 	struct Motion {
@@ -357,6 +358,7 @@ private:
 	void motion(const char* name, int timeout, bool async, Tick tick) {
 		while (running) pros::delay(10);
 		running = true;
+		finished = false;
 		traveled = 0;
 		auto body = [=, this] {
 			lateralPID.reset();
@@ -377,6 +379,7 @@ private:
 			tank(0, 0);
 			sim::world().event("%s %s after %u ms at (%.1f, %.1f, %.0f)", name, why, pros::millis() - start, pose.x, pose.y, pose.theta);
 			running = false;
+			finished = true;
 		};
 		if (!async) return body();
 		pros::Task{body};

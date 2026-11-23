@@ -279,7 +279,7 @@ std::string tuneBumpers() { return odom.measureBumpers(0); }
 // Back a few inches from a wall, room to spin; paste the results into odom's mounts
 std::string tuneMounts() {
 	constexpr double SENSOR_WIDTH = 11.22047;	// [in]
-	return odom.measureMounts(0, 1, SENSOR_WIDTH, -6000);
+	return odom.measureMounts(0, 1, SENSOR_WIDTH, -6000, 10);	// 10" off: the claw end's corners swing wide
 }
 
 #pragma endregion

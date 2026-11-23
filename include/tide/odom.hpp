@@ -540,9 +540,10 @@ private:
 	static double clampMv(double mv) { return std::clamp(mv, -12000.0, 12000.0); }
 
 	// A cancelled LemLib motion stops the motors as it ends, so wait it out before driving
+	// Not waitUntilDone(): LemLib's never returns until a motion has finished, so before the first one it hangs
 	void stopMotions() {
 		chassis.cancelAllMotions();
-		chassis.waitUntilDone();
+		pros::delay(20);	// A cancelled motion's last loop zeroes the drive; let it pass first
 	}
 
 	/**

@@ -216,12 +216,12 @@ inline void buildAutonPage(lv_obj_t* scr) {
 	}
 }
 
-// Tuners in one column, or two past 3 (a column holds 3 rows), result panel on the right
+// Tuners in columns of 3 rows, up to three columns, result panel on the right
 inline void buildTunePage(lv_obj_t* scr) {
 	lv_obj_t* p = page(scr);
-	const bool wide   = tuners.size() > 3;
-	const int  btnW   = wide ? 96 : 152;
-	const int  leftW  = wide ? 2 * btnW + GAP : btnW;
+	const int  cols   = std::min<int>(3, (tuners.size() + 2) / 3);
+	const int  btnW   = cols > 1 ? 96 : 152;
+	const int  leftW  = cols * btnW + (cols - 1) * GAP;
 	lv_obj_t* left = grid(p, 0, leftW);
 	for (int i = 0; i < (int)tuners.size(); i++) {
 		tunerBtns.push_back(button(left, tuners[i].name, btnW, color::SELECTED, [](lv_event_t* e) {
