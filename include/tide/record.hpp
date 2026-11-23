@@ -16,16 +16,20 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <functional>
+#include <map>
 #include <string>
 #include <vector>
 
-// Driver runs recorded to the SD card as where the robot was and what its mechanisms did,
-// then played back as an auton: the drive follows the path, the mechanisms repeat on cue
+// Driver runs recorded as where the robot was and what its mechanisms did, then played back as an
+// auton: the drive follows the path, the mechanisms repeat on cue. A recording replays straight away
+// from memory, is sent over the terminal for tools/recording.py to keep in the source, and goes on
+// the SD card if there is one
 
 namespace tide {
 
-// SD card folder; the desktop sim points it somewhere on disk
+// SD card folder; optional on the brain. The desktop sim points it somewhere on disk
 inline std::string sdRoot = "/usd/";
 
 ////////////////////////////////////////////////////////////////
@@ -47,7 +51,10 @@ public:
 
 	bool recording() const { return active; }
 
-	// Samples every 10 ms in the background from the pose odom has now until stop()
+	// A recording built into the program, as tools/recording.py saved it; replays when none is newer
+	void builtIn(const std::string& name, const char* text) { if (*text) compiled[name] = text; }
+
+	// Samples every PERIOD_MS in the background from the pose odom has now until stop()
 	void start(const std::string& name) {
 		if (active || sampling) return;
 		file = name;
@@ -62,31 +69,47 @@ public:
 				rows.push_back((pros::millis() - t0) / 1000.0);
 				for (double v : {double(pose.x), double(pose.y), double(pose.theta)}) rows.push_back(v);
 				for (const Channel& c : channels) rows.push_back(c.read());
-				pros::Task::delay_until(&wake, 10);
+				pros::Task::delay_until(&wake, PERIOD_MS);
 			}
 			sampling = false;
 		});
 		std::printf("Recording %s\n", name.c_str());
 	}
 
-	// Ends the recording and saves it; false if the SD card wouldn't take it
-	bool stop() {
-		if (!active) return false;
+	// Ends the recording and keeps it for replay; the terminal dump runs in the background so
+	// driving doesn't wait on it
+	void stop() {
+		if (!active) return;
 		active = false;
 		while (sampling) pros::delay(5);
 
-		std::FILE* f = std::fopen(path(file).c_str(), "w");
-		if (!f) {
-			std::printf("Recording %s NOT SAVED: no SD card?\n", file.c_str());
-			return false;
+		std::string text = "t x y theta";
+		for (const Channel& c : channels) text += std::string(" ") + c.name;
+		text += "\n";
+		char number[24];
+		for (std::size_t i = 0; i < rows.size(); i++) {
+			std::snprintf(number, sizeof(number), (i + 1) % width() ? "%.5g " : "%.5g\n", rows[i]);
+			text += number;
 		}
-		std::fprintf(f, "t x y theta");
-		for (const Channel& c : channels) std::fprintf(f, " %s", c.name);
-		std::fprintf(f, "\n");
-		for (std::size_t i = 0; i < rows.size(); i++) std::fprintf(f, (i + 1) % width() ? "%.3f " : "%.3f\n", rows[i]);
-		std::fclose(f);
-		std::printf("Recorded %s: %.1f s\n", file.c_str(), rows.size() / width() / 100.0);
-		return true;
+		const std::size_t count = rows.size() / width();
+		kept[file] = text;
+		std::printf("Recorded %s: %.1f s\n", file.c_str(), count * PERIOD_MS / 1000.0);
+
+		if (std::FILE* f = std::fopen(path(file).c_str(), "w")) {	// Fails at once with no card
+			std::fputs(text.c_str(), f);
+			std::fclose(f);
+		}
+		pros::Task([name = file, text, count] {
+			// Paced, so the radio link to the controller keeps up
+			std::printf("=== recording %s %zu rows ===\n", name.c_str(), count);
+			std::size_t line = 0;
+			for (std::size_t from = 0, to; from < text.size(); from = to + 1) {
+				to = text.find('\n', from);
+				std::printf("%.*s\n", int(to - from), text.c_str() + from);
+				if (++line % 10 == 0) pros::delay(40);
+			}
+			std::printf("=== end %s ===\n", name.c_str());
+		});
 	}
 
 	/**
@@ -113,41 +136,62 @@ public:
 	}
 
 private:
-	static constexpr std::uint32_t MAX_MS = 75000;	// Skills plus margin, so a forgotten recording stops
-	static constexpr int SPAN = 5;					// samples either side a speed is measured over, against odom jitter
+	static constexpr std::uint32_t MAX_MS    = 75000;	// Skills plus margin, so a forgotten recording stops
+	static constexpr std::uint32_t PERIOD_MS = 20;		// Sample spacing; shorter makes the terminal dump longer
+	static constexpr int SPAN = 2;					// samples either side a speed is measured over, against odom jitter
 
 	Odom& odom;
 	lemlib::Chassis& chassis;
 	const std::vector<Channel> channels;
 	std::string file;
 	std::vector<double> rows;	// t, x, y, theta, then channels, per sample
+	std::map<std::string, std::string> kept;		// Recorded since the program started
+	std::map<std::string, const char*> compiled;	// Built in
 	volatile bool active = false, sampling = false;
 
 	std::size_t width() const { return 4 + channels.size(); }
 	static std::string path(const std::string& name) { return sdRoot + name + ".txt"; }
 
+	// Newest first: recorded this run, then the SD card, then built in
+	std::string text(const std::string& name) const {
+		if (kept.count(name)) return kept.at(name);
+		if (std::FILE* f = std::fopen(path(name).c_str(), "r")) {
+			std::string out;
+			char chunk[512];
+			for (std::size_t n; (n = std::fread(chunk, 1, sizeof(chunk), f)) > 0;) out.append(chunk, n);
+			std::fclose(f);
+			return out;
+		}
+		return compiled.count(name) ? compiled.at(name) : "";
+	}
+
 	bool load(const std::string& name, std::vector<Waypoint>& path, std::vector<std::vector<double>>& values) const {
-		std::FILE* f = std::fopen(Recorder::path(name).c_str(), "r");
-		if (!f) {
-			std::printf("Replay %s FAILED: no recording on the SD card\n", name.c_str());
+		const std::string all = text(name);
+		if (all.empty()) {
+			std::printf("Replay %s FAILED: nothing recorded\n", name.c_str());
 			return false;
 		}
-		char header[256];
-		const bool read = std::fgets(header, sizeof(header), f);
-		std::size_t columns = 0;
-		for (const char* p = header; read && *p; p++) columns += *p == ' ';
-		if (columns + 1 != width()) {
+		const std::size_t headerEnd = all.find('\n');
+		const std::size_t columns = std::count(all.begin(), all.begin() + std::min(headerEnd, all.size()), ' ') + 1;
+		if (columns != width()) {
 			std::printf("Replay %s FAILED: recorded with other mechanisms\n", name.c_str());
-			std::fclose(f);
 			return false;
 		}
 		std::vector<double> row(width());
-		auto next = [&] { return std::all_of(row.begin(), row.end(), [f](double& v) { return std::fscanf(f, "%lf", &v) == 1; }); };
+		const char* at = all.c_str() + headerEnd;
+		auto next = [&] {
+			for (double& v : row) {
+				char* end;
+				v = std::strtod(at, &end);
+				if (end == at) return false;
+				at = end;
+			}
+			return true;
+		};
 		while (next()) {
 			path.push_back({row[0], row[1], row[2], row[3]});
 			values.emplace_back(row.begin() + 4, row.end());
 		}
-		std::fclose(f);
 		if (path.size() < 2 * SPAN + 1) {
 			std::printf("Replay %s FAILED: too short\n", name.c_str());
 			return false;

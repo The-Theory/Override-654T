@@ -367,7 +367,7 @@ tide::Odom odom(chassis, ..., {mounts}, {
 
 ### Recording a driver run
 
-`tide::Recorder` (`tide/record.hpp`) records a driver run to the SD card and plays it back as an auton. Every 10 ms it saves where odom thinks the robot is, plus each mechanism you list as a `tide::Channel`. A Channel is a name, how to read it, and how to set it on playback:
+`tide::Recorder` (`tide/record.hpp`) records a driver run and plays it back as an auton. Every 20 ms it saves where odom thinks the robot is, plus each mechanism you list as a `tide::Channel`. A Channel is a name, how to read it, and how to set it on playback:
 
 ```cpp
 tide::Recorder recorder(odom, chassis, {
@@ -376,9 +376,11 @@ tide::Recorder recorder(odom, chassis, {
 });
 
 recorder.start("skills");	// from a known start pose, in driver control
-recorder.stop();			// saves /usd/skills.txt
+recorder.stop();			// keeps it in memory, sends it over the terminal, saves /usd/skills.txt if there's an SD card
 recorder.replay("skills");	// in an auton
 ```
+
+No SD card is needed. `replay` right after `stop` uses the copy in memory, until the program restarts. To keep a recording across uploads, run `python3 tools/recording.py` on the laptop with the controller plugged in before pressing stop. It reads `pros terminal` over the radio and writes `src/recordings/<name>.inc`. It refuses a dump that dropped lines. Rebuild and upload, and `recorder.builtIn("skills", ...)` in `initialize()` makes it the fallback. `replay` takes the newest copy it has: memory first, then the SD card, then the built-in one.
 
 It doesn't record controller input: replaying sticks would drift a little more every second. Playback sets the pose to where the recording started, then `odom.track` follows the path. Track is a RAMSETE path follower: the feedforward supplies the voltage, and RAMSETE steers back onto the path when the robot gets pushed off, so it needs planned moves measured first. Each channel is set again as the path reaches the point where it changed. The last number in a channel is the smallest change worth replaying, so sensor noise isn't replayed.
 

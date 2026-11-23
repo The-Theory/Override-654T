@@ -6,7 +6,7 @@ OUT      := out
 INCLUDES := -I fake -I . -I $(ROOT)/include -I $(ROOT)/src
 CXXFLAGS := -std=c++20 -O2 -g -Wall $(INCLUDES)
 SRC      := $(shell find $(ROOT)/src -name '*.cpp')
-HEADERS  := $(shell find fake . $(ROOT)/include/tide $(ROOT)/src -name '*.hpp' -o -name '*.h')
+HEADERS  := $(shell find fake . $(ROOT)/include/tide $(ROOT)/src -name '*.hpp' -o -name '*.h' -o -name '*.inc')
 AUTON    ?=
 WEB      ?= web/public/sim.js
 

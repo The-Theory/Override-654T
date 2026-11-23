@@ -123,8 +123,9 @@ void startOnToggle(tide::Point toggle) {
 
 // Claw on playback. A recorded grab closes where the piece sat on that field; if the claw doesn't
 // see one here, it finds it first: a short creep, else a scan behind the mouth
+double replayClawWas = NAN;	// The preload is already held when playback starts
 void replayClaw(double mv) {
-	static double was = NAN;	// The preload is already held when playback starts
+	double& was = replayClawWas;
 	if (mv > 0 && was <= 0 && !clawSeesPiece() && !odom.creep(-CREEP_MV, clawSeesPiece, 600)) {
 		const lemlib::Pose pose = chassis.getPose();
 		const tide::Point behind = tide::toField(0, -BACK_BUMPER - 2, pose.theta);
@@ -244,6 +245,7 @@ void replayAuton(tide::Alliance) {
 	const tide::Point start = flushOn(toggle::Q1);
 	chassis.setPose(start.x, start.y, WEST);
 	odom.pushUntilStall(SQUARE_MV, 800, 150);
+	replayClawWas = NAN;
 	recorder.replay("skills");
 }
 
@@ -364,6 +366,9 @@ std::string robotInfo() {
 }
 
 void initialize() {
+	recorder.builtIn("skills",
+#include "recordings/skills.inc"	// tools/recording.py writes it from the terminal
+	);
 	tide::screen::init(autons, tuners, robotInfo, {"Nanny"});
 	initRobot();
 	pros::Task{autoToggle}; // Start autoToggling
