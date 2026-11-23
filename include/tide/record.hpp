@@ -22,8 +22,9 @@
 #include <string>
 #include <vector>
 
-// Driver runs recorded as where the robot was and what its mechanisms did, then played back as an
-// auton: the drive follows the path, the mechanisms repeat on cue. A recording replays straight away
+// Driver runs recorded as where the robot was, what its distance sensors read and what its mechanisms
+// did, then played back as an auton: the drive follows the path, correcting itself so the sensors read
+// what they read in the recording, and the mechanisms repeat on cue. A recording replays straight away
 // from memory, is sent over the terminal for tools/recording.py to keep in the source, and goes on
 // the SD card if there is one
 
@@ -69,6 +70,7 @@ public:
 				rows.push_back((pros::millis() - t0) / 1000.0);
 				for (double v : {double(pose.x), double(pose.y), double(pose.theta)}) rows.push_back(v);
 				for (const Channel& c : channels) rows.push_back(c.read());
+				for (const DistanceMount& m : odom.getMounts()) rows.push_back(Odom::inches(m.sensor));
 				pros::Task::delay_until(&wake, PERIOD_MS);
 			}
 			sampling = false;
@@ -85,6 +87,7 @@ public:
 
 		std::string text = "t x y theta";
 		for (const Channel& c : channels) text += std::string(" ") + c.name;
+		for (std::size_t k = 0; k < odom.getMounts().size(); k++) text += " d" + std::to_string(k + 1);
 		text += "\n";
 		char number[24];
 		for (std::size_t i = 0; i < rows.size(); i++) {
@@ -126,6 +129,7 @@ public:
 		chassis.setPose(path[0].x, path[0].y, path[0].theta);
 		std::vector<double> last(channels.size(), NAN);
 		odom.track(path, [&](std::size_t i) {
+			match(path[i], values[i].data() + channels.size());
 			for (std::size_t c = 0; c < channels.size(); c++) {
 				if (!std::isnan(last[c]) && std::fabs(values[i][c] - last[c]) < channels[c].change) continue;
 				channels[c].write(values[i][c]);
@@ -149,7 +153,45 @@ private:
 	std::map<std::string, const char*> compiled;	// Built in
 	volatile bool active = false, sampling = false;
 
-	std::size_t width() const { return 4 + channels.size(); }
+	std::size_t width() const { return 4 + channels.size() + odom.getMounts().size(); }
+
+	static constexpr double MATCH_RANGE = 40;	// [in] past this a distance sensor's ~5% error outweighs what it fixes
+	static constexpr double MATCH_GATE  = 4;	// [in] off by more and it's seeing something else (a moved piece, a robot)
+	static constexpr double MATCH_NEAR  = 4;	// [in] only while the robot is near where the recording was
+	static constexpr double MATCH_TURN  = 20;	// [deg/s] faster turns sweep the beam faster than the sensor updates
+	static constexpr double MATCH_ANGLE = 3;	// [deg] off the recording's heading, an angled beam reads too differently
+	static constexpr double MATCH_GAIN  = 0.1;	// of each sample's mismatch moved per sample, so one bad reading barely counts; 0 turns matching off
+	static constexpr double MATCH_STEP  = 0.1;	// [in] most odom moves per sample
+
+	/**
+	 * Nudges odom so each distance sensor reads what it read at this point of the recording. The
+	 * target is the recording, not the field map, so it can't pull replay away from the frame the
+	 * recording's odom drifted in. Sensor lag is the same in both runs at the same speed, so it cancels.
+	 */
+	void match(const Waypoint& ref, const double* recorded) {
+		const lemlib::Pose pose = chassis.getPose();
+		if (std::hypot(pose.x - ref.x, pose.y - ref.y) > MATCH_NEAR || std::fabs(ref.w) > MATCH_TURN ||
+			std::fabs(std::remainder(pose.theta - ref.theta, 360.0)) > MATCH_ANGLE) return;
+		double dx = 0, dy = 0;
+		const std::vector<DistanceMount>& mounts = odom.getMounts();
+		for (std::size_t k = 0; k < mounts.size(); k++) {
+			const DistanceMount& m = mounts[k];
+			const double was = recorded[k], now = Odom::inches(m.sensor);
+			if (std::isnan(was) || std::isnan(now) || was > MATCH_RANGE) continue;
+			// What it should read from where odom puts it now, which trails or leads the recording's spot
+			const Point beam  = toField(0, 1, ref.theta + m.facing);
+			const Point there = toField(m.right, m.forward, ref.theta), here = toField(m.right, m.forward, pose.theta);
+			const double expected = was + (ref.x + there.x - pose.x - here.x) * beam.x + (ref.y + there.y - pose.y - here.y) * beam.y;
+			const double off = now - expected;	// Longer: the robot is further back along the beam than odom says
+			if (std::fabs(off) > MATCH_GATE) continue;
+			dx -= off * beam.x * MATCH_GAIN;
+			dy -= off * beam.y * MATCH_GAIN;
+		}
+		const double step = std::hypot(dx, dy);
+		if (step == 0) return;
+		const double scale = std::min(1.0, MATCH_STEP / step);
+		chassis.setPose(pose.x + dx * scale, pose.y + dy * scale, pose.theta);
+	}
 	static std::string path(const std::string& name) { return sdRoot + name + ".txt"; }
 
 	// Newest first: recorded this run, then the SD card, then built in

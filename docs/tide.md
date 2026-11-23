@@ -384,6 +384,8 @@ No SD card is needed. `replay` right after `stop` uses the copy in memory, until
 
 It doesn't record controller input: replaying sticks would drift a little more every second. Playback sets the pose to where the recording started, then `odom.track` follows the path. Track is a RAMSETE path follower: the feedforward supplies the voltage, and RAMSETE steers back onto the path when the robot gets pushed off, so it needs planned moves measured first. Each channel is set again as the path reaches the point where it changed. The last number in a channel is the smallest change worth replaying, so sensor noise isn't replayed.
 
+The recording also keeps what each of odom's distance sensors read. On playback, wherever the robot is near the recorded spot and not turning, odom is nudged a little each sample so every sensor that sees a wall within 40" reads what it read in the recording, from where odom puts the robot now. It matches the recording rather than the field map, so it can't pull playback away from the frame the recording's odom drifted in, and sensor lag cancels because both runs move at the same speed. A reading more than 4" off is something else, like a moved piece, and is skipped. That fixes a robot set down an inch off, or knocked aside, before the error reaches a goal.
+
 A channel's setter can take its time. The path waits while it runs, so it can, for example, look for a piece that sits somewhere else on this field before the claw closes. Square the robot on a wall before `replay` too, so a crooked setup doesn't bend the whole path.
 
 ## Field

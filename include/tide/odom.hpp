@@ -491,6 +491,12 @@ public:
 	}
 
 	const std::vector<DistanceMount>& getMounts() const { return mounts; }
+
+	// NaN if unplugged or nothing in range
+	static double inches(pros::Distance& sensor) {
+		const std::int32_t mm = sensor.get();
+		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
+	}
 	const OdomSettings& getSettings() const { return settings; }
 
 private:
@@ -506,12 +512,6 @@ private:
 	}
 
 	static constexpr int SWEEP_MV = 2500;	// Slow enough for the sensor to keep up, enough to beat friction
-
-	// NaN if unplugged or nothing in range
-	static double inches(pros::Distance& sensor) {
-		const std::int32_t mm = sensor.get();
-		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
-	}
 
 	static constexpr double DT            = 0.01;	// [s] control loop
 	static constexpr double SCAN_JUMP     = 0.75;	// [in] reading change that means the beam moved to another object
