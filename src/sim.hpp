@@ -20,6 +20,15 @@ inline void simRobot(sim::World& w) {
 
 	w.liftTau = 0.1;	// Guess: a raised cascade slows the drive's response this much
 
+	// The sim's own FF runs (sim --tune "FF down" / "FF up"), until robot.hpp has the real robot's
+	tide::OdomSettings& s = odom.getSettings();
+	if (!s.lateral.measured()) {
+		s.lateral       = {1205, 166.49, 41.66};
+		s.lateralLoaded = {1205, 166.49, 58.24};
+		s.angular       = {1205, 16.59, 4.15};
+		s.angularLoaded = {1205, 16.59, 5.80};
+	}
+
 	w.joints.push_back({
 		.ports          = winchMotors.get_port_all(),
 		.sensor         = winchEncoder.get_port(),

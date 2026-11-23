@@ -498,6 +498,7 @@ public:
 		return mm == PROS_ERR || mm >= 9999 ? NAN : mm / 25.4;	// 9999 = nothing in range
 	}
 	const OdomSettings& getSettings() const { return settings; }
+	OdomSettings& getSettings() { return settings; }
 
 private:
 	static double toRad(double degrees) { return degrees * std::numbers::pi / 180; }
@@ -618,7 +619,7 @@ private:
 	pros::MotorGroup& right;
 	pros::Rotation& tracking;
 	const std::vector<DistanceMount> mounts;
-	const OdomSettings settings;
+	OdomSettings settings;
 };
 
 } // namespace tide

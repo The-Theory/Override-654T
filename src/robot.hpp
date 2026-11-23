@@ -144,11 +144,11 @@ inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 }, {
 	.toolForward   = FRONT_BUMPER,	// [in] claw mouth at the front bumper
 
-	// SIM VALUES: replace with the Tune page's "FF down" / "FF up" results before running autons
-	.lateral       = {1205, 166.49, 41.66},	// [mV], [mV per in/s], [mV per in/s²]
-	.lateralLoaded = {1205, 166.49, 58.24},
-	.angular       = {1205, 16.59, 4.15},	// per deg
-	.angularLoaded = {1205, 16.59, 5.80},
+	// Paste the Tune page's "FF down" / "FF up" results; until then moves use LemLib's PID and Replay won't run
+	// .lateral       = {kS, kV, kA},	// [mV], [mV per in/s], [mV per in/s²]
+	// .lateralLoaded = {kS, kV, kA},
+	// .angular       = {kS, kV, kA},	// per deg
+	// .angularLoaded = {kS, kV, kA},
 	.load          = [] { return winch.position() / LIFT_LOADED; },
 });
 
