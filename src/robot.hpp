@@ -92,7 +92,7 @@ inline lemlib::Drivetrain drivetrain(
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
 constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter, horizontal
-inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, -0.01);
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0.57);	// Offset tuner 2026-11-23
 inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -0.01);
 inline lemlib::OdomSensors sensors(
 	&verticalWheel, nullptr, 
