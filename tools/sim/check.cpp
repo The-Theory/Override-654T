@@ -60,9 +60,9 @@ void expect(const char* what, double got, double want, double tolerance) {
 
 void checkOffset() {
 	chassis.setPose(0, 0, 0);
-	const std::string out = tide::trackingOffset(leftMotors, rightMotors, imu, tracking, WHEEL);
+	const std::string out = tide::trackingOffset(leftMotors, rightMotors, imu, {{"Vertical", tracking, WHEEL}});
 	double offset = NAN;
-	std::sscanf(out.c_str(), "Tracking offset %lf", &offset);
+	std::sscanf(out.c_str(), "Vertical offset %lf", &offset);
 	expect("tracking offset", offset, OFFSET, 0.05);
 }
 

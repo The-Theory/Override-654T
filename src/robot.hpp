@@ -92,8 +92,8 @@ inline lemlib::Drivetrain drivetrain(
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
 constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter, horizontal
-inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0.57);	// Offset tuner 2026-11-23
-inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -0.01);
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0.37);		// Offset tuner 2026-11-23: mean of 0.57 ccw, 0.16 cw
+inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -2.80);	// Offset tuner 2026-11-23, cw only
 inline lemlib::OdomSensors sensors(
 	&verticalWheel, nullptr, 
 	&horizontalWheel, nullptr,
@@ -102,12 +102,9 @@ inline lemlib::OdomSensors sensors(
 
 // Chassis PID
 inline lemlib::ControllerSettings lateralController(
-	// 9,			// kP
-	// 0.21324,	// kI
-	// 80,			// kD
-	10.048,			// kP
-	0.28812,	// kI
-	233.62,			// kD
+	9.826,			// kP
+	0.28795,	// kI
+	233.55,			// kD
 	6,			// anti windup		[in] wider pushes the robot on after it should be slowing
 	1,			// small error		[in]
 	100,		// small timeout	[ms]
@@ -116,9 +113,9 @@ inline lemlib::ControllerSettings lateralController(
 	0			// slew
 );
 inline lemlib::ControllerSettings angularController(
-	1.369,		// kP
-	0.05589,	// kI
-	22.37,		// kD
+	0.883,		// kP
+	0.03169,	// kI
+	16.41,		// kD
 	20,			// anti windup		[deg] integral pushes through turn friction once this close
 	1,			// small error		[deg]
 	100,		// small timeout	[ms]

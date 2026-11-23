@@ -255,10 +255,12 @@ std::string tuneLateral() {
 		{.setpoint = 0, .amplitude = 7000, .maxDeviation = 12, .hysteresis = 0.25, .rule = tide::TuneRule::SOME_OVERSHOOT}).summary;
 }
 
-// Spins 5 turns in place per wheel; paste each result into verticalWheel / horizontalWheel
+// Spins 5 turns in place each way; paste each offset into verticalWheel / horizontalWheel
 std::string tuneOffset() {
-	return "Vertical " + tide::trackingOffset(leftMotors, rightMotors, imu, verticalEncoder, TRACKING_WHEEL) +
-		   "Horizontal " + tide::trackingOffset(leftMotors, rightMotors, imu, horizontalEncoder, TRACKING_WHEEL_H);
+	return tide::trackingOffset(leftMotors, rightMotors, imu, {
+		{"Vertical",   verticalEncoder,   TRACKING_WHEEL},
+		{"Horizontal", horizontalEncoder, TRACKING_WHEEL_H},
+	});
 }
 
 // Drive and turn feedforward, lift down then up, since a raised lift is more inertia.

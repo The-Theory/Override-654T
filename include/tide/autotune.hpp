@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
+#include <array>
 #include <functional>
 #include <numbers>
 #include <string>
@@ -331,24 +332,37 @@ inline std::string characterize(const char* name, const Plant& plant, int rampMs
 /**
  * Spins in place and measures a vertical tracking wheel's offset [in] for lemlib::TrackingWheel,
  * + right of the turning center. Spinning in place should move the wheel by offset × angle,
- * so it needs no measuring, and drift averages out over several turns.
+ * so it needs no measuring. Spins both ways and averages, so sliding while spinning cancels.
  */
-inline std::string trackingOffset(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu,
-								  pros::Rotation& tracking, double wheelDiameter, int turns = 5, int mv = 4000) {
-	const Plant spin  = angularPlant(left, right, imu);
-	const Plant wheel = lateralPlant(left, right, tracking, wheelDiameter);
-	spin.apply(mv);
-	while (std::abs(spin.measure()) < turns * 360.0) pros::delay(10);
-	spin.apply(0);
-	pros::delay(500);	// Let it coast to a stop, so both readings cover the same motion
+struct TrackingWheelSpec { const char* name; pros::Rotation& encoder; double diameter; };
 
-	// Clockwise spin moves a wheel right of center backward
-	const double offset = -wheel.measure() / (spin.measure() * std::numbers::pi / 180);
+inline std::string trackingOffset(pros::MotorGroup& left, pros::MotorGroup& right, pros::Imu& imu,
+								  const std::vector<TrackingWheelSpec>& wheels, int turns = 5, int mv = 4000) {
+	// One way, then back: a robot that slides while spinning adds the same travel both ways, which the mean cancels
+	std::vector<std::array<double, 2>> offsets(wheels.size());
+	for (int k = 0; k < 2; k++) {
+		const Plant spin = angularPlant(left, right, imu);
+		std::vector<Plant> travel;
+		for (const TrackingWheelSpec& w : wheels) travel.push_back(lateralPlant(left, right, w.encoder, w.diameter));
+		spin.apply(k == 0 ? mv : -mv);
+		while (std::abs(spin.measure()) < turns * 360.0) pros::delay(10);
+		spin.apply(0);
+		pros::delay(500);	// Let it coast to a stop, so both readings cover the same motion
+
+		// Clockwise spin moves a wheel right of center backward
+		for (std::size_t i = 0; i < wheels.size(); i++)
+			offsets[i][k] = -travel[i].measure() / (spin.measure() * std::numbers::pi / 180);
+	}
+	std::string out;
 	char line[96];
-	// Raw travel too, so a wheel that never turned (no contact, unplugged) doesn't pass as a centered one
-	std::snprintf(line, 96, "Tracking offset %.2f in\nwheel %.2f in over %.0f deg\n", offset, wheel.measure(), spin.measure());
-	std::printf("%s", line);
-	return line;
+	for (std::size_t i = 0; i < wheels.size(); i++) {
+		// The gap shows how much it slid; a wheel that never turned reads 0 both ways
+		std::snprintf(line, 96, "%s offset %.2f in\ncw %.2f  ccw %.2f\n", wheels[i].name,
+					  (offsets[i][0] + offsets[i][1]) / 2, offsets[i][0], offsets[i][1]);
+		out += line;
+	}
+	std::printf("%s", out.c_str());
+	return out;
 }
 
 #pragma endregion
