@@ -92,8 +92,8 @@ inline lemlib::Drivetrain drivetrain(
 // Odometry
 constexpr float TRACKING_WHEEL = lemlib::Omniwheel::NEW_2;	// [in] diameter
 constexpr float TRACKING_WHEEL_H = lemlib::Omniwheel::NEW_275;	// [in] diameter, horizontal
-inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0.37);		// Offset tuner 2026-11-23: mean of 0.57 ccw, 0.16 cw
-inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -2.80);	// Offset tuner 2026-11-23, cw only
+inline lemlib::TrackingWheel verticalWheel(&verticalEncoder, TRACKING_WHEEL, 0.37);	// Offset tuner 2026-11-23
+inline lemlib::TrackingWheel horizontalWheel(&horizontalEncoder, TRACKING_WHEEL_H, -2.80);
 inline lemlib::OdomSensors sensors(
 	&verticalWheel, nullptr, 
 	&horizontalWheel, nullptr,
@@ -134,18 +134,18 @@ constexpr double BACK_BUMPER  = 5.2;	// Toggle wheel end
 inline tide::Odom odom(chassis, leftMotors, rightMotors, verticalEncoder, {
 	// sensor			right [in]	forward [in]	facing
 	// Old claw-at-back measurements turned around, until the Mounts run; front is unmeasured
-	{leftDistance,		-5.33,		-1.97,			tide::dir::WEST},
-	{rightDistance,		 5.89,		 0.33,			tide::dir::EAST},
-	{frontDistance,		 0,			 0,				tide::dir::NORTH},
-	{backDistance,		 0.43,		 0.81,			tide::dir::SOUTH},
+	{leftDistance,		-5.83,		-1.79,			tide::dir::WEST},
+	{rightDistance,		 5.39,		 -0.42,			tide::dir::EAST},
+	{frontDistance,		 -4.03,		0.64,				tide::dir::NORTH},
+	{backDistance,		 -0.08,		 5.38,			tide::dir::SOUTH},
 }, {
 	.toolForward   = FRONT_BUMPER,	// [in] claw mouth at the front bumper
 
 	// Paste the Tune page's "FF down" / "FF up" results; until then moves use LemLib's PID and Replay won't run
-	// .lateral       = {kS, kV, kA},	// [mV], [mV per in/s], [mV per in/s²]
-	// .lateralLoaded = {kS, kV, kA},
-	// .angular       = {kS, kV, kA},	// per deg
-	// .angularLoaded = {kS, kV, kA},
+	.lateral       = {1131, 144.14, 0.57},	// [mV], [mV per in/s], [mV per in/s²]
+	.lateralLoaded = {1051, 147.32, 0.59},
+	.angular       = {1404, 16.88, 1.31},	// per deg
+	.angularLoaded = {1505, 17.72, 1.37},
 	.load          = [] { return winch.position() / LIFT_LOADED; },
 });
 
