@@ -307,6 +307,7 @@ const std::vector<tide::screen::Tuner> tuners = {
 	{"Bumpers",    tuneBumpers},
 	{"FF down",    ffLiftDown},
 	{"FF up",      ffLiftUp},
+	{"Send rec",   [] { return std::string(recorder.send("skills") ? "Sent skills\n" : "Nothing recorded\n"); }},	// To tools/recording.py on the laptop
 };
 
 // Info page

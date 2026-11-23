@@ -25,8 +25,8 @@
 // Driver runs recorded as where the robot was, what its distance sensors read and what its mechanisms
 // did, then played back as an auton: the drive follows the path, correcting itself so the sensors read
 // what they read in the recording, and the mechanisms repeat on cue. A recording replays straight away
-// from memory, is sent over the terminal for tools/recording.py to keep in the source, and goes on
-// the SD card if there is one
+// from memory, goes on the SD card if there is one, and send() hands it to tools/recording.py to keep
+// in the source
 
 namespace tide {
 
@@ -78,8 +78,7 @@ public:
 		std::printf("Recording %s\n", name.c_str());
 	}
 
-	// Ends the recording and keeps it for replay; the terminal dump runs in the background so
-	// driving doesn't wait on it
+	// Ends the recording and keeps it for replay until the program restarts; send() keeps it longer
 	void stop() {
 		if (!active) return;
 		active = false;
@@ -102,17 +101,22 @@ public:
 			std::fputs(text.c_str(), f);
 			std::fclose(f);
 		}
-		pros::Task([name = file, text, count] {
-			// Paced, so the radio link to the controller keeps up
-			std::printf("=== recording %s %zu rows ===\n", name.c_str(), count);
-			std::size_t line = 0;
-			for (std::size_t from = 0, to; from < text.size(); from = to + 1) {
-				to = text.find('\n', from);
-				std::printf("%.*s\n", int(to - from), text.c_str() + from);
-				if (++line % 10 == 0) pros::delay(40);
-			}
-			std::printf("=== end %s ===\n", name.c_str());
-		});
+	}
+
+	// Prints the newest copy of a recording over the terminal for tools/recording.py to save into the
+	// source; paced so the radio link to the controller keeps up. False if there's none
+	bool send(const std::string& name) const {
+		const std::string all = text(name);
+		if (all.empty()) return false;
+		std::printf("=== recording %s %zu rows ===\n", name.c_str(), std::size_t(std::count(all.begin(), all.end(), '\n')) - 1);
+		std::size_t line = 0;
+		for (std::size_t from = 0, to; from < all.size(); from = to + 1) {
+			to = all.find('\n', from);
+			std::printf("%.*s\n", int(to - from), all.c_str() + from);
+			if (++line % 10 == 0) pros::delay(40);
+		}
+		std::printf("=== end %s ===\n", name.c_str());
+		return true;
 	}
 
 	/**
